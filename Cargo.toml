@@ -1,0 +1,8 @@
+[package]
+name = "arendur"
+version = "0.0.1"
+authors = ["Luxko <luxko@qq.com>"]
+
+[dependencies]
+num-traits = "0.1"
+cgmath = { path = "F:/Projects/GithubRepos/cgmath", version = "0.12" }
