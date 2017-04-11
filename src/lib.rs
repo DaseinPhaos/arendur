@@ -3,4 +3,5 @@ extern crate cgmath;
 extern crate num_traits;
 
 pub mod geometry;
+pub mod shape;
 // pub mod float;

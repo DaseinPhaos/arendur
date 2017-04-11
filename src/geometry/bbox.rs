@@ -1,5 +1,11 @@
 use super::cgmath_prelude::*;
 use std::ops;
+use std::mem;
+use super::ray::Ray;
+
+pub type BBox2f = BBox2<Float>;
+pub type BBox3f = BBox3<Float>;
+
 
 /// A 2D bounding box
 #[derive(PartialEq, Copy, Clone)]
@@ -236,6 +242,16 @@ impl<T: BaseNum> BBox3<T> {
         Point3::new(x, y, z)
     }
 
+    /// `index==false` for `self.pmin`, else `self.pmax`.
+    #[inline]
+    fn index(&self, index: bool) -> Point3<T> {
+        if index {
+            self.pmax
+        } else {
+            self.pmin
+        }
+    }
+
     /// Extend the bounding box with `p`, return the resultant new bbox
     #[inline]
     pub fn extend(&self, p: Point3<T>) -> Self {
@@ -412,17 +428,116 @@ impl<T: BaseNum> BBox3<T> {
     
     /// Apply transform `t` on `self`, returning a new bounding box
     pub fn apply_transform<Tr>(&self, t: &Tr) -> Self
-        where Tr: Transform<Point3<T>>
+        where Tr: Transform3<T>
     {
-        let bbox = BBox3::new(
-            t.transform_point(Point3::new(self.pmin.x, self.pmin.y, self.pmin.z)),
-            t.transform_point(Point3::new(self.pmax.x, self.pmin.y, self.pmin.z))
-        );
-        bbox.extend(Point3::new(self.pmin.x, self.pmax.y, self.pmin.z))
-            .extend(Point3::new(self.pmin.x, self.pmin.y, self.pmax.z))
-            .extend(Point3::new(self.pmin.x, self.pmax.y, self.pmax.z))
-            .extend(Point3::new(self.pmax.x, self.pmin.y, self.pmax.z))
-            .extend(Point3::new(self.pmax.x, self.pmax.y, self.pmin.z))
-            .extend(Point3::new(self.pmax.x, self.pmax.y, self.pmax.z))
+        // let bbox = BBox3::new(
+        //     t.transform_point(Point3::new(self.pmin.x, self.pmin.y, self.pmin.z)),
+        //     t.transform_point(Point3::new(self.pmax.x, self.pmin.y, self.pmin.z))
+        // );
+        // bbox.extend(Point3::new(self.pmin.x, self.pmax.y, self.pmin.z))
+        //     .extend(Point3::new(self.pmin.x, self.pmin.y, self.pmax.z))
+        //     .extend(Point3::new(self.pmin.x, self.pmax.y, self.pmax.z))
+        //     .extend(Point3::new(self.pmax.x, self.pmin.y, self.pmax.z))
+        //     .extend(Point3::new(self.pmax.x, self.pmax.y, self.pmin.z))
+        //     .extend(Point3::new(self.pmax.x, self.pmax.y, self.pmax.z))
+        let p = t.transform_point(self.pmin);
+        let diagonal = self.diagonal();
+        BBox3::new(
+            p, p + diagonal
+        )
+    }
+}
+
+// impl<T> ops::Index<bool> for BBox3<T>{
+//     type Output = Point3<T>;
+
+//     #[inline]
+//     fn index(&self, index: bool) -> &Point3<T> {
+//         if index {
+//             &self.pmax
+//         } else {
+//             &self.pmin
+//         }
+//     }
+// }
+
+impl BBox3f {
+    /// Test if the `ray` intersects `self`
+    pub fn intersect_ray<R>(&self, ray: &R) -> Option<(Float, Float)>
+        where R: Ray + ?Sized
+    {
+        let mut t0 = 0.0 as Float;
+        let mut t1 = ray.max_extend();
+
+        let origin = ray.origin();
+        let direction = ray.direction();
+
+        for i in 0..3 {
+            let inv_direction = (1.0 as Float) / direction[i];
+            let mut t_near = (self.pmin[i] - origin[i]) * inv_direction;
+            let mut t_far = (self.pmax[i] - origin[i]) * inv_direction;
+            if t_near > t_far {
+                mem::swap(&mut t_near, &mut t_far);
+            }
+            
+            // TODO: Update to ensure robust ray-bounds intersection
+
+            if t_near > t0 {
+                t0 = t_near;
+            }
+            if t_far < t1 {
+                t1 = t_far;
+            }
+
+            if t0 > t1 {
+                return None;
+            }
+        }
+
+        Some((t0, t1))
+    }
+
+    /// Test if the `ray` intersects `self`, with cache
+    #[inline]
+    pub fn intersect_ray_cached(&self, cache: &(Point3f, Vector3f, Vector3<bool>, Float)) -> Option<(Float, Float)>
+    {
+        let mut t0 = (self.index(cache.2.x).x - cache.0.x) * cache.1.x;
+        let mut t1 = (self.index(!cache.2.x).x - cache.0.x) * cache.1.x;
+
+        let ty0 = (self.index(cache.2.y).y - cache.0.y) * cache.1.y;
+        let ty1 = (self.index(!cache.2.y).y - cache.0.y) * cache.1.y;
+
+        // TODO: update for robustness
+
+        if t0 > ty1 || ty0 > t1 { return None; }
+        if ty0 > t0 { t0 = ty0; }
+        if ty1 < t1 { t1 = ty1; }
+
+        let tz0 = (self.index(cache.2.z).z - cache.0.z) * cache.1.z;
+        let tz1 = (self.index(!cache.2.z).z - cache.0.z) * cache.1.z;
+
+        // TODO: update for robustness
+
+        if t0 > tz1 || tz0 > t1 { return None; }
+        if tz0 > t0 { t0 = tz0; }
+        if tz1 < t1 { t1 = tz1; }
+
+        if t0 < cache.3 && t1 > (0.0 as Float) {
+            Some((t0, t1))
+        } else {
+            None
+        }
+    }
+
+    /// Construct cache for chached intersection
+    pub fn construct_ray_cache<R>(ray: R) -> (Point3f, Vector3f, Vector3<bool>, Float)
+        where R: Ray
+    {
+        let origin = ray.origin();
+        let invert_direction = ray.direction() / (1.0 as Float);
+        let zero = 0.0 as Float;
+        let dir_is_neg = Vector3::new(invert_direction.x < zero, invert_direction.y < zero, invert_direction.z < zero);
+        let max_extend = ray.max_extend();
+        (origin, invert_direction, dir_is_neg, max_extend)
     }
 }

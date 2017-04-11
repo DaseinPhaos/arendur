@@ -1,7 +1,8 @@
 use super::cgmath_prelude::*;
 use super::float;
+use super::bbox::BBox3f;
 
-// A semi-infinite line
+/// A semi-infinite line
 pub trait Ray {
     /// Returns where the ray originates
     fn origin(&self) -> Point3f;
@@ -9,6 +10,9 @@ pub trait Ray {
     /// Sets the origin to `o`.
     /// Implementations must ensure that this is valid
     fn set_origin(&mut self, o: Point3f);
+
+    /// Returns the max extend of the ray, in `self.direction().length()`
+    fn max_extend(&self) -> Float;
 
     /// Returns where the ray heads to.
     /// The length of the returned vector is the unit of the ray
@@ -25,10 +29,16 @@ pub trait Ray {
 
     /// Apply transform `t` on `self`, returning the new `Ray`.
     fn apply_transform<T>(&self, t: &T) -> Self
-        where T: Transform<Point3f>;
+        where T: Transform3<Float>;
+
+    /// intersect against a bbox
+    fn intersect_bbox(&self, bbox: &BBox3f) -> Option<(Float, Float)>
+    {
+        bbox.intersect_ray(self)
+    }
 }
 
-/// A semi-infinite line specified by `origin` and `dir`ection.
+/// A semi-infinite line specified by its `origin` and `dir`ection.
 #[derive(PartialEq, Copy, Clone)]
 pub struct RawRay {
     pub origin: Point3f,
@@ -70,6 +80,10 @@ impl Ray for RawRay {
         self.origin = o;
     }
 
+    #[inline]
+    fn max_extend(&self) -> Float {
+        self.tmax
+    }
     #[inline]
     fn direction(&self) -> Vector3f {
         self.dir
