@@ -1,4 +1,5 @@
-//! Contains basic geometry definitions.
+//! Contains foundamental geometry definitions.
+//!
 //! `cgmath_prelude` ports some foundamental definitions from `cgmath`.
 //! `float` defines functions dealing with basic type `Float`.
 //! `ray` defines the ray interface.

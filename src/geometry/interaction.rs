@@ -2,7 +2,8 @@
 
 use super::cgmath_prelude::*;
 use super::transform::TransformExt;
-use super::super::shape::ShapeInfo;
+use shape::ShapeInfo;
+use primitive::Primitive;
 // use super::float;
 
 /// Basic information about an interaction
@@ -70,6 +71,8 @@ pub struct SurfaceInteraction<'a> {
     pub shading_duv: DerivativeInfo2D,
     /// shape information of the surface
     pub shape_info: Option<ShapeInfo<'a>>,
+    // TODO: store primitive hit
+    // pub primitive_hit: Option<&'a Primitive>,
 }
 
 impl<'a> SurfaceInteraction<'a> {
@@ -100,6 +103,7 @@ impl<'a> SurfaceInteraction<'a> {
             shading_norm: norm,
             shading_duv: duv,
             shape_info: shape_info,
+            // primitive_hit: None,
         }
     }
 
@@ -129,10 +133,24 @@ impl<'a> SurfaceInteraction<'a> {
         self.shading_norm = norm;
     }
 
-    pub fn apply_transform<T>(&self, t: &T) -> Self
+    // pub fn set_primitive<'b, P>(&mut self, primitive: &'b P)
+    //     where 'b: 'a,
+    //           P: 'b,
+    // {
+    //     self.primitive_hit = Some(primitive)
+    // }
+
+    pub fn apply_transform<T>(&self, t: &T) -> SurfaceInteraction<'a>
         where T: TransformExt
     {
-        /// TODO: implement this
-        unimplemented!();
+        SurfaceInteraction{
+            basic: self.basic.apply_transform(t),
+            uv: self.uv,
+            duv: self.duv.apply_transform(t),
+            shading_norm: t.transform_norm(self.shading_norm),
+            shading_duv: self.shading_duv.apply_transform(t),
+            // FIXME: should shape info be updated when transformed?
+            shape_info: self.shape_info,
+        }
     }
 }

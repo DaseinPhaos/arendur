@@ -6,4 +6,5 @@ extern crate num_traits;
 
 pub mod geometry;
 pub mod shape;
-// pub mod float;
+pub mod primitive;
+pub mod spectrum;

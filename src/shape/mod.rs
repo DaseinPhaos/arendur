@@ -1,43 +1,9 @@
-//! Defines interface for a shape, providing raw access to its underlying
-//! geometry properties.
+//! Defines interface `Shape`, representing some geometric entity
+//! which resides in certain coordinate frames.
+//!
+//! Submodules defines some basic shapes.
 
 use geometry::*;
-// use geometry::interaction::SurfaceInteraction;
-
-// /// Basic information about a shape
-// /// Guarantees: 
-// /// - `local_parent.inverse() == parent_local`.
-// /// - `(local_parent.det() < 0) == swap_handedness`.
-// pub struct ShapeInfo<'a, T0: 'a, T1: 'a> {
-//     /// transform from local coordinate frame into parent
-//     pub local_parent: &'a T0,
-//     /// transform from parent coordinate frame into local
-//     pub parent_local: &'a T1,
-//     /// indicates if the shape normal's orientation should be reversed
-//     pub reverse_orientation: bool,
-//     /// indicates if transforms swap handedness
-//     pub swap_handedness: bool,
-// }
-
-
-// /// A shape
-// pub trait Shape<T>
-//     where T: TransformExt
-// {
-//     /// returns basic info of this shape
-//     fn info(&self) -> ShapeInfo<T, T>;
-    
-//     /// returns bounding box of the shape in its local frame
-//     fn bbox_local(&self) -> BBox3f;
-
-//     /// returns bounding box of the shape in the parent frame
-//     fn bbox_parent(&self) -> BBox3f {
-//         let local_parent = self.info().local_parent;
-//         let bbox_local = self.bbox_local();
-//         local_parent.transform_bbox(&bbox_local)
-//     }
-// }
-
 
 /// Basic information about a shape
 /// Guarantees: 
@@ -56,6 +22,8 @@ pub struct ShapeInfo<'a> {
 }
 
 impl<'a> ShapeInfo<'a> {
+    /// Construct a new shape. Users should always use this method
+    /// so that gurantees are met.
     pub fn new(local_parent: &'a Matrix4f, parent_local: &'a Matrix4f, reverse_orientation: bool) -> ShapeInfo<'a> {
         #[cfg(debug)]
         {

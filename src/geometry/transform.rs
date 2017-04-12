@@ -35,7 +35,7 @@ pub trait TransformExt: Transform3<Float> + Copy {
     {
         let m = <Self as Into<Matrix4<_>>>::into(*self);
         let inverse_transpose = m.inverse_transform().expect("Invalid inversion").transpose();
-        inverse_transpose.transform_vector(norm)
+        inverse_transpose.transform_vector(norm).normalize()
     }
 }
 
