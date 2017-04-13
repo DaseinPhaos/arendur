@@ -60,6 +60,7 @@ pub struct RawRay {
 }
 
 impl RawRay {
+    /// Construct a new ray
     #[inline]
     pub fn new(origin: Point3f, dir: Vector3f, tmax: Float) -> RawRay {
         let mut ray = RawRay {
@@ -73,6 +74,12 @@ impl RawRay {
         ray
     }
 
+    /// Construct a new ray, set max extend to infinity
+    #[inline]
+    pub fn from_od(origin: Point3f, dir: Vector3f) -> RawRay {
+        RawRay::new(origin, dir, float::infinity())
+    }
+    #[inline]
     fn reset_shearing_transform(&mut self) {
         let stc = ShearingTransformCache::from_ray(self);
         self.stc = stc;
@@ -231,5 +238,24 @@ impl Permulation {
     pub fn permzz(p0t: Point3f, p1t: Point3f, p2t: Point3f) -> (Point3f, Point3f, Point3f)
     {
         (p0t, p1t, p2t)
+    }
+}
+
+/// Ray with differencials
+pub struct RayDifferential {
+    pub ray: RawRay,
+    pub raydx: RawRay,
+    pub raydy: RawRay,
+}
+
+impl RayDifferential {
+    pub fn apply_transform<T>(&self, t: &T) -> Self
+        where T: Transform3<Float>
+    {
+        RayDifferential{
+            ray: self.ray.apply_transform(t),
+            raydx: self.raydx.apply_transform(t),
+            raydy: self.raydy.apply_transform(t),
+        }
     }
 }

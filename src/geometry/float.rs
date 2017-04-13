@@ -12,6 +12,16 @@ pub fn clamp(f: Float, min: Float, max: Float) -> Float {
 }
 
 #[inline]
+pub fn epsilon() -> Float {
+    <Float as num_traits::Float>::epsilon()
+}
+
+#[inline]
+pub fn one_minus_epsilon() -> Float {
+    1.0 as Float - epsilon()
+}
+
+#[inline]
 pub fn nan() -> Float {
     <Float as num_traits::Float>::nan()
 }

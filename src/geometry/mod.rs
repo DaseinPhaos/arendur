@@ -16,8 +16,7 @@ pub mod interaction;
 pub mod prelude;
 
 pub use self::foundamental::*;
-pub use self::ray::Ray;
-pub use self::ray::RawRay;
+pub use self::ray::{Ray, RawRay, RayDifferential};
 pub use self::transform::TransformExt;
 pub use self::bbox::{BBox2, BBox3, BBox2f, BBox3f};
 pub use self::interaction::{DerivativeInfo2D, InteractInfo, SurfaceInteraction};

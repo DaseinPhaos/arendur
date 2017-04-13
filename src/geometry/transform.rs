@@ -3,13 +3,19 @@
 use super::foundamental::*;
 use super::bbox::BBox3;
 use super::interaction::{InteractInfo, DerivativeInfo2D, SurfaceInteraction};
+use super::{Ray, RayDifferential};
 
 /// An object that can transform geometry entities.
 pub trait TransformExt: Transform3<Float> + Copy {
     #[inline]
     fn transform_ray<R>(&self, ray: &R) -> R
-        where R: super::Ray {
+        where R: Ray {
             ray.apply_transform(self)
+    }
+
+    #[inline]
+    fn transform_ray_differential(&self, raydif: &RayDifferential) -> RayDifferential {
+        raydif.apply_transform(self)
     }
 
     #[inline]

@@ -9,3 +9,4 @@ pub mod shape;
 pub mod component;
 pub mod spectrum;
 pub mod filming;
+pub mod sample;

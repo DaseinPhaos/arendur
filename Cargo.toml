@@ -5,5 +5,5 @@ authors = ["Luxko <luxko@qq.com>"]
 
 [dependencies]
 num-traits = "0.1"
-
+rand = "0.3"
 cgmath = { path = "F:/Projects/GithubRepos/cgmath", version = "0.12" }
