@@ -1,6 +1,6 @@
 //! Component transformed from another component
 
-use geometry::*;
+use geometry::prelude::*;
 use super::*;
 use std::rc::Rc;
 

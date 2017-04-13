@@ -1,4 +1,4 @@
-use geometry::*;
+use geometry::prelude::*;
 use super::{Shape, ShapeInfo};
 
 /// A (possibly-partial) sphere, as a geometry definition

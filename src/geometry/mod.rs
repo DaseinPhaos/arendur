@@ -13,12 +13,11 @@ pub mod bbox;
 pub mod transform;
 pub mod foundamental;
 pub mod interaction;
+pub mod prelude;
 
-// pub use num_traits::Float;
 pub use self::foundamental::*;
 pub use self::ray::Ray;
 pub use self::ray::RawRay;
 pub use self::transform::TransformExt;
 pub use self::bbox::{BBox2, BBox3, BBox2f, BBox3f};
 pub use self::interaction::{DerivativeInfo2D, InteractInfo, SurfaceInteraction};
-

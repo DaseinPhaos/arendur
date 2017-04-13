@@ -1,5 +1,5 @@
 //! Defines spectral representations
-use geometry::*;
+use geometry::prelude::*;
 use std::ops;
 
 pub type RGBSpectrumf = RGBSpectrum<Float>;

@@ -1,6 +1,6 @@
 //! Defines renderable components in the world.
 
-use geometry::*;
+use geometry::prelude::*;
 
 /// A renderable composable component.
 pub trait Composable {

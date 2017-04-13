@@ -1,7 +1,7 @@
 //! Defines interface `Shape`, representing some geometric entity
 //! which resides in certain coordinate frames.
 
-use geometry::*;
+use geometry::prelude::*;
 
 pub use self::sphere::Sphere;
 pub use self::triangle::{TriangleInstance, TriangleMesh};

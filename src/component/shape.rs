@@ -1,6 +1,6 @@
 //! Primitive component made up by a `Shape`.
 
-use geometry::*;
+use geometry::prelude::*;
 use super::*;
 use std::rc::Rc;
 use shape::*;

@@ -1,6 +1,6 @@
 //! A naively built linear aggregation of some other components
 
-use geometry::*;
+use geometry::prelude::*;
 use super::{Aggregate, Primitive, Composable};
 use std::rc::Rc;
 

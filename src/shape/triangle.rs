@@ -1,6 +1,6 @@
 //! Defines triangle mesh and triangle instance
 
-use geometry::*;
+use geometry::prelude::*;
 use shape::{Shape, ShapeInfo};
 use std::ops;
 
