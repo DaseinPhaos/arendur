@@ -1,9 +1,9 @@
-//! Basic geometry definitions
+//! Basic geometric interation
 
-use super::cgmath_prelude::*;
+use super::foundamental::*;
 use super::transform::TransformExt;
 use shape::ShapeInfo;
-use primitive::Primitive;
+// use primitive::Primitive;
 // use super::float;
 
 /// Basic information about an interaction

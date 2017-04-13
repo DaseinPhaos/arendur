@@ -1,8 +1,10 @@
+//! Component transformed from another component
+
 use geometry::*;
 use super::*;
 use std::rc::Rc;
-use shape::*;
 
+/// Component transformed from another component
 pub struct TransformedComposable<'a> {
     original: Rc<Composable>,
     local_parent: &'a Matrix4f,

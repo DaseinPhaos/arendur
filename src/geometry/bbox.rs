@@ -1,4 +1,6 @@
-use super::cgmath_prelude::*;
+//! 2D and 3D bounding box
+
+use super::foundamental::*;
 use std::ops;
 use std::mem;
 use super::ray::Ray;
@@ -195,11 +197,13 @@ impl<T: BaseNum> BBox2<T> {
 
 #[derive(PartialEq, Eq, Copy, Clone, Hash)]
 pub struct BBox3<T> {
+    /// min corner of the bounding box
     pub pmin: Point3<T>,
+    /// max corner of the bounding box
     pub pmax: Point3<T>,
 }
 
-
+/// A 3D bounding box
 impl<T: BaseNum> BBox3<T> {
     /// Construct a new bounding box marked by two corner vertice
     #[inline]

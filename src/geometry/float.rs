@@ -1,5 +1,15 @@
+//! Functions for float number manipulation
+
 use num_traits;
-use super::cgmath_prelude::*;
+use super::foundamental::*;
+
+#[inline]
+pub fn clamp(f: Float, min: Float, max: Float) -> Float {
+    debug_assert!(min <= max);
+    if f < min { min }
+    else if f < max { f }
+    else { max }
+}
 
 #[inline]
 pub fn nan() -> Float {

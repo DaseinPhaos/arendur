@@ -1,4 +1,4 @@
-//! A naively build linear aggregate
+//! A naively built linear aggregation of some other components
 
 use geometry::*;
 use super::{Aggregate, Primitive, Composable};

@@ -1,3 +1,5 @@
+//! Defines triangle mesh and triangle instance
+
 use geometry::*;
 use shape::{Shape, ShapeInfo};
 use std::ops;
@@ -9,6 +11,7 @@ static IDENTITY_MATRIX: Matrix4f = Matrix4f{
     w: Vector4f{x: 0.0 as Float, y: 0.0 as Float, z: 0.0 as Float, w: 1.0 as Float},
 };
 
+/// A triangle mesh
 pub struct TriangleMesh {
     vertices: Vec<Point3f>,
     indices: Vec<usize>,
@@ -20,29 +23,25 @@ pub struct TriangleMesh {
 }
 
 impl TriangleMesh {
+    /// Count of triangles in the mesh
     #[inline]
     pub fn triangle_count(&self) -> usize {
         debug_assert!(self.indices.len() % 3 == 0);
         self.indices.len() / 3
     }
 
+    /// Count of vertices in the mesh
     pub fn vertex_count(&self) -> usize {
         self.vertices.len()
     }
 
+    /// bounding box, in local frame
     pub fn bounding(&self) -> BBox3f {
         self.bbox
     }
-
-
 }
 
-// pub struct TriShape<'a> {
-//     pub info: ShapeInfo<'a>,
-//     pub mesh: &'a TriangleMesh,
-// }
-
-
+/// An instance of triangle from a triangle mesh.
 pub struct TriangleInstance<'a> {
     mesh: &'a TriangleMesh,
     /// ith triangle into the `parent` mesh
@@ -56,16 +55,19 @@ impl<'a> TriangleInstance<'a> {
         (*self)[0]
     }
     
+    /// return points in local frame
     #[inline]
     pub fn y(&self) -> Point3f {
         (*self)[1]
     }
 
+    /// return points in local frame
     #[inline]
     pub fn z(&self) -> Point3f {
         (*self)[2]
     }
 
+    /// return uv-coordinates
     #[inline]
     pub fn uvs(&self) -> (Point2f, Point2f, Point2f) {
         if let Some(ref uvs) = self.mesh.uvs {(
@@ -79,6 +81,7 @@ impl<'a> TriangleInstance<'a> {
         )}
     }
 
+    /// return vertice indices in the parent mesh
     #[inline]
     pub fn vidx(&self, idx: usize) -> usize {
         debug_assert!(self.idx < self.mesh.indices.len());

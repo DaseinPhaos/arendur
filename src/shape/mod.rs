@@ -1,9 +1,10 @@
 //! Defines interface `Shape`, representing some geometric entity
 //! which resides in certain coordinate frames.
-//!
-//! Submodules defines some basic shapes.
 
 use geometry::*;
+
+pub use self::sphere::Sphere;
+pub use self::triangle::{TriangleInstance, TriangleMesh};
 
 /// Basic information about a shape
 /// Guarantees: 

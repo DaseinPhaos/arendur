@@ -1,9 +1,11 @@
+//! Primitive component made up by a `Shape`.
+
 use geometry::*;
 use super::*;
 use std::rc::Rc;
 use shape::*;
 
-/// Represents a primitive made up of a single `Shape`
+/// Represents a primitive made up by a single `Shape`
 pub struct ShapedPrimitive<T> {
     shape: Rc<T>,
     // TODO: material:

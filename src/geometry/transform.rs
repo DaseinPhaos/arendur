@@ -1,4 +1,6 @@
-use super::cgmath_prelude::*;
+//! Transformation interface
+
+use super::foundamental::*;
 use super::bbox::BBox3;
 use super::interaction::{InteractInfo, DerivativeInfo2D, SurfaceInteraction};
 

@@ -1,4 +1,6 @@
-use super::cgmath_prelude::*;
+//! ray for ray-tracing
+
+use super::foundamental::*;
 use super::float;
 use super::bbox::BBox3f;
 use std::mem;
@@ -140,15 +142,16 @@ impl Ray for RawRay {
     }
 }
 
+/// Cache structure used to accelerate ray-bbox intersection test
 #[derive(Copy, Clone, PartialEq)]
 pub struct ShearingTransformCache {
-    pub perm: Permulation,
+    perm: Permulation,
     pub neg_o: Vector3f,
     pub shear: Vector3f,
 }
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum Permulation {
+enum Permulation {
     XZ,
     YZ,
     ZZ,
