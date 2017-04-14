@@ -16,4 +16,4 @@ keywords = ["cg", "rendering"]
 [dependencies]
 num-traits = "0.1"
 rand = "0.3"
-cgmath = "0.12"
+cgmath = "0.13"
