@@ -1,7 +1,16 @@
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! Defines some commonly used filters
 
 use geometry::prelude::*;
 use super::Filter;
+use std::mem;
 
 // /// Commonly used filter info
 // #[derive(Copy, Clone, Debug)]
@@ -177,7 +186,7 @@ impl Filter for MitchellFilter {
     }
 }
 
-/// A windowed sinc filter as per (Lanczos)[https://en.wikipedia.org/wiki/Lanczos_resampling]
+/// A windowed sinc filter as per [Lanczos](https://en.wikipedia.org/wiki/Lanczos_resampling).
 /// `tau` controls how many circles the function passes through
 /// before clamping to zero.
 #[derive(Copy, Clone, Debug)]
@@ -228,5 +237,74 @@ impl Filter for LanczosSincFilter {
     unsafe fn evaluate_unsafe(&self, p: Point2f) -> Float {
         LanczosSincFilter::lanczos_sinc(p.x, self.inv_tau)
         * LanczosSincFilter::lanczos_sinc(p.y, self.inv_tau)
+    }
+}
+
+
+const PREC_FILTER_WIDTH: usize = 16;
+const PREC_FILTER_SIZE: usize = PREC_FILTER_WIDTH * PREC_FILTER_WIDTH;
+
+/// To help accelerate the sampling process, sometimes it might
+/// be desirable to precompute the filtered value at some
+/// discrete locations and look'em up at runtime. This struct
+/// provides such functionality.
+#[derive(Clone, Debug)]
+pub struct PrecomputedFilter {
+    // buf: [Float; PREC_FILTER_SIZE],
+    buf: Vec<Float>,
+    radius: Vector2f,
+    mulx: Float,
+    muly: Float,
+}
+
+impl PrecomputedFilter {
+    /// construction
+    pub fn new<F: Filter>(from: &F) -> Self {
+        let radius = from.radius();
+        const INV_PREC_FILTER_WIDTH: Float = 1.0 as Float / PREC_FILTER_WIDTH as Float;
+        let dp = radius * INV_PREC_FILTER_WIDTH;
+        let mut ret = PrecomputedFilter {
+            // buf: unsafe { mem::uninitialized() },
+            buf: unsafe { vec![mem::uninitialized(); PREC_FILTER_SIZE] },
+            radius: radius,
+            mulx: PREC_FILTER_WIDTH as Float / radius.x,
+            muly: PREC_FILTER_WIDTH as Float / radius.y,
+        };
+        for y in 0..PREC_FILTER_WIDTH {
+            let py = dp.y * (y as Float + 0.5 as Float);
+            for x in 0..PREC_FILTER_WIDTH {
+                let px = dp.x * (x as Float + 0.5 as Float);
+                unsafe{
+                    *ret.buf.get_unchecked_mut(PrecomputedFilter::index_at(x, y)) = from.evaluate_unsafe(Point2f::new(px, py));
+                }
+            }
+        }
+        ret
+    }
+
+    #[inline]
+    fn index_at(x: usize, y: usize) -> usize {
+        x*PREC_FILTER_WIDTH + y
+    }
+
+    #[inline]
+    unsafe fn index_at_p(&self, p: Point2f) -> usize {
+        let px = (p.x.abs() * self.mulx) as usize;
+        let py = (p.y.abs() * self.muly) as usize;
+        Self::index_at(px, py)
+    }
+}
+
+impl Filter for PrecomputedFilter {
+    #[inline]
+    fn radius(&self) -> Vector2f {
+        self.radius
+    }
+
+    #[inline]
+    unsafe fn evaluate_unsafe(&self, p: Point2f) -> Float {
+        debug_assert!(p.x <= self.radius.x);
+        debug_assert!(p.y <= self.radius.y);
+        *self.buf.get_unchecked(self.index_at_p(p))
     }
 }

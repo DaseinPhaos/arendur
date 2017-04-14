@@ -1,3 +1,11 @@
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! A naive sampler.
 #![allow(unused_variables)]
 
@@ -7,7 +15,15 @@ use geometry::prelude::*;
 use std::usize::MAX;
 use super::Sampler;
 
-// A naive sampler
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+/// A naive sampler. Who dare use it?
 #[derive(Clone)]
 pub struct Naive {
     rng: rand::ThreadRng,

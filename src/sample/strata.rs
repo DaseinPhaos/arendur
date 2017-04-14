@@ -1,4 +1,12 @@
-//! Defines stratified samplers
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! Defines a stratified sampler
 extern crate rand;
 use super::sink::{Sinkf, Sink2f};
 use super::Sampler;
@@ -7,7 +15,6 @@ use geometry::*;
 use std;
 
 /// Represents a stratified sampler
-// TODO: Account for arrays maybe?
 #[derive(Debug, Clone)]
 pub struct StrataSampler<T> {
     sinkf: Sinkf,

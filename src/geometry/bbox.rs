@@ -1,3 +1,11 @@
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! 2D and 3D bounding box
 
 use super::foundamental::*;
@@ -176,6 +184,7 @@ impl<T: BaseNum> BBox2<T> {
         )
     }
 
+    /// Returns the bounding circle as `(center, radius)`
     pub fn bcircle(&self) -> (Point2<T>, T)
         where T: BaseFloat
     {
@@ -192,6 +201,14 @@ impl<T: BaseNum> BBox2<T> {
 
         debug_assert!(radius >= zero);
         (center, radius)
+    }
+
+    /// Casting to another type of bbox
+    pub fn cast<R: BaseNum>(&self) -> BBox2<R> {
+        BBox2{
+            pmin: self.pmin.cast(),
+            pmax: self.pmax.cast(),
+        }
     }
 }
 
@@ -450,6 +467,14 @@ impl<T: BaseNum> BBox3<T> {
             p, p + diagonal
         )
     }
+
+    /// Casting to another type of bbox
+    pub fn cast<R: BaseNum>(&self) -> BBox3<R> {
+        BBox3{
+            pmin: self.pmin.cast(),
+            pmax: self.pmax.cast(),
+        }
+    }
 }
 
 // impl<T> ops::Index<bool> for BBox3<T>{
@@ -543,5 +568,43 @@ impl BBox3f {
         let dir_is_neg = Vector3::new(invert_direction.x < zero, invert_direction.y < zero, invert_direction.z < zero);
         let max_extend = ray.max_extend();
         (origin, invert_direction, dir_is_neg, max_extend)
+    }
+}
+
+pub struct BBox2uIter {
+    ix: usize,
+    iy: usize,
+    nx: usize,
+    ny: usize,
+}
+
+impl Iterator for BBox2uIter {
+    type Item = Point2<usize>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Point2<usize>> {
+        while self.iy < self.ny {
+            if self.ix < self.nx {
+                self.ix += 1;
+                return Some(Point2::new(self.ix, self.iy))
+            } else {
+                self.iy += 1;
+                self.ix = 0;
+            }
+        }
+        None
+    }
+}
+
+impl IntoIterator for BBox2<usize> {
+    type Item = Point2<usize>;
+    type IntoIter = BBox2uIter;
+    fn into_iter(self) -> BBox2uIter {
+        BBox2uIter{
+            ix: self.pmin.x,
+            iy: self.pmin.y,
+            nx: self.pmax.x,
+            ny: self.pmax.y,
+        }
     }
 }

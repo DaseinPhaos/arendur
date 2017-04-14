@@ -1,3 +1,11 @@
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! The sampling and filtering interface
 
 // TODO: add more samplers
@@ -5,8 +13,12 @@
 use geometry::prelude::*;
 use filming;
 
-/// The sampling interface
-/// Smaplers return sampled values in $[0, 1)$
+/// The sampling interface.
+/// Samplers should return sampled values in $[0, 1)$.
+///
+/// Additional information are provided through the interface
+/// (like pixel location, dimension, samples per pixel etc.)
+/// such that implementations might provide better-quality.
 pub trait Sampler: Clone {
     /// Start sampling a new pixel
     fn start_pixel(&mut self, p: Point2<u32>);
@@ -47,7 +59,7 @@ pub trait Sampler: Clone {
         }
     }
 
-    // /// request the prequest, `n` to checksum
+    // /// request the prequest, `n` to checksum.
     // fn request(&mut self, n: u32) -> &[Float];
 
     // /// request the prequest, `n` to checksum
@@ -62,25 +74,24 @@ pub trait Sampler: Clone {
     /// maximum sample count per pixel
     fn sample_per_pixel(&self) -> usize;
 
-    /// Try advance to the next sample
+    /// Try to advance to the next sample
     /// `true` if the sampling process can continue
     /// `false` when overflowing `sample_per_pixel`, eg
     fn next_sample(&mut self) -> bool;
 
-    /// set current sample to a particular index
+    /// try to set current sample to a particular index
     fn set_sample_index(&mut self, idx: usize) -> bool;
 }
 
-/// The filter interface
+/// The filter interface.
 /// A filter always lies at $(0, 0)$ in its local frame.
-
 pub trait Filter {
-    /// Returns the filter's radius
+    /// Returns the filter's radius.
     /// The filter's support in local frame is thus given
     /// by $[-radius.x, radius.x]\times [-radius.y, radius.y]$
     fn radius(&self) -> Vector2f;
 
-    /// Returns the filter's support as a bounding box, in local frame
+    /// Returns the filter's support as a bounding box, in local frame.
     #[inline]
     fn support(&self) -> BBox2f {
         let p = self.radius();
@@ -92,7 +103,7 @@ pub trait Filter {
     /// This method is thus marked as `unsafe`.
     unsafe fn evaluate_unsafe(&self, p: Point2f) -> Float;
 
-    /// Evluate the filter at `p` in its local frame.
+    /// Evaluate the filter at `p` in its local frame.
     /// Point outside support is checked.
     #[inline]
     fn evaluate(&self, p: Point2f) -> Float {

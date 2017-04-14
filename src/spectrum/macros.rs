@@ -1,5 +1,13 @@
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 macro_rules! delegate_impl_op {
-        (@both
+    (@both
         $Trait: ident<$Scalar: ty>,
         $tmethod: ident,
         $withmethod: ident
@@ -43,6 +51,37 @@ macro_rules! delegate_impl_op {
                 $Type{
                     inner: self.$withmethod(rhs.inner)
                 }
+            }
+        }
+    };
+    (@assign
+        $Trait: ident,
+        $tmethod: ident,
+        $withmethod: ident
+        for
+        $Type: ident
+    ) => {
+        impl ops::$Trait for $Type {
+            fn $tmethod(&mut self, rhs: $Type) {
+                self.inner.$withmethod(rhs.inner)
+            }
+        }
+        impl<'a> ops::$Trait<&'a $Type> for $Type {
+            fn $tmethod(&mut self, rhs: &'a $Type) {
+                self.inner.$withmethod(rhs.inner)
+            }
+        }
+    };
+    (@assign
+        $Trait: ident<$Rhs: ty>,
+        $tmethod: ident,
+        $withmethod: ident
+        for
+        $Type: ident
+    ) => {
+        impl ops::$Trait<$Rhs> for $Type {
+            fn $tmethod(&mut self, rhs: $Rhs) {
+                self.inner.$withmethod(rhs)
             }
         }
     };

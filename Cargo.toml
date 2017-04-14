@@ -3,7 +3,17 @@ name = "arendur"
 version = "0.0.1"
 authors = ["Luxko <luxko@qq.com>"]
 
+license = "MIT/Apache-2.0"
+description = "Just another physically based renderer."
+
+documentation = "https://docs.rs/arendur"
+repository = "https://github.com/DaseinPhaos/arendur"
+homepage = "https://github.com/DaseinPhaos/arendur"
+readme = "README.md"
+
+keywords = ["cg", "rendering"]
+
 [dependencies]
 num-traits = "0.1"
 rand = "0.3"
-cgmath = { path = "F:/Projects/GithubRepos/cgmath", version = "0.12" }
+cgmath = "0.12"

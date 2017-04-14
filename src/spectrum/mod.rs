@@ -1,3 +1,11 @@
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! Defines spectral representations
 use geometry::prelude::*;
 use std::ops;
@@ -38,7 +46,7 @@ pub trait Spectrum
     }
 }
 
-/// An specturm represented in SRGB
+/// An spectrum represented in SRGB
 #[derive(Copy, Clone, PartialEq)]
 pub struct RGBSpectrum<T: BaseNum> {
     pub inner: Vector3<T>,
@@ -139,9 +147,9 @@ delegate_impl_op!(Div, div, div_element_wise for RGBSpectrumf);
 delegate_impl_op!(Rem, rem, rem_element_wise for RGBSpectrumf);
 delegate_impl_op!(@both Mul<Float>, mul, mul for RGBSpectrumf);
 delegate_impl_op!(Div<Float>, div, div for RGBSpectrumf);
-
-
-
-
-
-
+delegate_impl_op!(@assign AddAssign, add_assign, add_assign_element_wise for RGBSpectrumf);
+delegate_impl_op!(@assign SubAssign, sub_assign, sub_assign_element_wise for RGBSpectrumf);
+delegate_impl_op!(@assign MulAssign, mul_assign, mul_assign_element_wise for RGBSpectrumf);
+delegate_impl_op!(@assign DivAssign, div_assign, div_assign_element_wise for RGBSpectrumf);
+delegate_impl_op!(@assign MulAssign<Float>, mul_assign, mul_assign for RGBSpectrumf);
+delegate_impl_op!(@assign DivAssign<Float>, div_assign, div_assign for RGBSpectrumf);

@@ -1,3 +1,11 @@
+// Copyright 2017 Dasein Phaos aka. Luxko
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
 //! Defines cameras and films.
 
 use geometry::prelude::*;
@@ -50,14 +58,7 @@ pub trait Camera {
     // TODO: add film
 }
 
-/// A film!
-pub trait Film {
-    /// get resolution
-    fn resolution(&self) -> Point2<u32>;
-
-    // TODO: filter
-}
-
 pub mod projective;
 pub mod ortho;
 pub mod perspective;
+pub mod film;
