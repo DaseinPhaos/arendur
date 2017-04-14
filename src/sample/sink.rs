@@ -1,12 +1,12 @@
 //! Defines a utility sink for sampler's memory management
 
 use std;
-use num_traits::Zero;
 use geometry::prelude::*;
 
 pub type Sinkf = Sink<Float>;
 pub type Sink2f = Sink<Point2f>;
 
+#[derive(Debug, Clone)]
 pub struct Sink<T> {
     inner: Vec<T>,
     // dimension count
@@ -19,12 +19,14 @@ pub struct Sink<T> {
     isample: usize,
 }
 
-impl<T: Copy + Zero> Sink<T> {
+impl<T: Copy> Sink<T> {
     /// Constructs a new sink from given dimension and sample count
-    pub fn new(ndim: usize, nsample: u64) -> Sink<T> {
-        debug_assert!(nsample < std::usize::MAX as u64);
-        let nsample = nsample as usize;
-        let mut inner = vec![<T as Zero>::zero(); ndim * nsample];
+    pub fn new(ndim: usize, nsample: usize) -> Sink<T> {
+        // debug_assert!(nsample < std::usize::MAX as u64);
+        // let nsample = nsample as usize;
+        let inner = unsafe {
+            vec![std::mem::uninitialized(); ndim * nsample]
+        };
         Sink{
             inner: inner,
             ndim: ndim,
@@ -34,15 +36,28 @@ impl<T: Copy + Zero> Sink<T> {
         }
     }
 
+    /// Advance to next pixel, reset indexing
+    #[inline]
+    pub fn reset(&mut self) {
+        self.idim = 0;
+        self.isample = 0;
+    }
+
     /// get sample value in next dimension
-    pub fn next_dim(&mut self) -> T {
+    #[inline]
+    pub fn next_dim(&mut self) -> Option<T> {
         self.idim += 1usize;
-        let isample = self.isample;
-        let idim = self.idim;
-        (*self)[(isample, idim)]
+        if self.idim >= self.ndim {
+            None
+        } else {
+            let isample = self.isample;
+            let idim = self.idim;
+            Some((*self)[(isample, idim)])
+        }
     }
 
     /// advance to next sample
+    #[inline]
     pub fn next_sample(&mut self) -> bool {
         if self.isample + 1 == self.nsample {
             false
@@ -50,6 +65,41 @@ impl<T: Copy + Zero> Sink<T> {
             self.isample += 1;
             true
         }
+    }
+
+    /// set sample index
+    #[inline]
+    pub fn set_sample_index(&mut self, idx: usize) -> bool {
+        if idx >= self.nsample {
+            false
+        } else {
+            self.isample = idx;
+            true
+        }
+    }
+
+    /// get total dimension
+    #[inline]
+    pub fn ndim(&self) -> usize {
+        self.ndim
+    }
+
+    /// get total sample count
+    #[inline]
+    pub fn nsample(&self) -> usize {
+        self.nsample
+    }
+
+    /// get current dim
+    #[inline]
+    pub fn idim(&self) -> usize {
+        self.idim
+    }
+
+    /// get current sample
+    #[inline]
+    pub fn isample(&self) -> usize {
+        self.isample
     }
 }
 
