@@ -108,3 +108,82 @@ impl Sphericalf {
         }
     }
 }
+
+/// normal manipulations
+pub mod normal {
+    use super::*;
+    #[inline]
+    pub fn cos_theta(norm: Vector3f) -> Float {
+        norm.z
+    }
+
+    #[inline]
+    pub fn cos2_theta(norm: Vector3f) -> Float {
+        norm.z * norm.z
+    }
+
+    #[inline]
+    pub fn sin2_theta(norm: Vector3f) -> Float {
+        ((1.0 as Float) - cos2_theta(norm)).abs()
+    }
+
+    #[inline]
+    pub fn sin_theta(norm: Vector3f) -> Float {
+        sin2_theta(norm).sqrt()
+    }
+
+    #[inline]
+    pub fn tan_theta(norm: Vector3f) -> Float {
+        sin_theta(norm)/cos_theta(norm)
+    }
+
+    #[inline]
+    pub fn tan2_theta(norm: Vector3f) -> Float {
+        sin2_theta(norm)/cos2_theta(norm)
+    }
+
+    #[inline]
+    pub fn cos_phi(norm: Vector3f) -> Float {
+        let sin_theta = sin_theta(norm);
+        if sin_theta == 0.0 as Float {
+            1.0 as Float
+        } else {
+            float::clamp(norm.x / sin_theta, -1.0 as Float, 1.0 as Float)
+        }
+    }
+
+    pub fn sin_phi(norm: Vector3f) -> Float {
+        let sin_theta = sin_theta(norm);
+        if sin_theta == 0.0 as Float {
+            0.0 as Float
+        } else {
+            float::clamp(norm.y / sin_theta, -1.0 as Float, 1.0 as Float)
+        }
+    }
+
+    #[inline]
+    pub fn cos2_phi(norm: Vector3f) -> Float {
+        cos_phi(norm).powi(2)
+    }
+
+    #[inline]
+    pub fn sin2_phi(norm: Vector3f) -> Float {
+        sin_phi(norm).powi(2)
+    }
+
+    #[inline]
+    pub fn cos_dphi(n0: Vector3f, n1: Vector3f) -> Float {
+        float::clamp(
+            (n0.x * n1.x + n0.y * n1.y) / (
+                (n0.x * n0.x + n0.y * n0.y) * (n1.x * n1.x + n1.y * n1.y)
+            ).sqrt(),
+            -1.0 as Float,
+            1.0 as Float
+        )
+    }
+
+    #[inline]
+    pub fn reflect(wo: Vector3f, n: Vector3f) -> Vector3f {
+        -wo + 2.0 as Float * wo.dot(n) * n
+    }
+}

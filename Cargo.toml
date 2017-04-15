@@ -17,3 +17,4 @@ keywords = ["cg", "rendering"]
 num-traits = "0.1"
 rand = "0.3"
 cgmath = "0.13"
+bitflags = "0.7"

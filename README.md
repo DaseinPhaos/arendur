@@ -1,6 +1,6 @@
 # arendur
 
-Just Another Renderer. This time in rust though.
+Just Another Renderer. This time in Rust though.
 
 This is a project for personal study, guided by [pbrt](http://www.pbrt.org/). The implementation does have some Rusty-strength though, feel free to check out!
 

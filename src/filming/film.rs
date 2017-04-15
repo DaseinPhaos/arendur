@@ -169,9 +169,7 @@ impl<S: Clone> BoundedSink2D<S> {
         assert!(bbox.pmax.x > bbox.pmin.x);
         assert!(bbox.pmax.y > bbox.pmin.y);
         let diagonal = bbox.diagonal();
-        let pixels = unsafe{
-            vec![value; diagonal.x * diagonal.y]
-        };
+        let pixels = vec![value; diagonal.x * diagonal.y];
         BoundedSink2D{
             pixels: pixels,
             bounding: bbox,

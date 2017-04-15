@@ -47,7 +47,7 @@ pub trait Spectrum
 }
 
 /// An spectrum represented in SRGB
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct RGBSpectrum<T: BaseNum> {
     pub inner: Vector3<T>,
 }
@@ -93,6 +93,12 @@ impl RGBSpectrumf {
             0.212671 as Float * self.r() + 0.715160 as Float * self.g() + 0.072169 as Float * self.b(),
             0.019334 as Float * self.r()+  0.119193 as Float * self.g() + 0.950227 as Float * self.b()
         )
+    }
+
+    /// sqrt
+    #[inline]
+    pub fn sqrt(self) -> RGBSpectrumf {
+        RGBSpectrumf::new(self.inner.x.sqrt(), self.inner.y.sqrt(), self.inner.z.sqrt())   
     }
 }
 

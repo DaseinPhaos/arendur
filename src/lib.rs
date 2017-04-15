@@ -6,7 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#![feature(conservative_impl_trait)]
+#[macro_use]
+extern crate bitflags;
 
 #[macro_use]
 extern crate cgmath;
@@ -18,3 +19,4 @@ pub mod component;
 pub mod spectrum;
 pub mod filming;
 pub mod sample;
+pub mod bxdf;
