@@ -13,18 +13,27 @@ use std::cmp::Eq;
 use std::mem;
 use std::cmp;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
 use std::sync::{Arc, Weak};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 extern crate image;
-use self::image::{ConvertBuffer, GenericImage};
+use self::image::GenericImage;
 use spectrum::{RGBSpectrum, ToNorm, RGBSpectrumf, Spectrum};
 
 /// an image texture
 pub struct ImageTexture<TM: BaseNum + image::Primitive, M> {
     mapping: M,
     mipmap: Arc<MipMap<TM>>,
+}
+
+impl<TM: BaseNum + image::Primitive + ToNorm + 'static, M: Mapping2D> Texture for ImageTexture<TM, M> {
+    type Texel = RGBSpectrumf;
+
+    #[inline]
+    fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel {
+        let t2dinfo = self.mapping.map(si, dxy);
+        self.mipmap.look_up(t2dinfo.p, t2dinfo.dpdx, t2dinfo.dpdy).to_rgbf()
+    }
 }
 
 impl<TM: BaseNum + image::Primitive + ToNorm + 'static, M: Mapping2D> ImageTexture<TM, M> {
@@ -34,7 +43,7 @@ impl<TM: BaseNum + image::Primitive + ToNorm + 'static, M: Mapping2D> ImageTextu
             Entry::Occupied(oe) => {
                 oe.get().clone().upgrade()
             },
-            Entry::Vacant(oe) => {
+            Entry::Vacant(_) => {
                 None
             },
         };
@@ -70,7 +79,7 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
         if let Ok(opened) = image::open(info.name.clone()) {
             let (nx, ny) = opened.dimensions();
             let np2x = nx.next_power_of_two();
-            let np2y = nx.next_power_of_two();
+            let np2y = ny.next_power_of_two();
 
             let miplevels = if np2x > np2y {
                 np2x.trailing_zeros() + 1
@@ -222,17 +231,17 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
         let inv2_det = 1.0 as Float / det * 2.0 as Float;
         let usqrt = (det*c).sqrt();
         let vsqrt = (det*a).sqrt();
-        let s0 = (st.x - inv2_det * usqrt).ceil() as usize;
-        let s1 = (st.x + inv2_det * usqrt).ceil() as usize;
-        let t0 = (st.y - inv2_det * vsqrt).ceil() as usize;
-        let t1 = (st.y + inv2_det * vsqrt).ceil() as usize;
+        let s0 = (s - inv2_det * usqrt).ceil() as usize;
+        let s1 = (s + inv2_det * usqrt).ceil() as usize;
+        let t0 = (t - inv2_det * vsqrt).ceil() as usize;
+        let t1 = (t + inv2_det * vsqrt).ceil() as usize;
 
         let mut sum = RGBSpectrumf::black();
         let mut sumwt = 0.0 as Float;
         for it in t0..t1 {
-            let tt = it as Float - st.y;
+            let tt = it as Float - s;
             for is in s0..s1 {
-                let ss = is as Float - st.x;
+                let ss = is as Float - t;
                 let square_radius = a * ss * ss + b * ss * tt + c * tt * tt;
                 if square_radius < 1.0 as Float {
                     let idx = (square_radius * WEIGHT_LUT_SIZE as Float) as usize;

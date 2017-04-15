@@ -2,7 +2,7 @@
 
 Just Another Renderer. This time in Rust though.
 
-This is a project for personal study, guided by [pbrt](http://www.pbrt.org/). The implementation does have some Rusty-strength though, feel free to check out!
+This is a project guided by [pbrt](http://www.pbrt.org/). Its on `0.0.1` for the time being, meaning it can't render anything just yet.
 
 To tinker with it you can either clone the source code with `git`:
 
@@ -15,10 +15,10 @@ or simply grab it from [crates.io](https:://crates.io).
 
 ## Contributing
 
-Contributions by any form are appreciated!
+Contribution/guidance appreciated.
 
 ## License
 
-Just as the Rust Programming Language, this project is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
+This project is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE), [LICENSE-MIT](LICENSE-MIT) for details.

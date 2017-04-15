@@ -6,23 +6,3 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[macro_use]
-extern crate bitflags;
-
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate cgmath;
-extern crate num_traits;
-
-pub mod geometry;
-pub mod shape;
-pub mod component;
-pub mod spectrum;
-pub mod filming;
-pub mod sample;
-pub mod bxdf;
-pub mod material;
-pub mod texturing;
-pub mod lighting;
