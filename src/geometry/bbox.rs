@@ -12,6 +12,7 @@ use super::foundamental::*;
 use std::ops;
 use std::mem;
 use super::ray::Ray;
+use num_traits::NumCast;
 
 pub type BBox2f = BBox2<Float>;
 pub type BBox3f = BBox3<Float>;
@@ -168,19 +169,18 @@ impl<T: BaseNum> BBox2<T> {
     }
 
     /// Linearly interpolate between the two corners
-    pub fn lerp(&self, t: Vector2<f64>) -> Point2<T>
-        where f64: From<T>,
-              T: From<f64>,
+    pub fn lerp(&self, t: Vector2<Float>) -> Point2<T>
+        where T: NumCast,
     {
         Point2::new(
-            (
-                t.x * <T as Into<f64>>::into(self.pmin.x)
-                + (1.0 - t.x) * <T as Into<f64>>::into(self.pmax.x)
-            ).into(),
-            (
-                t.y * <T as Into<f64>>::into(self.pmin.y)
-                + (1.0 - t.y) * <T as Into<f64>>::into(self.pmax.y)
-            ).into(),
+            <T as NumCast>::from(
+                t.x * <Float as NumCast>::from(self.pmax.x).unwrap()
+                + (1.0 as Float - t.x) * <Float as NumCast>::from(self.pmin.x).unwrap()
+            ).unwrap(),
+            <T as NumCast>::from(
+                t.y * <Float as NumCast>::from(self.pmax.y).unwrap()
+                + (1.0 as Float - t.y) * <Float as NumCast>::from(self.pmin.y).unwrap()
+            ).unwrap()
         )
     }
 
@@ -409,23 +409,22 @@ impl<T: BaseNum> BBox3<T> {
     }
 
     /// Linearly interpolate between the two corners
-    pub fn lerp(&self, t: Vector3<f64>) -> Point3<T>
-        where f64: From<T>,
-              T: From<f64>,
+    pub fn lerp(&self, t: Vector3f) -> Point3<T>
+         where T: NumCast,
     {
         Point3::new(
-            (
-                t.x * <T as Into<f64>>::into(self.pmin.x)
-                + (1.0 - t.x) * <T as Into<f64>>::into(self.pmax.x)
-            ).into(),
-            (
-                t.y * <T as Into<f64>>::into(self.pmin.y)
-                + (1.0 - t.y) * <T as Into<f64>>::into(self.pmax.y)
-            ).into(),
-            (
-                t.z * <T as Into<f64>>::into(self.pmin.z)
-                + (1.0 - t.z) * <T as Into<f64>>::into(self.pmax.z)
-            ).into(),
+            <T as NumCast>::from(
+                t.x * <Float as NumCast>::from(self.pmax.x).unwrap()
+                + (1.0 as Float - t.x) * <Float as NumCast>::from(self.pmin.x).unwrap()
+            ).unwrap(),
+            <T as NumCast>::from(
+                t.y * <Float as NumCast>::from(self.pmax.y).unwrap()
+                + (1.0 as Float - t.y) * <Float as NumCast>::from(self.pmin.y).unwrap()
+            ).unwrap(),
+            <T as NumCast>::from(
+                t.z * <Float as NumCast>::from(self.pmax.z).unwrap()
+                + (1.0 as Float - t.z) * <Float as NumCast>::from(self.pmin.z).unwrap()
+            ).unwrap(),
         )
     }
 
