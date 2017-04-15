@@ -17,6 +17,7 @@ pub type Point3f = cgmath::Point3<Float>;
 pub type Vector2f = cgmath::Vector2<Float>;
 pub type Vector3f = cgmath::Vector3<Float>;
 pub type Vector4f = cgmath::Vector4<Float>;
+pub type Matrix2f = cgmath::Matrix2<Float>;
 pub type Matrix3f = cgmath::Matrix3<Float>;
 pub type Matrix4f = cgmath::Matrix4<Float>;
 pub type Basis3f = cgmath::Basis3<Float>;

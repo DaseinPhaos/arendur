@@ -49,7 +49,8 @@ pub trait Camera {
         };
 
         RayDifferential{
-            ray: ray, raydx: ray_dx, raydy: ray_dy
+            ray: ray,
+            diffs: Some((ray_dx, ray_dy)),
         }
     }
 

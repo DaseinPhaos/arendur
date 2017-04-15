@@ -10,6 +10,9 @@
 extern crate bitflags;
 
 #[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
 extern crate cgmath;
 extern crate num_traits;
 
@@ -20,3 +23,5 @@ pub mod spectrum;
 pub mod filming;
 pub mod sample;
 pub mod bxdf;
+pub mod material;
+pub mod texturing;

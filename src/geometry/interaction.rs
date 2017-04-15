@@ -6,8 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Basic geometric interation
+//! Basic geometric interaction
 
+use super::{RayDifferential, Ray};
 use super::foundamental::*;
 use super::transform::TransformExt;
 use shape::ShapeInfo;
@@ -38,24 +39,24 @@ impl InteractInfo {
     }
 }
 
-/// Derivative information about some $(p, n) = f(u, v)$
+/// Differential information about some $p(u, v)$, $n(u, v)$
 #[derive(PartialEq, Copy, Clone)]
-pub struct DerivativeInfo2D {
-    /// partial derivative of position along u-axis
+pub struct DuvInfo {
+    /// partial differential of position along u
     pub dpdu: Vector3f,
-    /// partial derivative of position along v-axis
+    /// partial differential of position along v
     pub dpdv: Vector3f,
-    /// partial derivative of normal along u-axis
+    /// partial differential of normal along u
     pub dndu: Vector3f,
-    /// partial derivative of normal along v-axis
+    /// partial differential of normal along v
     pub dndv: Vector3f,
 }
 
-impl DerivativeInfo2D {
+impl DuvInfo {
     pub fn apply_transform<T>(&self, t: &T) -> Self
         where T: TransformExt
     {
-        DerivativeInfo2D {
+        DuvInfo {
             dpdu: t.transform_vector(self.dpdu),
             dpdv: t.transform_vector(self.dpdv),
             dndu: t.transform_norm(self.dndu),
@@ -72,15 +73,16 @@ pub struct SurfaceInteraction<'a> {
     /// uv-position
     pub uv: Point2f,
     /// partial derivatives along uv
-    pub duv: DerivativeInfo2D,
+    pub duv: DuvInfo,
     /// Normal used for shading, might be different from `self.basic.norm`
     pub shading_norm: Vector3f,
     /// uv-derivatives used for shading, might be different from `self.duv`
-    pub shading_duv: DerivativeInfo2D,
+    pub shading_duv: DuvInfo,
     /// shape information of the surface
     pub shape_info: Option<ShapeInfo<'a>>,
-    // TODO: store primitive hit
+    // /// primitive hit
     // pub primitive_hit: Option<&'a Primitive>,
+
 }
 
 impl<'a> SurfaceInteraction<'a> {
@@ -89,7 +91,7 @@ impl<'a> SurfaceInteraction<'a> {
         pos: Point3f,
         wo: Vector3f,
         uv: Point2f,
-        duv: DerivativeInfo2D,
+        duv: DuvInfo,
         shape_info: Option<ShapeInfo<'a>>,
     ) -> SurfaceInteraction<'a> {
         let mut norm = duv.dpdu.cross(duv.dpdv).normalize();
@@ -118,7 +120,7 @@ impl<'a> SurfaceInteraction<'a> {
     /// set `self.shading_`s.
     /// if `orient_norm_by_shading`, `self.norm` would be oriented
     /// according to `self.shading_norm`. Otherwise, the reverse.
-    pub fn set_shading(&mut self,duv: DerivativeInfo2D, orient_norm_by_shading: bool)
+    pub fn set_shading(&mut self,duv: DuvInfo, orient_norm_by_shading: bool)
     {
         self.duv = duv;
         // FIXME: should update according to more cretiarias
@@ -160,5 +162,77 @@ impl<'a> SurfaceInteraction<'a> {
             // FIXME: should shape info be updated when transformed?
             shape_info: self.shape_info,
         }
+    }
+
+    /// compute image plane differentials according to the differential ray
+    pub fn compute_dxy(&self, ray_diff: &RayDifferential) -> DxyInfo {
+        if let Some(ref diffs) = ray_diff.diffs {
+            // hitting plane is given by `(self.basic.pos, self.basic.norm)`.
+            let d = self.basic.norm.dot(self.basic.pos.to_vec());
+            let tx = (d - self.basic.norm.dot(diffs.0.origin().to_vec())) / self.basic.norm.dot(diffs.0.direction());
+            let px = diffs.0.evaluate(tx);
+            let ty = (d - self.basic.norm.dot(diffs.1.origin().to_vec())) / self.basic.norm.dot(diffs.1.direction());
+            let py = diffs.1.evaluate(ty);
+            let dpdx = px - self.basic.pos;
+            let dpdy = py - self.basic.pos;
+            let dudxy = solve_over_constrained_2x3(dpdx, (self.duv.dpdu, self.duv.dpdv), self.basic.norm).unwrap_or(Vector2f::new(0.0 as Float, 0.0 as Float));
+            let dvdxy = solve_over_constrained_2x3(dpdy, (self.duv.dpdu, self.duv.dpdv), self.basic.norm).unwrap_or(Vector2f::new(0.0 as Float, 0.0 as Float));
+            DxyInfo{
+                dpdx: dpdx, dpdy: dpdy,
+                dudx: dudxy.x, dudy: dudxy.y,
+                dvdx: dvdxy.x, dvdy: dvdxy.y,
+            }
+        } else {
+            Default::default()
+        }
+    }
+}
+
+/// Partial differential info about some `p(x, y)`, `u(x, y)`, `v(x, y)`
+/// according to some `(x, y)` image space
+#[derive(PartialEq, Copy, Clone)]
+pub struct DxyInfo {
+    pub dpdx: Vector3f,
+    pub dpdy: Vector3f,
+    pub dudx: Float,
+    pub dudy: Float,
+    pub dvdx: Float,
+    pub dvdy: Float,
+}
+
+impl Default for DxyInfo {
+    #[inline]
+    fn default() -> DxyInfo {
+        const ZERO: Float = 0.0 as Float;
+        DxyInfo{
+            dpdx: Vector3f::new(ZERO, ZERO, ZERO),
+            dpdy: Vector3f::new(ZERO, ZERO, ZERO),
+            dudx: ZERO,
+            dudy: ZERO,
+            dvdx: ZERO,
+            dvdy: ZERO,
+        }
+    }
+}
+
+/// helper function to solve over constrained system given by
+/// $M_{3*2}(x, y)^T = (a, b, c)^T$
+#[inline]
+fn solve_over_constrained_2x3(abc: Vector3f, m: (Vector3f, Vector3f), n: Vector3f) -> Option<Vector2f> {
+    if n.x.abs() > n.y.abs() && n.x.abs() > n.z.abs() {
+        Matrix2f::new(m.0.y, m.1.y, m.0.z, m.1.z)
+        .invert().map(|m| {
+            m * Vector2f::new(abc.y, abc.z)
+        })
+    } else if n.y.abs() > n.z.abs() {
+        Matrix2f::new(m.0.x, m.1.x, m.0.z, m.1.z)
+        .invert().map(|m| {
+            m * Vector2f::new(abc.x, abc.z)
+        })
+    } else {
+        Matrix2f::new(m.0.x, m.1.x, m.0.y, m.1.y)
+        .invert().map(|m| {
+            m * Vector2f::new(abc.x, abc.y)
+        })
     }
 }

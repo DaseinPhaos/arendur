@@ -129,7 +129,8 @@ impl Camera for PerspecCam {
         let rx = RawRay::from_od(ray.origin(), (pview.to_vec()+self.dx).normalize());
         let ry = RawRay::from_od(ray.origin(), (pview.to_vec()+self.dy).normalize());
         let ret = RayDifferential{
-            ray: ray, raydx: rx, raydy: ry
+            ray: ray,
+            diffs: Some((rx, ry)),
         };
         self.view_parent.transform_ray_differential(&ret)
     }

@@ -6,11 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Fundamental definition preludes
+//! defines the material interface
 
-pub use super::foundamental::*;
-pub use super::ray::{Ray, RawRay, RayDifferential};
-pub use super::transform::TransformExt;
-pub use super::bbox::{BBox2, BBox3, BBox2f, BBox3f};
-pub use super::interaction::{DuvInfo, DxyInfo, InteractInfo, SurfaceInteraction};
-pub use super::float;
+
+
+pub mod bsdf;
+
+/// The material interface
+pub trait Material {
+    // TODO:
+}

@@ -42,8 +42,7 @@ pub trait Ray {
     }
 
     /// Apply transform `t` on `self`, returning the new `Ray`.
-    fn apply_transform<T>(&self, t: &T) -> Self
-        where T: Transform3<Float>;
+    fn apply_transform(&self, t: &Matrix4f) -> Self;
 
     /// intersect against a bbox
     fn intersect_bbox(&self, bbox: &BBox3f) -> Option<(Float, Float)>
@@ -141,8 +140,7 @@ impl Ray for RawRay {
 
     // FIXME: Deal with rounding error
     #[inline]
-    fn apply_transform<T>(&self, t: &T) -> RawRay
-        where T: Transform<Point3f>
+    fn apply_transform(&self, t: &Matrix4f) -> RawRay
     {
         RawRay::new(
             t.transform_point(self.origin),
@@ -252,18 +250,20 @@ impl Permulation {
 /// Ray with differencials
 pub struct RayDifferential {
     pub ray: RawRay,
-    pub raydx: RawRay,
-    pub raydy: RawRay,
+    pub diffs: Option<(RawRay, RawRay)>,
 }
 
 impl RayDifferential {
-    pub fn apply_transform<T>(&self, t: &T) -> Self
-        where T: Transform3<Float>
+    pub fn apply_transform(&self, t: &Matrix4f) -> Self
     {
+        let mut diffs = self.diffs;
+        if let Some(ref mut diffs) = diffs {
+            diffs.0 = diffs.0.apply_transform(t);
+            diffs.1 = diffs.1.apply_transform(t);
+        }
         RayDifferential{
             ray: self.ray.apply_transform(t),
-            raydx: self.raydx.apply_transform(t),
-            raydy: self.raydy.apply_transform(t),
+            diffs: diffs,
         }
     }
 }

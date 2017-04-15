@@ -1,4 +1,4 @@
-// Copyright 2017 Dasein Phaos aka. Luxko aka. Luxko
+// Copyright 2017 Dasein Phaos aka. Luxko
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -39,7 +39,7 @@ pub trait Aggregate: Composable {
 
 }
 
-/// A renderable primitive entity
+/// A renderable primitive
 pub trait Primitive: Composable {
 
 }

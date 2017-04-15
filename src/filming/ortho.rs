@@ -115,7 +115,8 @@ impl Camera for OrthoCam {
         let rx = RawRay::from_od(ray.origin() + self.dx, ray.direction());
         let ry = RawRay::from_od(ray.origin() + self.dy, ray.direction());
         let ret = RayDifferential{
-            ray: ray, raydx: rx, raydy: ry
+            ray: ray,
+            diffs: Some((rx, ry)),
         };
         self.view_parent.transform_ray_differential(&ret)
     }

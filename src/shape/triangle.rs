@@ -124,7 +124,7 @@ impl<'a> TriangleInstance<'a> {
     }
 
     #[inline]
-    fn compute_shading_at(&self, b: Vector3f, dpdu: Vector3f) -> DerivativeInfo2D
+    fn compute_shading_at(&self, b: Vector3f, dpdu: Vector3f) -> DuvInfo
     {
         let p0 = self.x();
         let p1 = self.y();
@@ -159,7 +159,7 @@ impl<'a> TriangleInstance<'a> {
             panic!("invalid shading")
         };
 
-        DerivativeInfo2D {
+        DuvInfo {
             dpdu: shading_tangent,
             dpdv: shading_bitangent,
             dndu: dndu,
@@ -242,7 +242,7 @@ impl<'a> Shape for TriangleInstance<'a> {
 
         let mut surface_interaction = SurfaceInteraction::new(
             phit, -ray.direction(), uvhit,
-            DerivativeInfo2D{
+            DuvInfo{
                 dpdu: dpdu,
                 dpdv: dpdv,
                 dndu: Vector3f::zero(),

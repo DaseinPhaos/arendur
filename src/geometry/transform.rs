@@ -10,20 +10,23 @@
 
 use super::foundamental::*;
 use super::bbox::BBox3;
-use super::interaction::{InteractInfo, DerivativeInfo2D, SurfaceInteraction};
+use super::interaction::{InteractInfo, DuvInfo, SurfaceInteraction};
 use super::{Ray, RayDifferential};
 
 /// An object that can transform geometry entities.
 pub trait TransformExt: Transform3<Float> + Copy {
     #[inline]
     fn transform_ray<R>(&self, ray: &R) -> R
-        where R: Ray {
-            ray.apply_transform(self)
+        where R: Ray
+    {
+        let m : Matrix4f = (*self).into();
+        ray.apply_transform(&m)
     }
 
     #[inline]
     fn transform_ray_differential(&self, raydif: &RayDifferential) -> RayDifferential {
-        raydif.apply_transform(self)
+        let m : Matrix4f = (*self).into();
+        raydif.apply_transform(&m)
     }
 
     #[inline]
@@ -37,7 +40,7 @@ pub trait TransformExt: Transform3<Float> + Copy {
     }
 
     #[inline]
-    fn transform_derivative_info(&self, info: &DerivativeInfo2D) -> DerivativeInfo2D {
+    fn transform_derivative_info(&self, info: &DuvInfo) -> DuvInfo {
         info.apply_transform(self)
     }
 

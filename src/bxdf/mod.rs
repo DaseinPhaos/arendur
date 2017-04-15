@@ -56,3 +56,6 @@ pub mod scaled;
 pub mod fresnel;
 pub mod specular;
 pub mod lambertian;
+pub mod oren_nayar;
+
+// TODO: Add microfacet distribution model

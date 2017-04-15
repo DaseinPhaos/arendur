@@ -189,7 +189,7 @@ impl<'a> Shape for Sphere<'a> {
                 Some((
                     t, SurfaceInteraction::new(
                         p, -ray.direction(), Point2f::new(u, v),
-                        DerivativeInfo2D{
+                        DuvInfo{
                             dpdu: dpdu,
                             dpdv: dpdv,
                             dndu: dndu,

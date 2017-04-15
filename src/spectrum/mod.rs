@@ -8,7 +8,11 @@
 
 //! Defines spectral representations
 use geometry::prelude::*;
+use std;
 use std::ops;
+use std::mem;
+use num_traits::cast::NumCast;
+extern crate image;
 
 pub type RGBSpectrumf = RGBSpectrum<Float>;
 
@@ -73,6 +77,188 @@ impl<T: BaseNum> RGBSpectrum<T> {
     #[inline]
     pub fn b(&self) -> T {
         self.inner.z
+    }
+}
+
+impl<T: ToNorm + BaseNum> RGBSpectrum<T> {
+    #[inline]
+    pub fn to_rgbf(self) -> RGBSpectrumf {
+        RGBSpectrumf::new(self.inner.x.to_norm(), self.inner.y.to_norm(), self.inner.z.to_norm())
+    }
+
+    #[inline]
+    pub fn from_rgbf(v: RGBSpectrumf) -> Self {
+        RGBSpectrum::new(T::from_norm(v.inner.x), T::from_norm(v.inner.y), T::from_norm(v.inner.z))
+    }
+
+    /// lerp
+    #[inline]
+    pub fn approx_lerp(self, other: Self, t: Float) -> Self {
+        let lhs = self.to_rgbf();
+        let rhs = other.to_rgbf();
+        let inner = <Vector3f as InnerSpace>::lerp(lhs.inner, rhs.inner, t);
+        Self::from_rgbf(RGBSpectrumf{
+            inner: inner
+        })
+    }
+}
+
+impl<T: BaseNum + image::Primitive> image::Pixel for RGBSpectrum<T> {
+    type Subpixel = T;
+
+    #[inline]
+    fn channel_count() -> u8 {
+        3u8
+    }
+
+    #[inline]
+    fn channels(&self) -> &[T] {
+        let t: &[T; 3] = self.inner.as_ref();
+        t
+    }
+
+    #[inline]
+    fn channels_mut(&mut self) -> &mut [T] {
+        let t: &mut [T; 3] = self.inner.as_mut();
+        t
+    }
+
+    #[inline]
+    fn color_model() -> &'static str {
+        "RGB"
+    }
+
+    #[inline]
+    fn color_type() -> image::ColorType {
+        image::ColorType::RGB(mem::size_of::<T>() as u8 * 8)
+    }
+
+    #[inline]
+    fn channels4(&self) -> (T, T, T, T) {
+        (self.inner.x, self.inner.y, self.inner.z, <T as One>::one())
+    }
+
+    #[inline]
+    fn from_channels(a: T, b: T, c: T, d: T) -> Self {
+        RGBSpectrum::new(a*d, b*d, c*d)
+    }
+
+    #[inline]
+    fn from_slice<'a>(slice: &'a [T]) -> &'a Self {
+        unsafe {
+            let ptr: *const _ = mem::transmute(slice.as_ptr());
+            ptr.as_ref().unwrap()
+        }
+    }
+
+    #[inline]
+    fn from_slice_mut<'a>(slice: &'a mut [Self::Subpixel]) -> &'a mut Self {
+        unsafe {
+            let ptr: *mut _ = mem::transmute(slice.as_mut_ptr());
+            ptr.as_mut().unwrap()
+        }
+    }
+
+    #[inline]
+    fn to_rgb(&self) -> image::Rgb<T> {
+        image::Rgb{
+            data: [self.inner.x, self.inner.y, self.inner.z],
+        }
+    }
+
+    #[inline]
+    fn to_rgba(&self) -> image::Rgba<T> {
+        image::Rgba{
+            data: [self.inner.x, self.inner.y, self.inner.z, <T as One>::one()],
+        }
+    }
+
+    #[inline]
+    fn to_luma(&self) -> image::Luma<Self::Subpixel> {
+        let r = RGBSpectrumf{
+            inner: self.inner.cast()
+        };
+        image::Luma{
+            data: [<T as NumCast>::from(r.to_xyz().y).unwrap()]
+        }
+    }
+
+    #[inline]
+    fn to_luma_alpha(&self) -> image::LumaA<Self::Subpixel> {
+        let r = RGBSpectrumf{
+            inner: self.inner.cast()
+        };
+        image::LumaA{
+            data: [<T as NumCast>::from(r.to_xyz().y).unwrap(), <T as One>::one()]
+        }
+    }
+
+    #[inline]
+    fn map<F>(&self, f: F) -> Self 
+        where F: Fn(Self::Subpixel) -> Self::Subpixel
+    {
+        RGBSpectrum::new(
+            f(self.r()), f(self.g()), f(self.b())
+        )
+    }
+
+    #[inline]
+    fn apply<F>(&mut self, f: F) 
+        where F: Fn(Self::Subpixel) -> Self::Subpixel
+    {
+        self.inner.x = f(self.inner.x);
+        self.inner.y = f(self.inner.y);
+        self.inner.z = f(self.inner.z);
+    }
+
+    #[inline]
+    fn map_with_alpha<F, G>(&self, f: F, _g: G) -> Self 
+        where F: Fn(Self::Subpixel) -> Self::Subpixel,
+              G: Fn(Self::Subpixel) -> Self::Subpixel
+    {
+        self.map(f)
+    }
+
+    #[inline]
+    fn apply_with_alpha<F, G>(&mut self, f: F, _g: G) 
+        where F: Fn(Self::Subpixel) -> Self::Subpixel,
+              G: Fn(Self::Subpixel) -> Self::Subpixel
+    {
+        self.apply(f)
+    }
+
+    #[inline]
+    fn map2<F>(&self, other: &Self, f: F) -> Self 
+        where F: Fn(Self::Subpixel, Self::Subpixel) -> Self::Subpixel
+    {
+        RGBSpectrum::new(
+            f(self.r(), other.r()),
+            f(self.g(), other.g()),
+            f(self.b(), other.b())
+        )
+    }
+
+    #[inline]
+    fn apply2<F>(&mut self, other: &Self, f: F) 
+        where F: Fn(Self::Subpixel, Self::Subpixel) -> Self::Subpixel
+    {
+        *self = RGBSpectrum::new(
+            f(self.r(), other.r()),
+            f(self.g(), other.g()),
+            f(self.b(), other.b())
+        );
+    }
+
+    #[inline]
+    fn invert(&mut self) {
+        self.apply(|x| <T as One>::one() / x);
+    }
+
+    #[inline]
+    fn blend(&mut self, other: &Self) {
+        self.inner.x *= other.inner.x;
+        self.inner.y *= other.inner.y;
+        self.inner.z *= other.inner.z;
     }
 }
 
@@ -159,3 +345,25 @@ delegate_impl_op!(@assign MulAssign, mul_assign, mul_assign_element_wise for RGB
 delegate_impl_op!(@assign DivAssign, div_assign, div_assign_element_wise for RGBSpectrumf);
 delegate_impl_op!(@assign MulAssign<Float>, mul_assign, mul_assign for RGBSpectrumf);
 delegate_impl_op!(@assign DivAssign<Float>, div_assign, div_assign for RGBSpectrumf);
+
+pub trait ToNorm {
+    fn to_norm(self) -> Float;
+    
+    fn from_norm(f: Float) -> Self;
+}
+
+impl ToNorm for Float {
+    #[inline]
+    fn to_norm(self) -> Float {
+        self
+    }
+
+    #[inline]
+    fn from_norm(f: Float) -> Self {
+        f
+    }
+}
+
+delegate_impl_to_norm!(u8);
+delegate_impl_to_norm!(u16);
+delegate_impl_to_norm!(u32);

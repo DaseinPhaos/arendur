@@ -160,3 +160,20 @@ macro_rules! delegate_impl_op {
         }
     }
 }
+
+macro_rules! delegate_impl_to_norm {
+    ($Type: ident) => {
+        impl ToNorm for $Type {
+            #[inline]
+            fn to_norm(self) -> Float {
+                <Float as NumCast>::from(self).unwrap() / <Float as NumCast>::from(std::$Type::MAX).unwrap()
+            }
+
+            #[inline]
+            fn from_norm(mut f: Float) -> Self {
+                f = float::clamp(f, 0.0 as Float, 1.0 as Float);
+                <Self as NumCast>::from(f * <Float as NumCast>::from(std::$Type::MAX).unwrap()).unwrap()
+            }
+        }
+    }
+}

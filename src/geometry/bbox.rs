@@ -585,8 +585,9 @@ impl Iterator for BBox2uIter {
     fn next(&mut self) -> Option<Point2<usize>> {
         while self.iy < self.ny {
             if self.ix < self.nx {
+                let ix = self.ix;
                 self.ix += 1;
-                return Some(Point2::new(self.ix, self.iy))
+                return Some(Point2::new(ix, self.iy))
             } else {
                 self.iy += 1;
                 self.ix = 0;
