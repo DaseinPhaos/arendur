@@ -1,5 +1,7 @@
 # arendur
 
+[travis](https://travis-ci.org/DaseinPhaos/arendur.svg?branch=master)
+
 Just Another Renderer. This time in Rust though.
 
 This is a project guided by [pbrt](http://www.pbrt.org/). Its on `0.0.1` for the time being, meaning it can't render anything just yet.
