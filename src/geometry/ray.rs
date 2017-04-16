@@ -86,6 +86,15 @@ impl RawRay {
     pub fn from_od(origin: Point3f, dir: Vector3f) -> RawRay {
         RawRay::new(origin, dir, float::infinity())
     }
+
+    /// Construct a new ray from `origin` to `destination`
+    #[inline]
+    pub fn spawn(origin: Point3f, destination: Point3f) -> RawRay {
+        let dir_unormed = destination - origin;
+        let tmax = dir_unormed.magnitude();
+        RawRay::new(origin, dir_unormed/tmax, tmax)
+    }
+
     #[inline]
     fn reset_shearing_transform(&mut self) {
         let stc = ShearingTransformCache::from_ray(self);

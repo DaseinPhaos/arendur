@@ -37,11 +37,6 @@ impl Bxdf for LambertianBxdf {
     }
 
     #[inline]
-    fn evaluate_sampled(&self, _wo: Vector3f, _sample: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
-        unimplemented!();
-    }
-
-    #[inline]
     fn rho_hd(&self, _wo: Vector3f, _samples: &[Point2f]) -> RGBSpectrumf {
         self.reflectance
     }

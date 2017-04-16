@@ -97,11 +97,6 @@ impl Bxdf for SpecularTBxdf {
     }
 
     #[inline]
-    fn rho_hd(&self, _wo: Vector3f, _samples: &[Point2f]) -> RGBSpectrumf {
-        unimplemented!();
-    }
-
-    #[inline]
     fn rho_hh(&self, _samples0: &[Point2f], _samples1: &[Point2f]) -> RGBSpectrumf {
         unimplemented!();
     }

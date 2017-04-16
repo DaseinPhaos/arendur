@@ -9,7 +9,8 @@
 //! defines the general bxdf (bidirectional distribution function) interface
 
 use geometry::prelude::*;
-use spectrum::RGBSpectrumf;
+use spectrum::{Spectrum, RGBSpectrumf};
+use sample;
 
 /// A bidirectional distribution function
 pub trait Bxdf {
@@ -25,12 +26,38 @@ pub trait Bxdf {
     fn evaluate(&self, wo: Vector3f, wi: Vector3f) -> RGBSpectrumf;
 
     /// evaluate bxdf described as delta distribution
-    // TODO: explain sample usage
-    fn evaluate_sampled(&self, wo: Vector3f, sample: Point2f) -> (RGBSpectrumf, Vector3f, Float);
+    /// `u` is uniformly sampled from $[0,1)^2$.
+    /// returns the corresponding outgoing direction, the function value associated,
+    /// and a pdf at the outgoing direction
+    fn evaluate_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+        let mut wi = sample::sample_cosw_hemisphere(u);
+        if wo.z < 0.0 as Float {wi.z = -wi.z;}
+        let cos_theta = normal::cos_theta(wi);
+        let pdf = sample::pdf_cosw_hemisphere(cos_theta);
+        let spectrum = self.evaluate(wo, wi);
+        (spectrum, wi, pdf)
+    }
+
+    // /// evalute pdf
+    // fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+    //     if wo.z * wi.z > 0.0 as Float {
+    //         let costheta = normal::cos_theta(wi);
+    //         let pdf = sample
+    //     }
+    // }
 
     /// hemispherical-directional reflectance
     // TODO: explain more
-    fn rho_hd(&self, wo: Vector3f, samples: &[Point2f]) -> RGBSpectrumf;
+    fn rho_hd(&self, wo: Vector3f, samples: &[Point2f]) -> RGBSpectrumf {
+        let mut ret = RGBSpectrumf::black();
+        let mut pdfsum = 0.0 as Float;
+        for sample in samples {
+            let (spec, wi, pdf) = self.evaluate_sampled(wo, *sample);
+            ret += spec*pdf;
+            pdfsum += pdf;
+        }
+        ret/pdfsum
+    }
 
     /// hemispherical-hemispherical reflactance
     // TODO: explain more

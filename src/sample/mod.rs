@@ -116,6 +116,126 @@ pub trait Filter {
     }
 }
 
+/// transform an uniformly sampled `u` in $[0,1)^2$
+/// into uniform samples on a hemisphere
+#[inline]
+pub fn sample_unform_hemisphere(u: Point2f) -> Vector3f {
+    let costheta = u.x;
+    let sintheta = (1.0 as Float - costheta).max(0.0 as Float).sqrt();
+    let phi = 2.0 as Float * float::pi() * u.y;
+    Vector3f::new(sintheta*phi.cos(), sintheta*phi.sin(), costheta)
+}
+
+/// pdf of uniform samples on a hemisphere
+#[inline]
+pub fn pdf_unform_hemisphere() -> Float {
+    0.5 as Float * float::frac_1_pi()
+}
+
+/// transform an uniformly sampled `u` in $[0,1)^2$
+/// into uniform samples on a sphere
+#[inline]
+pub fn sample_unform_sphere(u: Point2f) -> Vector3f {
+    let costheta = 1.0 as Float - 2.0 as Float * u.x;
+    let sintheta = (1.0 as Float - costheta).max(0.0 as Float).sqrt();
+    let phi = 2.0 as Float * float::pi() * u.y;
+    Vector3f::new(sintheta*phi.cos(), sintheta*phi.sin(), costheta)
+}
+
+/// pdf of uniform samples on a hemisphere
+#[inline]
+pub fn pdf_unform_sphere() -> Float {
+    0.25 as Float * float::frac_1_pi()
+}
+
+/// transform an uniformly sampled `u` in $[0,1)^2$
+/// into concentric samples on a disk, preserving relative
+/// distributions
+#[inline]
+pub fn sample_concentric_disk(u: Point2f) -> Point2f {
+    let u = (2.0 as Float * u) - Point2f::new(1.0 as Float, 1.0 as Float);
+    if u.x == 0.0 as Float && u.y == 0.0 as Float {
+        Point2f::new(0.0 as Float, 0.0 as Float)
+    } else {
+        let (r, theta) = if u.x.abs() > u.y.abs() {
+            (u.x, float::frac_pi_4() * (u.y/u.x))
+        } else {
+            (u.y, float::frac_pi_2() - float::frac_pi_4() * (u.x/u.y))
+        };
+        r * Point2f::new(theta.cos(), theta.sin())
+    }
+}
+
+/// pdf of concentric samples on a disk
+#[inline]
+pub fn pdf_concentric_disk() -> Float {
+    float::pi()
+}
+
+/// transform an uniformly sampled `u` in $[0,1)^2$
+/// into uniform samples on a disk
+#[inline]
+pub fn sample_unform_disk(u: Point2f) -> Point2f {
+    let r = u.x.sqrt();
+    let theta = 2.0 as Float * float::pi() * u.y;
+    Point2f::new(r*theta.cos(), r*theta.sin())
+}
+
+/// pdf of uniform samples on a disk
+#[inline]
+pub fn pdf_unform_disk() -> Float {
+    float::pi()
+}
+
+/// transform an uniformly sampled `u` in $[0,1)^2$
+/// into cosine-theta weighted samples on a hemisphere
+#[inline]
+pub fn sample_cosw_hemisphere(u: Point2f) -> Vector3f {
+    let d = sample_concentric_disk(u);
+    let z = (1.0 as Float - d.x*d.x - d.y*d.y).sqrt();
+    Vector3f::new(d.x, d.y, z)
+}
+
+/// pdf of cosine-theta weighted samples on a hemisphere
+#[inline]
+pub fn pdf_cosw_hemisphere(cos_theta: Float) -> Float {
+    cos_theta * float::frac_1_pi()
+}
+
+/// transform an uniformly sampled `u` in $[0,1)^2$
+/// into uniform samples on a cone
+#[inline]
+pub fn sample_uniform_cone(u: Point2f, cos_max: Float) -> Vector3f {
+    let costheta = (1.0 as Float - u.x) + u.x * cos_max;
+    let sintheta = (1.0 as Float - costheta*costheta).sqrt();
+    let phi = u.y * (2.0 as Float * float::pi());
+    Vector3f::new(sintheta*phi.cos(), sintheta*phi.sin(), costheta)
+}
+
+/// pdf of uniform samples on a cone
+#[inline]
+pub fn pdf_uniform_cone(cos_max: Float) -> Float {
+    1.0 as Float / ((1.0 as Float - cos_max) * 2.0 as Float * float::pi())
+}
+
+/// transform an uniformly sampled `u` in $[0,1)^2$
+/// into uniform samples on a triangle's barycentric coordinates
+#[inline]
+pub fn sample_uniform_triangle(u: Point2f) -> Vector3f {
+    let sqrtux = u.x.sqrt();
+    let x = 1.0 as Float - sqrtux;
+    let y = sqrtux * u.y;
+    Vector3f::new(x, y, 1.0 as Float - x - y)
+}
+
+/// power heuristic as per
+#[inline]
+pub fn power_heuristic(nf: usize, pdff: Float, ng: usize, pdfg: Float) -> Float {
+    let f = nf as Float * pdff;
+    let g = ng as Float * pdfg;
+    (f*f)/(f*f+g*g)
+}
+
 pub mod naive;
 pub mod strata;
 pub mod filters;

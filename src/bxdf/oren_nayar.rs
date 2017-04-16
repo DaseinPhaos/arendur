@@ -60,16 +60,6 @@ impl Bxdf for OrenNayer {
     }
 
     #[inline]
-    fn evaluate_sampled(&self, _wo: Vector3f, _sample: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
-        unimplemented!();
-    }
-
-    #[inline]
-    fn rho_hd(&self, _wo: Vector3f, _samples: &[Point2f]) -> RGBSpectrumf {
-        unimplemented!();
-    }
-
-    #[inline]
     fn rho_hh(&self, _samples0: &[Point2f], _samples1: &[Point2f]) -> RGBSpectrumf {
         unimplemented!();
     }
