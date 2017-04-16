@@ -29,22 +29,26 @@ pub trait Bxdf {
     /// `u` is uniformly sampled from $[0,1)^2$.
     /// returns the corresponding outgoing direction, the function value associated,
     /// and a pdf at the outgoing direction
+    #[inline]
     fn evaluate_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
         let mut wi = sample::sample_cosw_hemisphere(u);
         if wo.z < 0.0 as Float {wi.z = -wi.z;}
         let cos_theta = normal::cos_theta(wi);
-        let pdf = sample::pdf_cosw_hemisphere(cos_theta);
+        let pdf = self.pdf(wo, wi);
         let spectrum = self.evaluate(wo, wi);
         (spectrum, wi, pdf)
     }
 
-    // /// evalute pdf
-    // fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
-    //     if wo.z * wi.z > 0.0 as Float {
-    //         let costheta = normal::cos_theta(wi);
-    //         let pdf = sample
-    //     }
-    // }
+    /// evalute pdf
+    #[inline]
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if wo.z * wi.z > 0.0 as Float {
+            let costheta = normal::cos_theta(wi);
+            sample::pdf_cosw_hemisphere(costheta)
+        } else {
+            0.0 as Float
+        }
+    }
 
     /// hemispherical-directional reflectance
     // TODO: explain more

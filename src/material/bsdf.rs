@@ -13,6 +13,7 @@
 use bxdf::*;
 use geometry::prelude::*;
 use spectrum::{RGBSpectrumf, Spectrum};
+use std::cmp;
 
 /// A bsdf
 pub struct Bsdf<'a> {
@@ -91,6 +92,61 @@ impl<'a> Bsdf<'a> {
             }
         }
         ret
+    }
+
+    pub fn evalute_sampled(&self, wow: Vector3f, u: Point2f, types: BxdfType) -> (RGBSpectrumf, Vector3f, Float) {
+        let match_count = self.have_n(types);
+        let mut ret = (
+            RGBSpectrumf::black(),
+            Vector3f::new(0.0 as Float, 1.0 as Float, 0.0 as Float),
+            0.0 as Float
+        );
+        if match_count == 0 { return ret; }
+        
+        let wo = self.parent_to_local(wow);
+        let idx = cmp::min((u.x * match_count as Float).floor() as usize, match_count-1);
+        let mut i = 0;
+        for bxdf in self.sink.iter() {
+            if i == idx {
+                // sample the target now
+                let (f, wi, mut pdf) = bxdf.evaluate_sampled(wo, u);
+                if pdf == 0.0 as Float { return ret; }
+                ret = (f, wi, pdf);
+            }
+            if bxdf.is(types) { i += 1; }
+        }
+        let wi = ret.1;
+        ret.1 = self.local_to_parent(wi);
+        
+        if match_count == 1 { return ret; }
+
+        let mut pdfsum = 0.0 as Float;
+        for bxdf in self.sink.iter() {
+            if bxdf.is(types) {
+                pdfsum += bxdf.pdf(wo, wi);
+            }
+        }
+        pdfsum /= match_count as Float;
+        ret.2 /= pdfsum;
+        ret
+    }
+
+    pub fn pdf(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> Float {
+        let wo = self.parent_to_local(wow);
+        let wi = self.parent_to_local(wiw);
+        let mut pdfsum = 0.0 as Float;
+        let mut match_count = 0;
+        for bxdf in self.sink.iter() {
+            if bxdf.is(types) {
+                match_count += 1;
+                pdfsum += bxdf.pdf(wo, wi);
+            }
+        }
+        if match_count == 0 {
+            pdfsum
+        } else {
+            pdfsum / match_count as Float
+        }
     }
 
     pub fn rho_hd(&self, wow: Vector3f, samples: &[Point2f]) -> RGBSpectrumf {
