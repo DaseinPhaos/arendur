@@ -47,16 +47,6 @@ impl<T: Fresnel> Bxdf for SpecularRBxdf<T> {
         let s = self.fresnel.evaluate(cos) * self.reflectance / cos.abs();
         (s, r, 1.0 as Float)
     }
-
-    #[inline]
-    fn rho_hd(&self, _wo: Vector3f, _samples: &[Point2f]) -> RGBSpectrumf {
-        unimplemented!();
-    }
-
-    #[inline]
-    fn rho_hh(&self, _samples0: &[Point2f], _samples1: &[Point2f]) -> RGBSpectrumf {
-        unimplemented!();
-    }
 }
 
 /// A specular transmission bxdf

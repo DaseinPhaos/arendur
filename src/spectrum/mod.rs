@@ -101,6 +101,11 @@ impl<T: ToNorm + BaseNum> RGBSpectrum<T> {
             inner: inner
         })
     }
+
+    #[inline]
+    pub fn is_black(self) -> bool {
+        self.inner == Vector3::zero()
+    }
 }
 
 impl<T: BaseNum + image::Primitive> image::Pixel for RGBSpectrum<T> {

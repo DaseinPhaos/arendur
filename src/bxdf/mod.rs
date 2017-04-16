@@ -52,7 +52,7 @@ pub trait Bxdf {
         let mut ret = RGBSpectrumf::black();
         let mut pdfsum = 0.0 as Float;
         for sample in samples {
-            let (spec, wi, pdf) = self.evaluate_sampled(wo, *sample);
+            let (spec, _wi, pdf) = self.evaluate_sampled(wo, *sample);
             ret += spec*pdf;
             pdfsum += pdf;
         }
@@ -61,7 +61,19 @@ pub trait Bxdf {
 
     /// hemispherical-hemispherical reflactance
     // TODO: explain more
-    fn rho_hh(&self, samples0: &[Point2f], samples1: &[Point2f]) -> RGBSpectrumf;
+    fn rho_hh(&self, samples0: &[Point2f], samples1: &[Point2f]) -> RGBSpectrumf {
+        let mut ret = RGBSpectrumf::black();
+        let mut pdfsum = 0.0 as Float;
+        for sample0 in samples0 {
+            // TODO: double check
+            let pdf = sample::pdf_unform_hemisphere();
+            let sample0 = sample::sample_unform_hemisphere(*sample0);
+            let spectrum = self.rho_hd(sample0, samples1);
+            ret += spectrum * pdf;
+            pdfsum += pdf;
+        }
+        ret/pdfsum
+    }
 }
 
 bitflags! {

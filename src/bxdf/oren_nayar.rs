@@ -58,9 +58,4 @@ impl Bxdf for OrenNayer {
         };
         self.reflectance * float::frac_1_pi() * (self.coef_a + self.coef_b * max_cos * sin_a * tan_b)
     }
-
-    #[inline]
-    fn rho_hh(&self, _samples0: &[Point2f], _samples1: &[Point2f]) -> RGBSpectrumf {
-        unimplemented!();
-    }
 }

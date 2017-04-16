@@ -26,12 +26,6 @@ pub trait Composable {
         let mut ray = ray.clone();
         self.intersect_ray(&mut ray).is_some()
     }
-
-    // TODO: Add arealight accessor
-
-    // TODO: Add material accessor
-
-    // TODO: Add bxdf computer
 }
 
 /// An aggregated renderable entity
@@ -41,7 +35,11 @@ pub trait Aggregate: Composable {
 
 /// A renderable primitive
 pub trait Primitive: Composable {
+    // TODO: Add arealight accessor
 
+    // TODO: Add material accessor
+
+    // TODO: Add bxdf computer
 }
 
 

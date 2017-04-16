@@ -6,25 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[macro_use]
-extern crate bitflags;
+//! Defines `Renderer` which can render a scene
 
-#[macro_use]
-extern crate lazy_static;
+use component::Composable;
 
-#[macro_use]
-extern crate cgmath;
-extern crate num_traits;
-extern crate copy_arena;
+/// A renderer
+pub trait Renderer {
+    /// render a scene
+    fn render<C: Composable>(&mut self, scene: &C);
+}
 
-pub mod geometry;
-pub mod shape;
-pub mod component;
-pub mod spectrum;
-pub mod filming;
-pub mod sample;
-pub mod bxdf;
-pub mod material;
-pub mod texturing;
-pub mod lighting;
-pub mod renderer;
