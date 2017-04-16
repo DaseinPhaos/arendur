@@ -27,11 +27,11 @@ impl<'a> Composable for TransformedComposable<'a>
     }
 
     #[inline]
-    fn intersect_ray(&self, ray: &mut RawRay) -> Option<(SurfaceInteraction, &Primitive)> {
+    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
         ray.apply_transform(self.parent_local);
         let mut ret = self.original.intersect_ray(ray);
         if let Some(ret) = ret.as_mut() {
-            ret.0.apply_transform(self.local_parent);
+            ret.apply_transform(self.local_parent);
         }
         ray.apply_transform(self.local_parent);
         ret

@@ -22,7 +22,7 @@ impl Composable for Naive {
         self.bbox
     }
 
-    fn intersect_ray(&self, ray: &mut RawRay) -> Option<(SurfaceInteraction, &Primitive)> {
+    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
         let mut min_ray = ray.clone();
         let mut final_ret = None;
         for element in &self.elements {

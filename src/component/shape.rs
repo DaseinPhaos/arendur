@@ -30,13 +30,15 @@ impl<T> Composable for ShapedPrimitive<T>
     }
 
     #[inline]
-    fn intersect_ray(&self, ray: &mut RawRay) -> Option<(SurfaceInteraction, &Primitive)> {
+    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
         let r = self.shape.intersect_ray(ray);
-        if let Some((t, si)) = r {
+        if let Some((t, mut si)) = r {
             ray.set_max_extend(t);
+            si.set_primitive(self);
             // transform si into parent frame
             let tlp = self.shape.info().parent_local;
-            Some((si.apply_transform(tlp), self))
+
+            Some(si.apply_transform(tlp))
         } else {
             None
         }

@@ -19,7 +19,7 @@ pub trait Composable {
     /// - `ray` is specified in parent frame,
     /// - if hit, returns surface interaction data in *parent* frame.
     /// - if hit, `ray`'s `tmax` would be updated to the hitting `t`.
-    fn intersect_ray(&self, ray: &mut RawRay) -> Option<(SurfaceInteraction, &Primitive)>;
+    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction>;
 
     /// test if an intersection can occur. Might be more efficient
     fn can_intersect(&self, ray: &RawRay) -> bool {

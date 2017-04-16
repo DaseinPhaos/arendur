@@ -45,7 +45,7 @@ pub trait TransformExt: Transform3<Float> + Copy {
     }
 
     #[inline]
-    fn transform_surface_interaction<'a>(&self, si: &SurfaceInteraction<'a>) -> SurfaceInteraction<'a> {
+    fn transform_surface_interaction<'a, 'b>(&self, si: &SurfaceInteraction<'a, 'b>) -> SurfaceInteraction<'a, 'b> {
         si.apply_transform(self)
     }
 

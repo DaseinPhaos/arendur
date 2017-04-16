@@ -12,7 +12,7 @@ use super::{RayDifferential, Ray};
 use super::foundamental::*;
 use super::transform::TransformExt;
 use shape::ShapeInfo;
-// use primitive::Primitive;
+use component::Primitive;
 // use super::float;
 
 /// Basic information about an interaction
@@ -67,7 +67,7 @@ impl DuvInfo {
 
 /// Interaction at some surface denoted as $f(u, v)$
 #[derive(Clone)]
-pub struct SurfaceInteraction<'a> {
+pub struct SurfaceInteraction<'a, 'b> {
     /// Basic information about the interaction
     pub basic: InteractInfo,
     /// uv-position
@@ -80,12 +80,11 @@ pub struct SurfaceInteraction<'a> {
     pub shading_duv: DuvInfo,
     /// shape information of the surface
     pub shape_info: Option<ShapeInfo<'a>>,
-    // /// primitive hit
-    // pub primitive_hit: Option<&'a Primitive>,
-
+    /// primitive hit
+    pub primitive_hit: Option<&'b Primitive>,
 }
 
-impl<'a> SurfaceInteraction<'a> {
+impl<'a, 'b> SurfaceInteraction<'a, 'b> {
     /// Construct a new instance from given info
     pub fn new(
         pos: Point3f,
@@ -93,7 +92,7 @@ impl<'a> SurfaceInteraction<'a> {
         uv: Point2f,
         duv: DuvInfo,
         shape_info: Option<ShapeInfo<'a>>,
-    ) -> SurfaceInteraction<'a> {
+    ) -> SurfaceInteraction<'a, 'b> {
         let mut norm = duv.dpdu.cross(duv.dpdv).normalize();
 
         if let Some(shape_info) = shape_info {
@@ -113,7 +112,7 @@ impl<'a> SurfaceInteraction<'a> {
             shading_norm: norm,
             shading_duv: duv,
             shape_info: shape_info,
-            // primitive_hit: None,
+            primitive_hit: None,
         }
     }
 
@@ -143,14 +142,13 @@ impl<'a> SurfaceInteraction<'a> {
         self.shading_norm = norm;
     }
 
-    // pub fn set_primitive<'b, P>(&mut self, primitive: &'b P)
-    //     where 'b: 'a,
-    //           P: 'b,
-    // {
-    //     self.primitive_hit = Some(primitive)
-    // }
+    pub fn set_primitive<P>(&mut self, primitive: &'b P)
+        where P: Primitive
+    {
+        self.primitive_hit = Some(primitive)
+    }
 
-    pub fn apply_transform<T>(&self, t: &T) -> SurfaceInteraction<'a>
+    pub fn apply_transform<T>(&self, t: &T) -> SurfaceInteraction<'a, 'b>
         where T: TransformExt
     {
         SurfaceInteraction{
@@ -161,6 +159,7 @@ impl<'a> SurfaceInteraction<'a> {
             shading_duv: self.shading_duv.apply_transform(t),
             // FIXME: should shape info be updated when transformed?
             shape_info: self.shape_info,
+            primitive_hit: self.primitive_hit,
         }
     }
 
