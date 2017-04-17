@@ -11,6 +11,7 @@
 use geometry::prelude::*;
 use spectrum::{Spectrum, RGBSpectrumf};
 use sample;
+use std::cmp;
 
 /// A bidirectional distribution function
 pub trait Bxdf {
@@ -53,29 +54,33 @@ pub trait Bxdf {
     // TODO: explain more
     fn rho_hd(&self, wo: Vector3f, samples: &[Point2f]) -> RGBSpectrumf {
         let mut ret = RGBSpectrumf::black();
-        let mut pdfsum = 0.0 as Float;
         for sample in samples {
-            let (spec, _wi, pdf) = self.evaluate_sampled(wo, *sample);
-            ret += spec*pdf;
-            pdfsum += pdf;
+            let (spec, wi, pdf) = self.evaluate_sampled(wo, *sample);
+            if pdf > 0.0 as Float {
+                ret += spec * normal::cos_theta(wi).abs() / pdf;
+            }
         }
-        ret/pdfsum
+        ret/(samples.len() as Float)
     }
 
     /// hemispherical-hemispherical reflactance
     // TODO: explain more
     fn rho_hh(&self, samples0: &[Point2f], samples1: &[Point2f]) -> RGBSpectrumf {
         let mut ret = RGBSpectrumf::black();
-        let mut pdfsum = 0.0 as Float;
-        for sample0 in samples0 {
-            // TODO: double check
-            let pdf = sample::pdf_unform_hemisphere();
-            let sample0 = sample::sample_unform_hemisphere(*sample0);
-            let spectrum = self.rho_hd(sample0, samples1);
-            ret += spectrum * pdf;
-            pdfsum += pdf;
+        let nsamples = cmp::min(samples0.len(), samples1.len());
+        for i in 0..nsamples {
+            let pdfo = sample::pdf_unform_hemisphere();
+            let wo = unsafe {
+                sample::sample_unform_hemisphere(*samples0.get_unchecked(i))
+            };
+            let (spec, wi, pdfi) = unsafe {
+                self.evaluate_sampled(wo, *samples1.get_unchecked(i))
+            };
+            if pdfi > 0.0 as Float {
+                ret += spec * (normal::cos_theta(wi)*normal::cos_theta(wo)).abs() / (pdfi * pdfo);
+            }
         }
-        ret/pdfsum
+        ret / (nsamples as Float)
     }
 }
 

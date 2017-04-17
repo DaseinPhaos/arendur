@@ -143,7 +143,7 @@ impl<'a> Shape for Sphere<'a> {
         self.geometry.bounding()
     }
 
-    fn intersect_ray<R: Ray>(&self, ray: &R) -> Option<(Float, SurfaceInteraction)> {
+    fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
         // first, transform ray into local frame
         let ray = ray.apply_transform(self.info.parent_local);
         if let Some(t) = SphereInfo::intersect_ray_full(self.geometry.radius, &ray) {
@@ -205,7 +205,7 @@ impl<'a> Shape for Sphere<'a> {
         
     }
 
-    fn can_intersect<R: Ray>(&self, ray: &R) -> bool {
+    fn can_intersect(&self, ray: &RawRay) -> bool {
         let ray = ray.apply_transform(self.info.parent_local);
         self.geometry.intersect_ray(&ray).is_some()
     }

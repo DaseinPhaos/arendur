@@ -60,7 +60,7 @@ impl Light for DistantLight {
     }
 
     #[inline]
-    fn evalute_sampled(&self, posw: Point3f, _sample: Point2f) -> LightSample {
+    fn evaluate_sampled(&self, posw: Point3f, _sample: Point2f) -> LightSample {
         let radiance = self.intensity;
         let pfrom = posw + (-2.0 as Float * self.world_radius) * self.dir;
         let pto = posw;

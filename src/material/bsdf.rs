@@ -94,7 +94,7 @@ impl<'a> Bsdf<'a> {
         ret
     }
 
-    pub fn evalute_sampled(&self, wow: Vector3f, u: Point2f, types: BxdfType) -> (RGBSpectrumf, Vector3f, Float) {
+    pub fn evaluate_sampled(&self, wow: Vector3f, u: Point2f, types: BxdfType) -> (RGBSpectrumf, Vector3f, Float) {
         let match_count = self.have_n(types);
         let mut ret = (
             RGBSpectrumf::black(),

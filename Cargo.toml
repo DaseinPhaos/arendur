@@ -22,3 +22,7 @@ image = "0.12"
 lazy_static = "0.2"
 copy_arena = "0.1"
 rayon = "0.7"
+
+[[example]]
+name = "whitted"
+path = "examples/whitted/main.rs"

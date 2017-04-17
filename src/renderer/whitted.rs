@@ -8,16 +8,16 @@
 
 //! Defines whitted renderer
 
+use bxdf::*;
 use sample::Sampler;
 use filming::Camera;
 use super::Renderer;
 use std::sync::Arc;
 use super::scene::Scene;
 use filming::film::FilmTile;
-use spectrum::RGBSpectrumf;
+use spectrum::{RGBSpectrumf, Spectrum};
 use rayon::prelude::*;
 use copy_arena::{Allocator, Arena};
-use sample::strata::StrataSampler;
 use geometry::prelude::*;
 use std::path::PathBuf;
 
@@ -28,14 +28,48 @@ pub struct WhittedRenderer<S> {
     path: PathBuf,
 }
 
-fn calculate_lighting<S: Sampler>(ray: RayDifferential, scene: &Scene, sampler: &mut S, alloc: &mut Allocator, depth: usize) -> RGBSpectrumf {
-    unimplemented!();
+// helper function for whitted rendering's light computation
+fn calculate_lighting<S: Sampler>(
+    mut ray: RayDifferential, 
+    scene: &Scene, 
+    sampler: &mut S, 
+    alloc: &mut Allocator, 
+    depth: usize
+) -> RGBSpectrumf {
+    let mut ret = RGBSpectrumf::black();
+    if depth > 5 { return ret; }
+    if let Some(mut surinter) = scene.aggregate.intersect_ray(&mut ray.ray) {
+        let pos = surinter.basic.pos;
+        let norm = surinter.shading_norm;
+        let wo = surinter.basic.wo;
+        let dxy = surinter.compute_dxy(&ray);
+        if let Some(primitive) = surinter.primitive_hit {
+            if let Some(light) = primitive.get_area_light() {
+                ret += light.evaluate_ray(&ray);
+            }
+            let bsdf = primitive.get_material().compute_scattering(&mut surinter, &dxy, alloc);
+            for light in &scene.lights {
+                let lightsample = light.evaluate_sampled(pos, sampler.next_2d());
+                if lightsample.no_effect() { continue; }
+                let wi = lightsample.wi();
+                let bsdfv = bsdf.evaluate(wo, wi, BXDF_ALL);
+                if bsdfv != RGBSpectrumf::black() && !lightsample.occluded(&*scene.aggregate) {
+                    ret += bsdfv * lightsample.radiance * wi.dot(norm) / lightsample.pdf;
+                    // TODO: specular reflect, specular transmit
+                }
+            }
+        }
+    } else {
+        for light in &scene.lights {
+            ret += light.evaluate_ray(&ray);
+        }
+    }
+    ret
 }
 
 impl<S: Sampler> Renderer for WhittedRenderer<S> {
     fn render(&mut self, scene: &Scene) {
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
-        let tn = tiles.len();
         tiles.par_iter_mut().for_each(|tile| {
             let mut arena = Arena::new();
             let mut allocator = arena.allocator();

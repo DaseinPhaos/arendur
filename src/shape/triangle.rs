@@ -196,7 +196,7 @@ impl<'a> Shape for TriangleInstance<'a> {
     }
 
     #[inline]
-    fn intersect_ray<R: Ray>(&self, ray: &R) -> Option<(Float, SurfaceInteraction)> {
+    fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
         let p0 = self.x();
         let p1 = self.y();
         let p2 = self.z();

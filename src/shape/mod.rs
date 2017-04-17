@@ -55,7 +55,7 @@ impl<'a> ShapeInfo<'a> {
 
 
 /// A shape
-pub trait Shape
+pub trait Shape: Sync + Send
 {
     /// returns basic info of this shape
     fn info(&self) -> ShapeInfo;
@@ -75,11 +75,11 @@ pub trait Shape
     /// - if hit, return `t` as the parametric distance along the ray
     ///   to the hitting point., and a `surface_interaction` for hitting
     ///   information at the surface, in local frame.
-    fn intersect_ray<R: Ray>(&self, ray: &R) -> Option<(Float, SurfaceInteraction)>;
+    fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)>;
 
     /// Tests if the interaction can occur. Implementation maybe faster
     /// than `self.intersect_ray`
-    fn can_intersect<R: Ray>(&self, ray: &R) -> bool {
+    fn can_intersect(&self, ray: &RawRay) -> bool {
         self.intersect_ray(ray).is_some()
     }
 

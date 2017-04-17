@@ -17,9 +17,21 @@ use bxdf::oren_nayar::OrenNayer;
 
 /// Matte material
 pub struct MatteMaterial {
-    kd: Arc<Texture<Texel=RGBSpectrumf>>,
+    pub kd: Arc<Texture<Texel=RGBSpectrumf>>,
+    pub sigma: Arc<Texture<Texel=Float>>,
+    pub bump: Option<Arc<Texture<Texel=Float>>>,
+}
+
+impl MatteMaterial {
+    /// construction
+    #[inline]
+    pub fn new(kd: Arc<Texture<Texel=RGBSpectrumf>>,
     sigma: Arc<Texture<Texel=Float>>,
-    bump: Option<Arc<Texture<Texel=Float>>>,
+    bump: Option<Arc<Texture<Texel=Float>>>) -> Self {
+        MatteMaterial{
+            kd: kd, sigma: sigma, bump: bump,
+        }
+    }
 }
 
 impl Material for MatteMaterial {

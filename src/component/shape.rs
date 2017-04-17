@@ -14,25 +14,24 @@ use std::sync::Arc;
 use shape::*;
 
 /// Represents a primitive made up by a single `Shape`
-pub struct ShapedPrimitive<T> {
-    shape: Arc<T>,
+pub struct ShapedPrimitive {
+    shape: Arc<Shape>,
     material: Arc<Material>,
     area_light: Option<Arc<Light>>,
     // TODO: medium:
 }
 
-impl<T> ShapedPrimitive<T> {
+impl ShapedPrimitive {
     /// construction
     #[inline]
-    pub fn new(shape: Arc<T>, material: Arc<Material>, area_light: Option<Arc<Light>>) -> ShapedPrimitive<T> {
+    pub fn new(shape: Arc<Shape>, material: Arc<Material>, area_light: Option<Arc<Light>>) -> ShapedPrimitive {
         ShapedPrimitive{
             shape: shape, material: material, area_light: area_light,
         }
     }
 }
 
-impl<T: Send + Sync> Composable for ShapedPrimitive<T>
-    where T: Shape
+impl Composable for ShapedPrimitive
 {
     #[inline]
     fn bbox_parent(&self) -> BBox3f {
@@ -55,8 +54,7 @@ impl<T: Send + Sync> Composable for ShapedPrimitive<T>
     }
 }
 
-impl<T: Send + Sync> Primitive for ShapedPrimitive<T>
-    where T: Shape
+impl Primitive for ShapedPrimitive
 {
     fn get_material(&self) -> &Material {
         &*self.material

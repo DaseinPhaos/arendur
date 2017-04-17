@@ -28,8 +28,12 @@ pub trait Light: Sync+ Send {
     // /// get transforms
     // fn parent_local(&self) -> Matrix4f;
 
+    fn evaluate_ray(&self, _rd: &RayDifferential) -> RGBSpectrumf {
+        RGBSpectrumf::black()
+    }
+
     /// sample the light at a location in parent frame `posw`, given `sample`
-    fn evalute_sampled(&self, posw: Point3f, sample: Point2f) -> LightSample;
+    fn evaluate_sampled(&self, posw: Point3f, sample: Point2f) -> LightSample;
 
     /// returns an estimation of total power of this light
     fn power(&self) -> RGBSpectrumf;
@@ -84,7 +88,7 @@ impl LightSample {
     /// test if this light would be occulued by any components
     /// in `Composable`, assuming they are in the same world frame
     #[inline]
-    pub fn occluded<C: Composable>(&self, components: &C) -> bool {
+    pub fn occluded<C: Composable + ?Sized>(&self, components: &C) -> bool {
         let ray = RawRay::spawn(self.pfrom, self.pto);
         components.can_intersect(&ray)
     }
@@ -99,6 +103,11 @@ impl LightSample {
             pfrom: t.transform_point(self.pfrom),
             pto: t.transform_point(self.pto),
         }
+    }
+
+    #[inline]
+    pub fn no_effect(&self) -> bool {
+        self.pdf == 0.0 as Float || self.radiance == RGBSpectrumf::black()
     }
 }
 
