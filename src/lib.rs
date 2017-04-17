@@ -14,8 +14,11 @@ extern crate lazy_static;
 
 #[macro_use]
 extern crate cgmath;
+extern crate image;
 extern crate num_traits;
 extern crate copy_arena;
+
+extern crate rayon;
 
 pub mod geometry;
 pub mod shape;

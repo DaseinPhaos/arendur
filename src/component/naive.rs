@@ -9,11 +9,11 @@
 //! A naively implemented linear aggregation of some other components
 
 use geometry::prelude::*;
-use super::{Aggregate, Primitive, Composable};
-use std::rc::Rc;
+use super::Composable;
+use std::sync::Arc;
 
 pub struct Naive {
-    elements: Vec<Rc<Composable>>,
+    elements: Vec<Arc<Composable>>,
     bbox: BBox3f,
 }
 
@@ -37,5 +37,3 @@ impl Composable for Naive {
         final_ret
     }
 }
-
-impl Aggregate for Naive { }

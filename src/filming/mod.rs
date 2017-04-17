@@ -9,6 +9,7 @@
 //! Defines cameras and films.
 
 use geometry::prelude::*;
+use self::film::Film;
 
 /// Samples for camera to generate rays.
 #[derive(Copy, Clone, PartialEq)]
@@ -18,7 +19,7 @@ pub struct SampleInfo {
 }
 
 /// A camera!
-pub trait Camera {
+pub trait Camera: Send + Sync {
     /// parent to view-space transform
     fn parent_to_view(&self) -> Matrix4f;
 
@@ -57,6 +58,9 @@ pub trait Camera {
     // TODO: add medium
 
     // TODO: add film
+    fn get_film(&self) -> &Film;
+
+    fn get_film_mut(&mut self) -> &mut Film;
 }
 
 pub mod projective;

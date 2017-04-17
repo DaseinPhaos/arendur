@@ -10,11 +10,11 @@
 
 use geometry::prelude::*;
 use super::*;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Component transformed from another component
 pub struct TransformedComposable<'a> {
-    original: Rc<Composable>,
+    original: Arc<Composable>,
     local_parent: &'a Matrix4f,
     parent_local: &'a Matrix4f,
 }

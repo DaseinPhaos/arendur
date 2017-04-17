@@ -33,7 +33,6 @@ pub trait Bxdf {
     fn evaluate_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
         let mut wi = sample::sample_cosw_hemisphere(u);
         if wo.z < 0.0 as Float {wi.z = -wi.z;}
-        let cos_theta = normal::cos_theta(wi);
         let pdf = self.pdf(wo, wi);
         let spectrum = self.evaluate(wo, wi);
         (spectrum, wi, pdf)

@@ -26,6 +26,9 @@ pub struct ImageTexture<TM: BaseNum + image::Primitive, M> {
     mipmap: Arc<MipMap<TM>>,
 }
 
+unsafe impl<T: BaseNum + image::Primitive, M> Sync for ImageTexture<T, M> { }
+unsafe impl<T: BaseNum + image::Primitive, M> Send for ImageTexture<T, M> { }
+
 impl<TM: BaseNum + image::Primitive + ToNorm + 'static, M: Mapping2D> Texture for ImageTexture<TM, M> {
     type Texel = RGBSpectrumf;
 

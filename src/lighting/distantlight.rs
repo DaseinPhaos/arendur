@@ -50,12 +50,12 @@ impl DistantLight {
 
 impl Light for DistantLight {
     #[inline]
-    fn flags() -> LightFlag {
+    fn flags(&self) -> LightFlag {
         LIGHIT_INFINITE
     }
 
     #[inline]
-    fn is_delta() -> bool {
+    fn is_delta(&self) -> bool {
         false
     }
 

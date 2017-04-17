@@ -6,15 +6,14 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Defines `Renderer` which can render a scene
+//! A scene in the world.
 
-use self::scene::Scene;
+use component::Composable;
+use lighting::Light;
+use std::sync::Arc;
 
-/// A renderer
-pub trait Renderer {
-    /// render a scene
-    fn render(&mut self, scene: &Scene);
+/// A scene in the world
+pub struct Scene {
+    pub lights: Vec<Arc<Light>>,
+    pub aggregate: Arc<Composable>,
 }
-
-pub mod scene;
-pub mod whitted;

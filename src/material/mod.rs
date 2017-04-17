@@ -13,7 +13,7 @@ use texturing::*;
 use copy_arena::Allocator;
 
 /// The material interface
-pub trait Material {
+pub trait Material: Sync + Send {
     /// 
     fn compute_scattering<'a>(
         &self,

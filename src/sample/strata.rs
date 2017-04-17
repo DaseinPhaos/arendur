@@ -15,7 +15,7 @@ use geometry::*;
 use std;
 
 /// Represents a stratified sampler
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct StrataSampler<T> {
     sinkf: Sinkf,
     sink2f: Sink2f,
@@ -74,7 +74,7 @@ impl<T: Rng> StrataSampler<T> {
     }
 }
 
-impl<T: Rng + Clone> Sampler for StrataSampler<T> {
+impl<T: Rng + Clone + Sync + Send> Sampler for StrataSampler<T> {
     fn start_pixel(&mut self, _p: Point2<u32>) {
         let nsample = self.sinkf.nsample();
         let ndim = self.sinkf.ndim();
@@ -157,3 +157,9 @@ impl<T: Rng + Clone> Sampler for StrataSampler<T> {
     }
 }
 
+impl<T: Rng + Clone> Clone for StrataSampler<T> {
+    #[inline]
+    fn clone(&self) -> Self {
+        StrataSampler::new(self.sampledx, self.sampledy, self.sinkf.ndim() as u32, self.rng.clone())
+    }
+}

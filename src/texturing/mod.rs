@@ -45,7 +45,7 @@ pub trait Mapping3D {
 }
 
 /// The texture interface
-pub trait Texture {
+pub trait Texture: Send + Sync {
     type Texel;
 
     /// Evaluate the texture given interaction info and partial

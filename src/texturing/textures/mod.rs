@@ -17,7 +17,7 @@ pub struct ConstantTexture<T> {
     pub value: T,
 }
 
-impl<T: Clone> Texture for ConstantTexture<T> {
+impl<T: Clone + Send + Sync> Texture for ConstantTexture<T> {
     type Texel = T;
 
     #[inline]
@@ -33,7 +33,7 @@ pub struct ProductTexture<T0, T1> {
     pub t1: T1,
 }
 
-impl<T0, T1> Texture for ProductTexture<T0, T1>
+impl<T0: Send + Sync, T1: Send + Sync> Texture for ProductTexture<T0, T1>
     where T0: Texture,
           T1: Texture,
           T0::Texel: ops::Mul<T1::Texel>,
@@ -54,7 +54,7 @@ pub struct MixTexture<T0, T1, L> {
     pub l: L,
 }
 
-impl<T0, T1, L> Texture for MixTexture<T0, T1, L>
+impl<T0: Send + Sync, T1: Send + Sync, L: Send + Sync> Texture for MixTexture<T0, T1, L>
     where T0: Texture,
           T1: Texture,
           L: Texture<Texel=Float>,

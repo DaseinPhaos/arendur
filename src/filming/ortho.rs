@@ -11,6 +11,7 @@
 use geometry::prelude::*;
 use super::{Camera, SampleInfo};
 use super::projective::ProjCameraInfo;
+use super::film::Film;
 
 /// An orthographic camera
 pub struct OrthoCam {
@@ -21,7 +22,7 @@ pub struct OrthoCam {
     dy: Vector3f,
     /// lens_radius, focal_distance; if presented
     lens: Option<(Float, Float)>,
-    // TODO: film?
+    film: Film,
 }
 
 impl OrthoCam {
@@ -31,14 +32,14 @@ impl OrthoCam {
         screen: BBox2f,
         znear: Float,
         zfar: Float,
-        lens: Option<(Float, Float)>
+        lens: Option<(Float, Float)>,
+        film: Film,
     ) -> OrthoCam {
         let parent_view = view_parent.inverse_transform().expect("matrix inversion failure");
         let proj_info = ProjCameraInfo::new(
             OrthoCam::ortho_transform(znear, zfar),
             screen,
-            // FIXME: should depdends on the film
-            Vector2f::new(800.0 as Float, 600.0 as Float)
+            film.resolutionf(),
         );
         let dx = proj_info.raster_view.transform_vector(Vector3f::new(1.0 as Float, 0.0 as Float, 0.0 as Float));
         let dy = proj_info.raster_view.transform_vector(Vector3f::new(0.0 as Float, 1.0 as Float, 0.0 as Float));
@@ -49,6 +50,7 @@ impl OrthoCam {
             dx: dx,
             dy: dy,
             lens: lens,
+            film: film,
         }
     }
 
@@ -119,5 +121,15 @@ impl Camera for OrthoCam {
             diffs: Some((rx, ry)),
         };
         self.view_parent.transform_ray_differential(&ret)
+    }
+
+    #[inline]
+    fn get_film(&self) -> &Film {
+        &self.film
+    }
+
+    #[inline]
+    fn get_film_mut(&mut self) -> &mut Film {
+        &mut self.film
     }
 }

@@ -19,7 +19,8 @@ use filming;
 /// Additional information are provided through the interface
 /// (like pixel location, dimension, samples per pixel etc.)
 /// such that implementations might provide better-quality.
-pub trait Sampler: Clone {
+pub trait Sampler: Clone + Sync + Send
+{
     /// Start sampling a new pixel
     fn start_pixel(&mut self, p: Point2<u32>);
 
@@ -85,7 +86,7 @@ pub trait Sampler: Clone {
 
 /// The filter interface.
 /// A filter always lies at $(0, 0)$ in its local frame.
-pub trait Filter {
+pub trait Filter: Send + Sync {
     /// Returns the filter's radius.
     /// The filter's support in local frame is thus given
     /// by $[-radius.x, radius.x]\times [-radius.y, radius.y]$

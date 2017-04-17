@@ -10,18 +10,28 @@
 
 use geometry::prelude::*;
 use super::*;
-use std::rc::Rc;
+use std::sync::Arc;
 use shape::*;
 
 /// Represents a primitive made up by a single `Shape`
 pub struct ShapedPrimitive<T> {
-    shape: Rc<T>,
-    // TODO: material:
-    // TODO: area_light:
+    shape: Arc<T>,
+    material: Arc<Material>,
+    area_light: Option<Arc<Light>>,
     // TODO: medium:
 }
 
-impl<T> Composable for ShapedPrimitive<T>
+impl<T> ShapedPrimitive<T> {
+    /// construction
+    #[inline]
+    pub fn new(shape: Arc<T>, material: Arc<Material>, area_light: Option<Arc<Light>>) -> ShapedPrimitive<T> {
+        ShapedPrimitive{
+            shape: shape, material: material, area_light: area_light,
+        }
+    }
+}
+
+impl<T: Send + Sync> Composable for ShapedPrimitive<T>
     where T: Shape
 {
     #[inline]
@@ -45,8 +55,10 @@ impl<T> Composable for ShapedPrimitive<T>
     }
 }
 
-impl<T> Primitive for ShapedPrimitive<T>
+impl<T: Send + Sync> Primitive for ShapedPrimitive<T>
     where T: Shape
 {
-
+    fn get_material(&self) -> &Material {
+        &*self.material
+    }
 }

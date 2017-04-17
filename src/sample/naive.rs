@@ -26,14 +26,14 @@ use super::Sampler;
 /// A naive sampler. Who dare use it?
 #[derive(Clone)]
 pub struct Naive {
-    rng: rand::ThreadRng,
+    rng: rand::StdRng,
 }
 
 impl Naive {
     #[inline]
     pub fn new() -> Naive {
         Naive {
-            rng: rand::thread_rng()
+            rng: rand::StdRng::new().unwrap()
         }
     }
 }

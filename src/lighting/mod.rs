@@ -13,13 +13,13 @@ use spectrum::*;
 use component::Composable;
 
 /// A Light
-pub trait Light {
+pub trait Light: Sync+ Send {
     /// return the flags of the light
-    fn flags() -> LightFlag;
+    fn flags(&self) -> LightFlag;
 
     /// test if the light is delta
-    fn is_delta() -> bool {
-        Self::flags().is_delta()
+    fn is_delta(&self) -> bool {
+        self.flags().is_delta()
     }
 
     // /// get transforms

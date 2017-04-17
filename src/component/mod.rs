@@ -9,9 +9,11 @@
 //! Defines renderable components in the world.
 
 use geometry::prelude::*;
+use lighting::Light;
+use material::Material;
 
 /// A renderable composable component.
-pub trait Composable {
+pub trait Composable: Sync + Send {
     /// returns bounding box in parent frame.
     fn bbox_parent(&self) -> BBox3f;
 
@@ -28,16 +30,20 @@ pub trait Composable {
     }
 }
 
-/// An aggregated renderable entity
-pub trait Aggregate: Composable {
+// /// An aggregated renderable entity
+// pub trait Aggregate: Composable {
 
-}
+// }
 
 /// A renderable primitive
 pub trait Primitive: Composable {
     // TODO: Add arealight accessor
+    fn get_area_light(&self) -> Option<&Light> {
+        None
+    }
 
     // TODO: Add material accessor
+    fn get_material(&self) -> &Material;
 
     // TODO: Add bxdf computer
 }

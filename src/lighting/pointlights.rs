@@ -22,12 +22,12 @@ pub struct PointLight {
 
 impl Light for PointLight {
     #[inline]
-    fn flags() -> LightFlag {
+    fn flags(&self) -> LightFlag {
         LIGHT_DPOS
     }
 
     #[inline]
-    fn is_delta() -> bool {
+    fn is_delta(&self) -> bool {
         true
     }
 
@@ -128,12 +128,12 @@ impl SpotLight {
 
 impl Light for SpotLight {
     #[inline]
-    fn flags() -> LightFlag {
+    fn flags(&self) -> LightFlag {
         LIGHT_DPOS
     }
 
     #[inline]
-    fn is_delta() -> bool {
+    fn is_delta(&self) -> bool {
         true
     }
 

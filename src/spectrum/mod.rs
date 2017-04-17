@@ -12,7 +12,7 @@ use std;
 use std::ops;
 use std::mem;
 use num_traits::cast::NumCast;
-extern crate image;
+use image;
 
 pub type RGBSpectrumf = RGBSpectrum<Float>;
 

@@ -109,7 +109,7 @@ impl<'a> Bsdf<'a> {
         for bxdf in self.sink.iter() {
             if i == idx {
                 // sample the target now
-                let (f, wi, mut pdf) = bxdf.evaluate_sampled(wo, u);
+                let (f, wi, pdf) = bxdf.evaluate_sampled(wo, u);
                 if pdf == 0.0 as Float { return ret; }
                 ret = (f, wi, pdf);
             }
