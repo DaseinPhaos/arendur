@@ -79,7 +79,7 @@ pub struct SurfaceInteraction<'a, 'b> {
     /// uv-derivatives used for shading, might be different from `self.duv`
     pub shading_duv: DuvInfo,
     /// shape information of the surface
-    pub shape_info: Option<ShapeInfo<'a>>,
+    pub shape_info: Option<&'a ShapeInfo>,
     /// primitive hit
     pub primitive_hit: Option<&'b Primitive>,
 }
@@ -91,7 +91,7 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
         wo: Vector3f,
         uv: Point2f,
         duv: DuvInfo,
-        shape_info: Option<ShapeInfo<'a>>,
+        shape_info: Option<&'a ShapeInfo>,
     ) -> SurfaceInteraction<'a, 'b> {
         let mut norm = duv.dpdu.cross(duv.dpdv).normalize();
 

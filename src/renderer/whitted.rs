@@ -19,13 +19,23 @@ use spectrum::{RGBSpectrumf, Spectrum};
 use rayon::prelude::*;
 use copy_arena::{Allocator, Arena};
 use geometry::prelude::*;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 /// whitted renderer
 pub struct WhittedRenderer<S> {
     sampler: S,
     camera: Arc<Camera>,
     path: PathBuf,
+}
+
+impl<S: Sampler> WhittedRenderer<S> {
+    pub fn new<P: AsRef<Path> + ?Sized>(sampler: S, camera: Arc<Camera>, path: &P) -> WhittedRenderer<S> {
+        WhittedRenderer{
+            sampler: sampler,
+            camera: camera,
+            path: path.as_ref().to_path_buf(),
+        }
+    }
 }
 
 // helper function for whitted rendering's light computation
@@ -70,11 +80,13 @@ fn calculate_lighting<S: Sampler>(
 impl<S: Sampler> Renderer for WhittedRenderer<S> {
     fn render(&mut self, scene: &Scene) {
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
-        tiles.par_iter_mut().for_each(|tile| {
+        // tiles.par_iter_mut().for_each(|tile| {
+        for tile in &mut tiles {
             let mut arena = Arena::new();
             let mut allocator = arena.allocator();
             let mut sampler = self.sampler.clone();
             let tile_bound = tile.bounding();
+            println!("Start sampling {:?}", tile_bound);
             for p in tile_bound {
                 let p: Point2<u32> = p.cast();
                 sampler.start_pixel(p);
@@ -83,7 +95,8 @@ impl<S: Sampler> Renderer for WhittedRenderer<S> {
                 let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0);
                 tile.add_sample(camera_sample_info.pfilm, &total_randiance);
             }
-        });
+        // });
+        }
         let render_result = self.camera.get_film().collect_into(tiles);
         render_result.save(self.path.clone()).expect("saving failure");
     }

@@ -20,6 +20,13 @@ pub struct PointLight {
     pub intensity: RGBSpectrumf,
 }
 
+impl PointLight {
+    pub fn new(pos: Point3f, intensity: RGBSpectrumf) -> PointLight {
+        PointLight{ posw: pos, intensity: intensity,}
+    }
+}
+
+
 impl Light for PointLight {
     #[inline]
     fn flags(&self) -> LightFlag {

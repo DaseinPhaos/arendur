@@ -10,6 +10,7 @@
 //! which resides in certain coordinate frames.
 
 use geometry::prelude::*;
+use std::sync::Arc;
 
 pub use self::sphere::Sphere;
 pub use self::triangle::{TriangleInstance, TriangleMesh};
@@ -18,22 +19,22 @@ pub use self::triangle::{TriangleInstance, TriangleMesh};
 /// Guarantees: 
 /// - `local_parent.inverse() == parent_local`.
 /// - `(local_parent.det() < 0) == swap_handedness`.
-#[derive(Copy, Clone)]
-pub struct ShapeInfo<'a> {
+#[derive(Clone)]
+pub struct ShapeInfo {
     /// transform from local coordinate frame into parent
-    pub local_parent: &'a Matrix4f,
+    pub local_parent: Arc<Matrix4f>,
     /// transform from parent coordinate frame into local
-    pub parent_local: &'a Matrix4f,
+    pub parent_local: Arc<Matrix4f>,
     /// indicates if the shape normal's orientation should be reversed
     pub reverse_orientation: bool,
     /// indicates if transforms swap handedness
     pub swap_handedness: bool,
 }
 
-impl<'a> ShapeInfo<'a> {
+impl ShapeInfo {
     /// Construct a new shape. Users should always use this method
     /// so that gurantees are met.
-    pub fn new(local_parent: &'a Matrix4f, parent_local: &'a Matrix4f, reverse_orientation: bool) -> ShapeInfo<'a> {
+    pub fn new(local_parent: Arc<Matrix4f>, parent_local: Arc<Matrix4f>, reverse_orientation: bool) -> ShapeInfo {
         #[cfg(debug)]
         {
             let b = relative_eq!(local_parent, parent_local.inverse());
@@ -58,14 +59,14 @@ impl<'a> ShapeInfo<'a> {
 pub trait Shape: Sync + Send
 {
     /// returns basic info of this shape
-    fn info(&self) -> ShapeInfo;
+    fn info(&self) -> &ShapeInfo;
     
     /// returns bounding box of the shape in its local frame
     fn bbox_local(&self) -> BBox3f;
 
     /// returns bounding box of the shape in the parent frame
     fn bbox_parent(&self) -> BBox3f {
-        let local_parent = self.info().local_parent;
+        let local_parent = *self.info().local_parent;
         let bbox_local = self.bbox_local();
         local_parent.transform_bbox(&bbox_local)
     }

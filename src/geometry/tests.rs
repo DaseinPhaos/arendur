@@ -46,11 +46,13 @@ mod bbox {
 
     #[test]
     fn test_bbox2_intersect() {
-        let bbox = BBox2::new(Point2::new(1, 0), Point2::new(0, 1));
-        let bbox1 = BBox2::new(Point2::new(20, 4), Point2::new(10, 8));
-        let diagonal = bbox1.intersect(& bbox).diagonal();
-        assert!(diagonal.x < 0);
-        assert!(diagonal.y < 0);
+        let bbox: BBox2<usize> = BBox2::new(Point2::new(1, 0), Point2::new(0, 1));
+        let bbox1: BBox2<usize> = BBox2::new(Point2::new(20, 4), Point2::new(10, 8));
+        assert!(bbox1.intersect(&bbox)==None);
+        let bbox = BBox2::new(Point2::new(0, 0), Point2::new(2, 2));
+        let bbox1 = BBox2::new(Point2::new(1, 3), Point2::new(3, 1));
+        let bbox2 = BBox2::new(Point2::new(1, 1), Point2::new(2, 2));
+        assert!(bbox.intersect(&bbox1) == bbox2);
     }
 
     #[test]
@@ -90,5 +92,16 @@ mod bbox {
         let bbox = BBox2::new(Point2f::new(1.0 as Float, 0.0 as Float), Point2::new(0.0 as Float, 1.0 as Float));
         let p = bbox.lerp(Vector2::new(0.5 as Float, 0.7 as Float));
         assert_eq!(p, Point2f::new(0.5 as Float, 0.7 as Float));
+    }
+
+    #[test]
+    fn test_bbox2_iter() {
+        let bbox = BBox2::new(Point2::new(0, 0), Point2::new(2, 2));
+        let mut bboxiter = bbox.into_iter();
+        assert_eq!(bboxiter.next(), Some(Point2::new(0, 0)));
+        assert_eq!(bboxiter.next(), Some(Point2::new(1, 0)));
+        assert_eq!(bboxiter.next(), Some(Point2::new(0, 1)));
+        assert_eq!(bboxiter.next(), Some(Point2::new(1, 1)));
+        assert_eq!(bboxiter.next(), None);
     }
 }

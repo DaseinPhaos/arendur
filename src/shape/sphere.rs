@@ -118,15 +118,15 @@ impl SphereInfo {
 }
 
 /// A (possibly-partial) sphere, as a shape
-#[derive(Copy, Clone)]
-pub struct Sphere<'a> {
-    pub info: ShapeInfo<'a>,
+#[derive(Clone)]
+pub struct Sphere {
+    pub info: ShapeInfo,
     pub geometry: SphereInfo,
 }
 
-impl<'a> Sphere<'a> {
+impl Sphere {
     /// Construct a new sphere
-    pub fn new(sphere: SphereInfo, shape_info: ShapeInfo<'a>) -> Sphere<'a> {
+    pub fn new(sphere: SphereInfo, shape_info: ShapeInfo) -> Sphere {
         Sphere {
             info: shape_info,
             geometry: sphere,
@@ -134,9 +134,9 @@ impl<'a> Sphere<'a> {
     }
 }
 
-impl<'a> Shape for Sphere<'a> {
-    fn info(&self) -> ShapeInfo {
-        self.info
+impl Shape for Sphere {
+    fn info(&self) -> &ShapeInfo {
+        &self.info
     }
 
     fn bbox_local(&self) -> BBox3f {
@@ -145,7 +145,7 @@ impl<'a> Shape for Sphere<'a> {
 
     fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
         // first, transform ray into local frame
-        let ray = ray.apply_transform(self.info.parent_local);
+        let ray = ray.apply_transform(&*self.info.parent_local);
         if let Some(t) = SphereInfo::intersect_ray_full(self.geometry.radius, &ray) {
             let p = ray.evaluate(t);
             // TODO: refine sphere intersection
@@ -160,6 +160,7 @@ impl<'a> Shape for Sphere<'a> {
                 let thetadelta = thetamax - thetamin;
                 let u = phi / phimax;
                 let theta = (p.z / self.geometry.radius).acos();
+                print!("theta == {}, thetamin == {}, thetamax == {}", theta, thetamin, thetamax);
                 debug_assert!(theta >= thetamin);
                 debug_assert!(theta <= thetamax);
                 let v = (theta - thetamin) / thetadelta;
@@ -195,7 +196,7 @@ impl<'a> Shape for Sphere<'a> {
                             dndu: dndu,
                             dndv: dndv,
                         },
-                        Some(self.info)
+                        Some(&self.info)
                     )
                 ))
             }
@@ -206,7 +207,7 @@ impl<'a> Shape for Sphere<'a> {
     }
 
     fn can_intersect(&self, ray: &RawRay) -> bool {
-        let ray = ray.apply_transform(self.info.parent_local);
+        let ray = ray.apply_transform(&*self.info.parent_local);
         self.geometry.intersect_ray(&ray).is_some()
     }
 

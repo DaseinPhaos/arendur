@@ -257,18 +257,23 @@ impl<'a, S> FilmTile<'a, S>
         let floor = posidxf.to_vec() + self.filter_radius;
         let ceilidx: Vector2<usize> = ceil.cast();
         let flooridx: Vector2<usize> = floor.cast() + Vector2::new(1, 1);
-        let relavant_box = BBox2::new(Point2::from_vec(ceilidx), Point2::from_vec(flooridx)).intersect(&self.sink.bounding);
-        for pixel_idx in relavant_box {
-            let pixel_pos = pidx_to_pcenter(pixel_idx);
-            let offset = Point2::from_vec(pixel_pos - pos);
-            let weight = unsafe {
-                self.filter.evaluate_unsafe(offset)
-            };
-            let pixel = unsafe {
-                self.sink.get_pixel_mut_unchecked(pixel_idx)
-            };
-            pixel.spectrum_sum += spectrum * weight;
-            pixel.filter_weight_sum += weight;
+        let filter_box = BBox2::new(Point2::from_vec(ceilidx), Point2::from_vec(flooridx));
+        if let Some(relavant_box) = filter_box.intersect(&self.sink.bounding) {
+            for pixel_idx in relavant_box {
+                let pixel_pos = pidx_to_pcenter(pixel_idx);
+                let offset = Point2::from_vec(pixel_pos - pos);
+                let weight = unsafe {
+                    self.filter.evaluate_unsafe(offset)
+                };
+                let pixel = unsafe {
+                    self.sink.get_pixel_mut_unchecked(pixel_idx)
+                };
+                pixel.spectrum_sum += spectrum * weight;
+                pixel.filter_weight_sum += weight;
+            }
+        } else {
+            // println!("pos == {:?}", pos);
+            // println!("filter box == {:?}, bounding == {:?}", filter_box, self.sink.bounding);
         }
     }
 
@@ -322,6 +327,7 @@ impl Image {
 
     /// save this image to `path`
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        print!("saving...");
         let mut support = Vec::with_capacity(self.inner.pixels.len() * 3);
         for p in self.inner.bounding {
             let s = unsafe {

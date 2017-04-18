@@ -19,7 +19,7 @@ pub type BBox3f = BBox3<Float>;
 
 
 /// A 2D bounding box
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub struct BBox2<T> {
     /// min corner of the bounding box
     pub pmin: Point2<T>,
@@ -93,8 +93,8 @@ impl<T: BaseNum> BBox2<T> {
 
     /// Return the intersection of two bounding boxes
     #[inline]
-    pub fn intersect(&self, other: &Self) -> Self {
-        BBox2{
+    pub fn intersect(&self, other: &Self) -> Option<Self> {
+        let ret = BBox2 {
             pmin: Point2::new(
                 <T as  PartialOrd>::partial_max(self.pmin.x, other.pmin.x),
                 <T as  PartialOrd>::partial_max(self.pmin.y, other.pmin.y),
@@ -103,6 +103,11 @@ impl<T: BaseNum> BBox2<T> {
                 <T as  PartialOrd>::partial_min(self.pmax.x, other.pmax.x),
                 <T as  PartialOrd>::partial_min(self.pmax.y, other.pmax.y),
             )        
+        };
+        if ret.pmin.x > ret.pmax.x || ret.pmin.y > ret.pmax.y {
+            None
+        } else {
+            Some(ret)
         }
     }
 
@@ -212,7 +217,7 @@ impl<T: BaseNum> BBox2<T> {
     }
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug)]
 pub struct BBox3<T> {
     /// min corner of the bounding box
     pub pmin: Point3<T>,
@@ -309,8 +314,8 @@ impl<T: BaseNum> BBox3<T> {
 
     /// Return the intersection of two bounding boxes
     #[inline]
-    pub fn intersect(&self, other: &Self) -> Self {
-        BBox3{
+    pub fn intersect(&self, other: &Self) -> Option<Self> {
+        let ret = BBox3{
             pmin: Point3::new(
                 <T as  PartialOrd>::partial_max(self.pmin.x, other.pmin.x),
                 <T as  PartialOrd>::partial_max(self.pmin.y, other.pmin.y),
@@ -321,6 +326,11 @@ impl<T: BaseNum> BBox3<T> {
                 <T as  PartialOrd>::partial_min(self.pmax.y, other.pmax.y),
                 <T as  PartialOrd>::partial_min(self.pmax.z, other.pmax.z),
             )        
+        };
+        if ret.pmin.x > ret.pmax.x || ret.pmin.y > ret.pmax.y || ret.pmin.z > ret.pmax.z {
+            None
+        } else {
+            Some(ret)
         }
     }
 

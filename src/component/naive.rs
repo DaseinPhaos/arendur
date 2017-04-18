@@ -17,6 +17,35 @@ pub struct Naive {
     bbox: BBox3f,
 }
 
+impl Naive {
+    pub fn new(elements: Vec<Arc<Composable>>) -> Naive {
+        // assert!(elements.len() > 0);
+        let mut bbox = elements[0].bbox_parent();
+        for element in &elements {
+            bbox = bbox.union(&element.bbox_parent());
+        }
+        Naive{
+            elements: elements,
+            bbox: bbox,
+        }
+    }
+
+    pub fn from_one(element: Arc<Composable>) -> Naive {
+        // assert!(elements.len() > 0);
+        let bbox = element.bbox_parent();
+        Naive{
+            elements: vec![element],
+            bbox: bbox,
+        }
+    }
+
+    pub fn append(&mut self, element: Arc<Composable>) {
+        let bbox = element.bbox_parent();
+        self.bbox = self.bbox.union(&bbox);
+        self.elements.push(element);
+    }
+}
+
 impl Composable for Naive {
     fn bbox_parent(&self) -> BBox3f {
         self.bbox

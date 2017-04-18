@@ -12,13 +12,6 @@ use geometry::prelude::*;
 use shape::{Shape, ShapeInfo};
 use std::ops;
 
-static IDENTITY_MATRIX: Matrix4f = Matrix4f{
-    x: Vector4f{x: 1.0 as Float, y: 0.0 as Float, z: 0.0 as Float, w: 0.0 as Float},
-    y: Vector4f{x: 0.0 as Float, y: 1.0 as Float, z: 0.0 as Float, w: 0.0 as Float},
-    z: Vector4f{x: 0.0 as Float, y: 0.0 as Float, z: 1.0 as Float, w: 0.0 as Float},
-    w: Vector4f{x: 0.0 as Float, y: 0.0 as Float, z: 0.0 as Float, w: 1.0 as Float},
-};
-
 /// A triangle mesh
 pub struct TriangleMesh {
     vertices: Vec<Point3f>,
@@ -27,7 +20,7 @@ pub struct TriangleMesh {
     normals: Option<Vec<Vector3f>>,
     uvs: Option<Vec<Point2f>>,
     bbox: BBox3f,
-    reverse_orientation: bool,
+    shapeinfo: ShapeInfo,
 }
 
 impl TriangleMesh {
@@ -180,8 +173,8 @@ impl<'a> ops::Index<usize> for TriangleInstance<'a> {
 
 impl<'a> Shape for TriangleInstance<'a> {
     #[inline]
-    fn info(&self) -> ShapeInfo {
-        ShapeInfo::new(&IDENTITY_MATRIX, &IDENTITY_MATRIX, self.mesh.reverse_orientation)
+    fn info(&self) -> &ShapeInfo {
+        &self.mesh.shapeinfo
     }
 
     #[inline]
