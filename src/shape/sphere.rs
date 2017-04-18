@@ -38,8 +38,13 @@ impl SphereInfo {
         let twopi = float::pi() * (2.0 as Float);
         if phimax > twopi { phimax = twopi; }
 
+        // TODO: double check
         let thetamin = (zmin/radius).acos();
         let thetamax = (zmax/radius).acos();
+        // if thetamin >= thetamax {
+        //     println!("{} > {}, zmin: {}, zmax: {}, radius: {}", thetamin, thetamax, zmin, zmax, radius);
+        //     panic!();
+        // }
 
         SphereInfo {
             radius: radius,
@@ -103,8 +108,11 @@ impl SphereInfo {
         let d1 = delta.sqrt() * invert_2a;
         let d0 = -b * invert_2a;
 
-        let t0 = d0 + d1;
-        let t1 = d0 - d1;
+        let(t0, t1) = if invert_2a > 0.0 as Float {
+            (d0-d1, d0+d1)
+        } else {
+            (d0+d1, d0-d1)
+        };
         let tmax = ray.max_extend();
         if t0 > tmax || t1 < (0.0 as Float) { return None; }
         if t0 > (0.0 as Float) {
@@ -159,10 +167,12 @@ impl Shape for Sphere {
                 let thetamin = self.geometry.thetamin;
                 let thetadelta = thetamax - thetamin;
                 let u = phi / phimax;
+                // let theta = float::clamp(
+                //     (p.z / self.geometry.radius).acos(),
+                //     -1.0 as Float,
+                //     1.0 as Float
+                // );
                 let theta = (p.z / self.geometry.radius).acos();
-                print!("theta == {}, thetamin == {}, thetamax == {}", theta, thetamin, thetamax);
-                debug_assert!(theta >= thetamin);
-                debug_assert!(theta <= thetamax);
                 let v = (theta - thetamin) / thetadelta;
                 let inv_z_radius = (1.0 as Float) / (p.x * p.x + p.y * p.y).sqrt();
                 let cos_phi = p.x * inv_z_radius;
@@ -170,7 +180,7 @@ impl Shape for Sphere {
                 let dpdu = Vector3f::new(-phimax * p.y, phimax * p.x, 0.0 as Float);
                 let dpdv = thetadelta * Vector3f::new(p.z * cos_phi, p.z * sin_phi, -self.geometry.radius * theta.sin());
                 let (dndu, dndv) = {
-                    let dppduu = phimax * phimax * Vector3f::new(p.x, p.y, 0.0 as Float);
+                    let dppduu = - phimax * phimax * Vector3f::new(p.x, p.y, 0.0 as Float);
                     let dppduv = thetadelta * p.z * phimax * Vector3f::new(-sin_phi, cos_phi, 0.0 as Float);
                     let dppdvv = -thetadelta * thetadelta * Vector3f::new(p.x, p.y, p.z);
 
@@ -184,7 +194,7 @@ impl Shape for Sphere {
                     let inv = (1.0 as Float) / (e * g - f * f);
                     (
                         (ff*f - ee*g) * inv * dpdu + (ee*f - ff*e) * inv * dpdv,
-                        (gg*f - ff*g) * inv * dpdu + (ff*e - gg*e) * inv * dpdv
+                        (gg*f - ff*g) * inv * dpdu + (ff*f - gg*e) * inv * dpdv
                     )
                 };
                 Some((

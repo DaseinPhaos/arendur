@@ -45,7 +45,7 @@ impl Composable for ShapedPrimitive
             ray.set_max_extend(t);
             si.set_primitive(self);
             // transform si into parent frame
-            let tlp = *self.shape.info().parent_local;
+            let tlp = *self.shape.info().local_parent;
 
             Some(si.apply_transform(&tlp))
         } else {

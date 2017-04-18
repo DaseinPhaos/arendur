@@ -39,23 +39,27 @@ use std::sync::Arc;
 
 fn main() {
     println!("Whitted example");
-    let transform0 = Arc::new(Matrix4f::from_translation(Vector3f::new(10.0 as Float, 10.0 as Float, 10.0 as Float)));
-    let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(-10.0 as Float, -10.0 as Float, -10.0 as Float)));
+    use std::io;
+    let mut s = String::new();
+    let _ = io::stdin().read_line(&mut s);
+    let transform0 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 0.0 as Float, 40.0 as Float)));
+    let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, -10.0 as Float, 10.0 as Float)));
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
     
-    let sphere0 = Sphere::new(SphereInfo::new(4.8 as Float, -2.4 as Float, 5.0 as Float, 6.49 as Float), ShapeInfo::new(transform0, inv_transform0, false));
-    let sphere1 = Sphere::new(SphereInfo::full(2.4 as Float), ShapeInfo::new(transform1, inv_transform1, false));
+    let sphere0 = Sphere::new(SphereInfo::full(20. as Float), ShapeInfo::new(transform0, inv_transform0, false));
+    // let sphere0 = Sphere::new(SphereInfo::new(20. as Float, -28. as Float, 58. as Float, 6.49 as Float), ShapeInfo::new(transform0, inv_transform0, false));
+    let sphere1 = Sphere::new(SphereInfo::full(15. as Float), ShapeInfo::new(transform1, inv_transform1, false));
 
-    let kd = ConstantTexture{value: RGBSpectrumf::new(1.0 as Float, 1.0 as Float, 1.0 as Float)};
-    let sigma = ConstantTexture{value: 3.0 as Float};
+    let kd = ConstantTexture{value: RGBSpectrumf::new(10.0 as Float, 10.0 as Float, 10.0 as Float)};
+    let sigma = ConstantTexture{value: 30.0 as Float};
 
 
     let material0 = matte::MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
 
     let sphere0 = ShapedPrimitive::new(Arc::new(sphere0), Arc::new(material0), None);
 
-    let kd = ConstantTexture{value: RGBSpectrumf::new(0.0 as Float, 0.04 as Float, 0.4 as Float)};
+    let kd = ConstantTexture{value: RGBSpectrumf::new(0.01 as Float, 0.34 as Float, 0.4 as Float)};
     let sigma = ConstantTexture{value: 1.0 as Float};
 
 
@@ -64,10 +68,26 @@ fn main() {
     let sphere1 = ShapedPrimitive::new(Arc::new(sphere1), Arc::new(material1), None);
 
     let mut naive = NaiveAggregate::from_one(Arc::new(sphere0));
-    naive.append(Arc::new(sphere1));
+    // naive.append(Arc::new(sphere1));
 
-    let pl0 = pointlights::PointLight::new(Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float), RGBSpectrumf::new(0.7 as Float, 0.6 as Float, 0.5 as Float));
-    let lights: Vec<Arc<Light>> = vec![Arc::new(pl0)];
+    let lights: Vec<Arc<Light>> = vec![
+        Arc::new(pointlights::PointLight::new(
+            Point3f::new(-10.0 as Float, 0.0 as Float, 0.0 as Float),
+            RGBSpectrumf::new(50.7 as Float, 0.0 as Float, 50.0 as Float))
+        ), 
+        Arc::new(pointlights::PointLight::new(
+            Point3f::new(10.0 as Float, 10.0 as Float, 0.0 as Float),
+            RGBSpectrumf::new(50.7 as Float, 20.0 as Float, 5.0 as Float))
+        ), 
+        Arc::new(pointlights::PointLight::new(
+            Point3f::new(0.0 as Float, -10.0 as Float, 0.0 as Float),
+            RGBSpectrumf::new(1.7 as Float, 50.0 as Float, 5.0 as Float))
+        ), 
+        Arc::new(pointlights::PointLight::new(
+            Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
+            RGBSpectrumf::new(10.7 as Float, 10.0 as Float, 10.0 as Float))
+        ), 
+    ];
     
     let scene = Scene{lights: lights, aggregate: Arc::new(naive)};
 
@@ -82,20 +102,20 @@ fn main() {
         float::pi()*2.0 as Float / 3.0 as Float, 
         None, 
         Film::new(
-            Point2::new(800, 600), 
+            Point2::new(600, 400), 
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
             ),
             Arc::new(
-                LanczosSincFilter::new(
+                BoxFilter::new(
                     Vector2f::new(2.0 as Float, 2.0 as Float), 
-                    1.1 as Float
+                    // 0.5 as Float, 0.25 as Float,
                 )
             )
         )
     );
-    let mut renderer = WhittedRenderer::new(StrataSampler::new(4, 4, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "test.png");
+    let mut renderer = WhittedRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "test.png");
 
     renderer.render(&scene);
 

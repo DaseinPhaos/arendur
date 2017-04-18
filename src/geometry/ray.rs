@@ -275,4 +275,15 @@ impl RayDifferential {
             diffs: diffs,
         }
     }
+
+    pub fn scale_differentials(&mut self, s: Float) {
+        let origin = self.ray.origin();
+        let dir = self.ray.direction();
+        if let Some((ref mut rx, ref mut ry)) = self.diffs {
+            rx.origin = origin + (rx.origin - origin) * s;
+            ry.origin = origin + (ry.origin - origin) * s;
+            rx.dir = dir + (rx.dir - dir) * s;
+            ry.dir = dir + (ry.dir - dir) * s;
+        }
+    }
 }

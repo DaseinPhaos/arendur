@@ -80,8 +80,8 @@ fn calculate_lighting<S: Sampler>(
 impl<S: Sampler> Renderer for WhittedRenderer<S> {
     fn render(&mut self, scene: &Scene) {
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
-        // tiles.par_iter_mut().for_each(|tile| {
-        for tile in &mut tiles {
+        tiles.par_iter_mut().for_each(|tile| {
+        // for tile in &mut tiles {
             let mut arena = Arena::new();
             let mut allocator = arena.allocator();
             let mut sampler = self.sampler.clone();
@@ -90,13 +90,19 @@ impl<S: Sampler> Renderer for WhittedRenderer<S> {
             for p in tile_bound {
                 let p: Point2<u32> = p.cast();
                 sampler.start_pixel(p);
-                let camera_sample_info = sampler.get_camera_sample(p);
-                let ray_differential = self.camera.generate_ray_differential(camera_sample_info);
-                let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0);
-                tile.add_sample(camera_sample_info.pfilm, &total_randiance);
+                // let mut blacked = 0;
+                loop {
+                    let camera_sample_info = sampler.get_camera_sample(p);
+                    let mut ray_differential = self.camera.generate_ray_differential(camera_sample_info);
+                    ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
+                    let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0);
+                    tile.add_sample(camera_sample_info.pfilm, &total_randiance);
+                    if !sampler.next_sample() { break; }
+                }
+                // println!("Done, blacked == {}", blacked);
             }
-        // });
-        }
+        });
+        // }
         let render_result = self.camera.get_film().collect_into(tiles);
         render_result.save(self.path.clone()).expect("saving failure");
     }

@@ -37,9 +37,18 @@ pub trait Sampler: Clone + Sync + Send
     #[inline]
     fn get_camera_sample(&mut self, idx: Point2<u32>) -> filming::SampleInfo {
         filming::SampleInfo{
-            pfilm:  self.next_2d() + idx.cast().to_vec(),
+            pfilm: self.next_2d() + idx.cast().to_vec(),
             plens: self.next_2d(),
         }
+        // let idx: Point2f = idx.cast();
+        // println!("getting camera sample at {:?}", idx);
+        // let pfilm = self.next_2d()+ idx.to_vec();
+        // let plens = self.next_2d();
+        // println!("pfilm=={:?}, plens=={:?}", pfilm, plens);
+        // use std::io::*;
+        // let mut s = String::new();
+        // let _ = stdin().read_line(&mut s);
+        // filming::SampleInfo{ pfilm: pfilm, plens: plens}
     }
 
     /// request `n` samples in place

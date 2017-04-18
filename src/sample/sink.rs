@@ -54,7 +54,9 @@ impl<T: Copy> Sink<T> {
     /// get sample value in next dimension
     #[inline]
     pub fn next_dim(&mut self) -> Option<T> {
+        //println!("\t getting next dim... idim=={}, ndim=={}, isample == {}, nsample == {}", self.idim, self.ndim, self.isample, self.nsample);
         if self.idim >= self.ndim {
+
             None
         } else {
             let isample = self.isample;
@@ -67,7 +69,7 @@ impl<T: Copy> Sink<T> {
     /// advance to next sample
     #[inline]
     pub fn next_sample(&mut self) -> bool {
-        if self.isample + 1 == self.nsample {
+        if self.isample + 1 >= self.nsample {
             false
         } else {
             self.isample += 1;
@@ -117,7 +119,7 @@ impl<T> std::ops::Index<(usize, usize)> for Sink<T> {
     /// index in (isample, idim)
     #[inline]
     fn index(&self, index: (usize, usize)) -> &T {
-        &self.inner[index.0 * self.ndim + self.idim]
+        &self.inner[index.0 * self.ndim + index.1]
     }
 }
 
@@ -125,7 +127,7 @@ impl<T> std::ops::IndexMut<(usize, usize)> for Sink<T> {
     /// index in (isample, idim)
     #[inline]
     fn index_mut(&mut self, index: (usize, usize)) -> &mut T {
-        &mut self.inner[index.0 * self.ndim + self.idim]
+        &mut self.inner[index.0 * self.ndim + index.1]
     }
 }
 

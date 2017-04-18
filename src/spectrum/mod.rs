@@ -56,6 +56,13 @@ pub struct RGBSpectrum<T: BaseNum> {
     pub inner: Vector3<T>,
 }
 
+impl<T: BaseNum> Default for RGBSpectrum<T> {
+    #[inline]
+    fn default() -> Self {
+        RGBSpectrum::new(T::zero(), T::zero(), T::zero())
+    }
+}
+
 impl<T: BaseNum> RGBSpectrum<T> {
     #[inline]
     pub fn new(r: T, g: T, b: T) -> Self {

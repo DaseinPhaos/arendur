@@ -76,6 +76,8 @@ impl<T: Rng> StrataSampler<T> {
 
 impl<T: Rng + Clone + Sync + Send> Sampler for StrataSampler<T> {
     fn start_pixel(&mut self, _p: Point2<u32>) {
+        use std::io::*;
+        let mut s = String::new();
         let nsample = self.sinkf.nsample();
         let ndim = self.sinkf.ndim();
         {

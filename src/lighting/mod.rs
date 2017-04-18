@@ -82,7 +82,7 @@ impl LightSample {
     /// get light direction vector `wi`
     #[inline]
     pub fn wi(&self) -> Vector3f {
-        (self.pto - self.pfrom).normalize()
+        (self.pfrom - self.pto).normalize()
     }
 
     /// test if this light would be occulued by any components

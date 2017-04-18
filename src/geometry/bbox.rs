@@ -580,18 +580,19 @@ impl BBox3f {
     }
 }
 
-pub struct BBox2uIter {
-    ix: usize,
-    iy: usize,
-    nx: usize,
-    ny: usize,
+pub struct BBox2iIter {
+    ix: isize,
+    iy: isize,
+    nx: isize,
+    ny: isize,
+    nx_start: isize,
 }
 
-impl Iterator for BBox2uIter {
-    type Item = Point2<usize>;
+impl Iterator for BBox2iIter {
+    type Item = Point2<isize>;
 
     #[inline]
-    fn next(&mut self) -> Option<Point2<usize>> {
+    fn next(&mut self) -> Option<Point2<isize>> {
         while self.iy < self.ny {
             if self.ix < self.nx {
                 let ix = self.ix;
@@ -599,22 +600,23 @@ impl Iterator for BBox2uIter {
                 return Some(Point2::new(ix, self.iy))
             } else {
                 self.iy += 1;
-                self.ix = 0;
+                self.ix = self.nx_start;
             }
         }
         None
     }
 }
 
-impl IntoIterator for BBox2<usize> {
-    type Item = Point2<usize>;
-    type IntoIter = BBox2uIter;
-    fn into_iter(self) -> BBox2uIter {
-        BBox2uIter{
+impl IntoIterator for BBox2<isize> {
+    type Item = Point2<isize>;
+    type IntoIter = BBox2iIter;
+    fn into_iter(self) -> BBox2iIter {
+        BBox2iIter{
             ix: self.pmin.x,
             iy: self.pmin.y,
             nx: self.pmax.x,
             ny: self.pmax.y,
+            nx_start: self.pmin.x,
         }
     }
 }

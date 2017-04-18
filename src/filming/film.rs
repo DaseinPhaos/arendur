@@ -20,7 +20,7 @@ use std::io::Result;
 // use std::marker::PhantomData;
 
 #[inline]
-fn pidx_to_pcenter(idx: Point2<usize>) -> Point2f {
+fn pidx_to_pcenter(idx: Point2<isize>) -> Point2f {
     let mut ret: Point2f = idx.cast();
     ret.x += 0.5 as Float;
     ret.y += 0.5 as Float;
@@ -28,7 +28,7 @@ fn pidx_to_pcenter(idx: Point2<usize>) -> Point2f {
 }
 
 #[inline]
-fn pcenter_to_pidx(mut center: Point2f) -> Point2<usize> {
+fn pcenter_to_pidx(mut center: Point2f) -> Point2<isize> {
     center.x -= 0.5 as Float;
     center.y -= 0.5 as Float;
     center.cast()
@@ -45,7 +45,7 @@ fn pcenter_to_pidx(mut center: Point2f) -> Point2<usize> {
 /// 4. when done, collect the result into a single `image`
 pub struct Film {
     resolution: Point2<usize>,
-    crop_window: BBox2<usize>,
+    crop_window: BBox2<isize>,
     filter: Arc<Filter>,
     filter_radius: Vector2f,
     inv_filter_radius: Vector2f,
@@ -57,12 +57,12 @@ impl Film {
         let resf: Point2f = resolution.cast();
         let crop_window = BBox2::new(
             Point2::new(
-                (resf.x * crop_window.pmin.x).ceil() as usize,
-                (resf.y * crop_window.pmin.y).ceil() as usize
+                (resf.x * crop_window.pmin.x).ceil() as isize,
+                (resf.y * crop_window.pmin.y).ceil() as isize
             ),
             Point2::new(
-                (resf.x * crop_window.pmax.x).ceil() as usize,
-                (resf.y * crop_window.pmax.y).ceil() as usize
+                (resf.x * crop_window.pmax.x).ceil() as isize,
+                (resf.y * crop_window.pmax.y).ceil() as isize
             )
         );
         let filter_radius = filter.radius();
@@ -102,8 +102,8 @@ impl Film {
     }
 
     /// spawn tiles
-    pub fn spawn_tiles<S>(&self, nx: usize, ny: usize) -> Vec<FilmTile<S>>
-        where TilePixel<S>: Clone
+    pub fn spawn_tiles<S>(&self, nx: isize, ny: isize) -> Vec<FilmTile<S>>
+        where TilePixel<S>: Clone + Default
     {
         assert!(nx > 0);
         assert!(ny > 0);
@@ -112,7 +112,7 @@ impl Film {
         let dy = extend.y / ny;
         let lastx = dx + extend.x % dx;
         let lasty = dy + extend.y % dy;
-        let mut ret = Vec::with_capacity(nx * ny);
+        let mut ret = Vec::with_capacity((nx * ny) as usize);
         for ix in 0..nx {
             let cdx = if ix==nx-1 { lastx } else { dx };
             for iy in 0..ny {
@@ -125,7 +125,7 @@ impl Film {
                     filter: &*self.filter,
                     filter_radius: self.filter_radius,
                     inv_filter_radius: self.inv_filter_radius,
-                    sink: BoundedSink2D::new(bbox),
+                    sink: BoundedSink2D::with_value(Default::default(), bbox),
                 })
             }
         }
@@ -138,7 +138,9 @@ impl Film {
               TilePixel<S>: Clone,
               I: IntoIterator<Item=FilmTile<'a, S>>,
     {
-        let mut tmp = BoundedSink2D::new(self.crop_window);
+        let mut tmp = BoundedSink2D::with_value(TilePixel{
+            spectrum_sum: RGBSpectrumf::black(),
+            filter_weight_sum: 0.0 as Float}, self.crop_window);
         for tile in tiles {
             self.merge_into(tile, &mut tmp);
         }
@@ -155,17 +157,17 @@ impl Film {
 /// Memory sink for bounded 2d values
 pub struct BoundedSink2D<S> {
     pixels: Vec<S>,
-    bounding: BBox2<usize>,
+    bounding: BBox2<isize>,
 }
 
 impl<S: Clone> BoundedSink2D<S> {
     /// construction
-    pub fn new(bbox: BBox2<usize>) -> BoundedSink2D<S> {
+    pub fn new(bbox: BBox2<isize>) -> BoundedSink2D<S> {
         assert!(bbox.pmax.x > bbox.pmin.x);
         assert!(bbox.pmax.y > bbox.pmin.y);
         let diagonal = bbox.diagonal();
         let pixels = unsafe{
-            vec![mem::uninitialized(); diagonal.x * diagonal.y]
+            vec![mem::uninitialized(); (diagonal.x * diagonal.y) as usize]
         };
         BoundedSink2D{
             pixels: pixels,
@@ -174,11 +176,11 @@ impl<S: Clone> BoundedSink2D<S> {
     }
 
     /// construction with default value
-    pub fn with_value(value: S, bbox: BBox2<usize>) -> BoundedSink2D<S> {
+    pub fn with_value(value: S, bbox: BBox2<isize>) -> BoundedSink2D<S> {
         assert!(bbox.pmax.x > bbox.pmin.x);
         assert!(bbox.pmax.y > bbox.pmin.y);
         let diagonal = bbox.diagonal();
-        let pixels = vec![value; diagonal.x * diagonal.y];
+        let pixels = vec![value; (diagonal.x * diagonal.y) as usize];
         BoundedSink2D{
             pixels: pixels,
             bounding: bbox,
@@ -189,15 +191,15 @@ impl<S: Clone> BoundedSink2D<S> {
 impl<S> BoundedSink2D<S> {
     /// returns the offset in `self.pixels` at p
     #[inline]
-    fn get_pixel_offset(&self, p: Point2<usize>) -> usize {
+    fn get_pixel_offset(&self, p: Point2<isize>) -> usize {
         debug_assert!(self.bounding.contain_lb(p));
-        (p.x - self.bounding.pmin.x)
-        + (p.y - self.bounding.pmin.y) * (self.bounding.pmax.x - self.bounding.pmin.x)
+        ((p.x - self.bounding.pmin.x)
+        + (p.y - self.bounding.pmin.y) * (self.bounding.pmax.x - self.bounding.pmin.x)) as usize
     }
 
     /// get pixel at
     #[inline]
-    pub fn get_pixel(&self, p: Point2<usize>) -> &S {
+    pub fn get_pixel(&self, p: Point2<isize>) -> &S {
         assert!(self.bounding.contain_lb(p));
         unsafe {
             self.get_pixel_unchecked(p)
@@ -205,14 +207,14 @@ impl<S> BoundedSink2D<S> {
     }
 
     #[inline]
-    unsafe fn get_pixel_unchecked(&self, p: Point2<usize>) -> &S {
+    unsafe fn get_pixel_unchecked(&self, p: Point2<isize>) -> &S {
         let idx = self.get_pixel_offset(p);
         self.pixels.get_unchecked(idx)
     }
 
     /// get mut pixel at
     #[inline]
-    pub fn get_pixel_mut(&mut self, p: Point2<usize>) -> &mut S {
+    pub fn get_pixel_mut(&mut self, p: Point2<isize>) -> &mut S {
         assert!(self.bounding.contain_lb(p));
         unsafe {
             self.get_pixel_mut_unchecked(p)
@@ -221,14 +223,14 @@ impl<S> BoundedSink2D<S> {
     
 
     #[inline]
-    unsafe fn get_pixel_mut_unchecked(&mut self, p: Point2<usize>) -> &mut S {
+    unsafe fn get_pixel_mut_unchecked(&mut self, p: Point2<isize>) -> &mut S {
         let idx = self.get_pixel_offset(p);
         self.pixels.get_unchecked_mut(idx)
     }
 
     /// get bounding
     #[inline]
-    pub fn bounding(&self) -> BBox2<usize> {
+    pub fn bounding(&self) -> BBox2<isize> {
         self.bounding
     }
 }
@@ -255,11 +257,15 @@ impl<'a, S> FilmTile<'a, S>
         let posidxf: Point2f = pcenter_to_pidx(pos).cast();
         let ceil = posidxf.to_vec() - self.filter_radius;
         let floor = posidxf.to_vec() + self.filter_radius;
-        let ceilidx: Vector2<usize> = ceil.cast();
-        let flooridx: Vector2<usize> = floor.cast() + Vector2::new(1, 1);
+        let ceilidx: Vector2<isize> = ceil.cast();
+        let flooridx: Vector2<isize> = floor.cast() + Vector2::new(1, 1);
         let filter_box = BBox2::new(Point2::from_vec(ceilidx), Point2::from_vec(flooridx));
+        // println!("\t\tfilter_box:{:?}", filter_box);
+        // println!("\t\tsink_bounding:{:?}", self.sink.bounding);
         if let Some(relavant_box) = filter_box.intersect(&self.sink.bounding) {
+            // println!("\t\trelavant_box:{:?}", relavant_box);
             for pixel_idx in relavant_box {
+                // print!("\t\t\t{:?}", pixel_idx);
                 let pixel_pos = pidx_to_pcenter(pixel_idx);
                 let offset = Point2::from_vec(pixel_pos - pos);
                 let weight = unsafe {
@@ -278,7 +284,7 @@ impl<'a, S> FilmTile<'a, S>
     }
 
     /// get the bouding box of this tile
-    pub fn bounding(&self) -> BBox2<usize> {
+    pub fn bounding(&self) -> BBox2<isize> {
         self.sink.bounding
     }
 }
@@ -291,11 +297,38 @@ pub struct TilePixel<S> {
 }
 
 impl<S> TilePixel<S>
-    where S: Spectrum + ops::Div<Float, Output=S>,
+    where S: Spectrum + ops::Div<Float, Output=S> + PartialEq,
 {
     /// get final result
     pub fn finalize(self) -> S {
-        self.spectrum_sum / self.filter_weight_sum
+        if self.filter_weight_sum == 0.0 as Float {
+            self.spectrum_sum
+        } else {
+            // FIXME:
+            // let mut ret = self.spectrum_sum / self.filter_weight_sum;
+            // let max = if ret.x > ret.y && ret.x > ret.z {
+            //     ret.x
+            // } else if ret.y > ret.z {
+            //     ret.y
+            // } else {
+            //     ret.z
+            // };
+            // if ret.x > 0.0 as Float && ret.x < 0.001 as Float {
+            //     ret.x = ret.x * 88.0 as Float;
+            // };
+            self.spectrum_sum / self.filter_weight_sum
+        }
+    }
+}
+
+impl<S> Default for TilePixel<S>
+    where S: Default
+{
+    fn default() -> Self {
+        TilePixel{
+            spectrum_sum: Default::default(),
+            filter_weight_sum: 0.0 as Float,
+        }
     }
 }
 
@@ -311,9 +344,9 @@ impl Image {
     }
 
     /// construct an image with default spectrum
-    pub fn new(spectrum: RGBSpectrumf, dim: Point2<usize>) -> Image {
+    pub fn new(spectrum: RGBSpectrumf, dim: Point2<u32>) -> Image {
         Image{
-            inner: BoundedSink2D::with_value(spectrum, BBox2::new(Point2::new(0, 0), dim))
+            inner: BoundedSink2D::with_value(spectrum, BBox2::new(Point2::new(0, 0), dim.cast()))
         }
     }
 
@@ -341,34 +374,34 @@ impl Image {
     }
 }
 
-impl ops::Index<(usize, usize)> for Image {
+impl ops::Index<(u32, u32)> for Image {
     type Output = RGBSpectrumf;
 
     #[inline]
-    fn index(&self, index: (usize, usize)) -> &RGBSpectrumf {
-        self.inner.get_pixel(Point2::new(index.0, index.1))
+    fn index(&self, index: (u32, u32)) -> &RGBSpectrumf {
+        self.inner.get_pixel(Point2::new(index.0, index.1).cast())
     }
 }
 
-impl ops::IndexMut<(usize, usize)> for Image {
+impl ops::IndexMut<(u32, u32)> for Image {
     #[inline]
-    fn index_mut(&mut self, index: (usize, usize)) -> &mut RGBSpectrumf {
-        self.inner.get_pixel_mut(Point2::new(index.0, index.1))
+    fn index_mut(&mut self, index: (u32, u32)) -> &mut RGBSpectrumf {
+        self.inner.get_pixel_mut(Point2::new(index.0, index.1).cast())
     }
 }
 
-impl ops::Index<Point2<usize>> for Image {
+impl ops::Index<Point2<u32>> for Image {
     type Output = RGBSpectrumf;
 
     #[inline]
-    fn index(&self, index: Point2<usize>) -> &RGBSpectrumf {
-        self.inner.get_pixel(index)
+    fn index(&self, index: Point2<u32>) -> &RGBSpectrumf {
+        self.inner.get_pixel(index.cast())
     }
 }
 
-impl ops::IndexMut<Point2<usize>> for Image {
+impl ops::IndexMut<Point2<u32>> for Image {
     #[inline]
-    fn index_mut(&mut self, index: Point2<usize>) -> &mut RGBSpectrumf {
-        self.inner.get_pixel_mut(index)
+    fn index_mut(&mut self, index: Point2<u32>) -> &mut RGBSpectrumf {
+        self.inner.get_pixel_mut(index.cast())
     }
 }

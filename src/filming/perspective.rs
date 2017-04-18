@@ -66,11 +66,17 @@ impl PerspecCam {
     pub fn perspective_transform(fov: Float, znear: Float, zfar: Float) -> Matrix4f {
         let one = Float::one();
         let zero = Float::zero();
+        // let persp = Matrix4f::new(
+        //     one, zero, zero, zero,
+        //     zero, one, zero, zero,
+        //     zero, zero, zfar/(zfar-znear), -zfar*znear/(zfar-znear),
+        //     zero, zero, one, zero
+        // );
         let persp = Matrix4f::new(
             one, zero, zero, zero,
             zero, one, zero, zero,
-            zero, zero, zfar/(zfar-znear), -zfar*znear/(zfar-znear),
-            zero, zero, one, zero
+            zero, zero, zfar/(zfar-znear), one,
+            zero, zero, -zfar*znear/(zfar-znear), zero
         );
 
         let inv_tan = one/ (fov * 0.5 as Float).tan();
