@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Functions for float number manipulation
+//! Floating point number helper functions
 
 use num_traits;
 use super::foundamental::*;

@@ -27,23 +27,6 @@ fn pidx_to_pcenter(idx: Point2<isize>) -> Point2f {
     ret
 }
 
-// #[inline]
-// #[allow(dead_code)]
-// fn pcenter_to_pidx(mut center: Point2f) -> Point2<isize> {
-//     center.x -= 0.5 as Float;
-//     center.y -= 0.5 as Float;
-//     center.cast()
-// }
-
-// #[inline]
-// #[allow(dead_code)]
-// fn pcenter_to_pidxf(mut center: Point2f) -> Point2f {
-//     center.x -= 0.5 as Float;
-//     center.y -= 0.5 as Float;
-//     center
-// }
-
-
 /// The mighty film
 ///
 /// # Intended Usage:
@@ -306,18 +289,6 @@ impl<S> TilePixel<S>
         if self.filter_weight_sum == 0.0 as Float {
             self.spectrum_sum
         } else {
-            // FIXME:
-            // let mut ret = self.spectrum_sum / self.filter_weight_sum;
-            // let max = if ret.x > ret.y && ret.x > ret.z {
-            //     ret.x
-            // } else if ret.y > ret.z {
-            //     ret.y
-            // } else {
-            //     ret.z
-            // };
-            // if ret.x > 0.0 as Float && ret.x < 0.001 as Float {
-            //     ret.x = ret.x * 88.0 as Float;
-            // };
             self.spectrum_sum / self.filter_weight_sum
         }
     }
@@ -340,11 +311,6 @@ pub struct Image {
 }
 
 impl Image {
-    // /// convert into an boundedsink
-    // fn into_inner(self) -> BoundedSink2D<RGBSpectrumf> {
-    //     self.inner
-    // }
-
     /// construct an image with default spectrum
     pub fn new(spectrum: RGBSpectrumf, dim: Point2<u32>) -> Image {
         Image{

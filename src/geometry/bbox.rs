@@ -487,19 +487,6 @@ impl<T: BaseNum> BBox3<T> {
     }
 }
 
-// impl<T> ops::Index<bool> for BBox3<T>{
-//     type Output = Point3<T>;
-
-//     #[inline]
-//     fn index(&self, index: bool) -> &Point3<T> {
-//         if index {
-//             &self.pmax
-//         } else {
-//             &self.pmin
-//         }
-//     }
-// }
-
 impl BBox3f {
     /// Test if the `ray` intersects `self`
     pub fn intersect_ray<R>(&self, ray: &R) -> Option<(Float, Float)>

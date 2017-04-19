@@ -110,7 +110,7 @@ impl Sphericalf {
     }
 }
 
-/// normal manipulations
+/// helper function dealing with normal vectors and spherical coordinates
 pub mod normal {
     use super::*;
     #[inline]
