@@ -17,6 +17,7 @@ use component::Primitive;
 
 /// Basic information about an interaction
 #[derive(PartialEq, Copy, Clone)]
+#[must_use]
 pub struct InteractInfo {
     /// Position at which the interaction occurs
     pub pos: Point3f,
@@ -41,6 +42,7 @@ impl InteractInfo {
 
 /// Differential information about some $p(u, v)$, $n(u, v)$
 #[derive(PartialEq, Copy, Clone)]
+#[must_use]
 pub struct DuvInfo {
     /// partial differential of position along u
     pub dpdu: Vector3f,
@@ -67,6 +69,7 @@ impl DuvInfo {
 
 /// Interaction at some surface denoted as $f(u, v)$
 #[derive(Clone)]
+#[must_use]
 pub struct SurfaceInteraction<'b> {
     /// Basic information about the interaction
     pub basic: InteractInfo,
@@ -93,7 +96,7 @@ impl<'b> SurfaceInteraction<'b> {
         duv: DuvInfo,
         // shape_info: Option<&'a ShapeInfo>,
     ) -> SurfaceInteraction<'b> {
-        let mut norm = duv.dpdu.cross(duv.dpdv).normalize();
+        let norm = duv.dpdu.cross(duv.dpdv).normalize();
 
         // if let Some(shape_info) = shape_info {
         //     if shape_info.reverse_orientation ^ shape_info.swap_handedness {
@@ -157,8 +160,6 @@ impl<'b> SurfaceInteraction<'b> {
             duv: self.duv.apply_transform(t),
             shading_norm: t.transform_norm(self.shading_norm),
             shading_duv: self.shading_duv.apply_transform(t),
-            // FIXME: should shape info be updated when transformed?
-            // shape_info: self.shape_info,
             primitive_hit: self.primitive_hit,
         }
     }

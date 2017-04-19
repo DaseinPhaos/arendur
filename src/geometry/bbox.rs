@@ -218,6 +218,7 @@ impl<T: BaseNum> BBox2<T> {
 }
 
 #[derive(PartialEq, Eq, Copy, Clone, Hash, Debug)]
+#[must_use]
 pub struct BBox3<T> {
     /// min corner of the bounding box
     pub pmin: Point3<T>,
@@ -471,7 +472,7 @@ impl<T: BaseNum> BBox3<T> {
         //     .extend(Point3::new(self.pmax.x, self.pmax.y, self.pmin.z))
         //     .extend(Point3::new(self.pmax.x, self.pmax.y, self.pmax.z))
         let p = t.transform_point(self.pmin);
-        let diagonal = self.diagonal();
+        let diagonal = t.transform_vector(self.diagonal());
         BBox3::new(
             p, p + diagonal
         )

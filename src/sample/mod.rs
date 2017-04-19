@@ -40,15 +40,6 @@ pub trait Sampler: Clone + Sync + Send
             pfilm: self.next_2d() + idx.cast().to_vec(),
             plens: self.next_2d(),
         }
-        // let idx: Point2f = idx.cast();
-        // println!("getting camera sample at {:?}", idx);
-        // let pfilm = self.next_2d()+ idx.to_vec();
-        // let plens = self.next_2d();
-        // println!("pfilm=={:?}, plens=={:?}", pfilm, plens);
-        // use std::io::*;
-        // let mut s = String::new();
-        // let _ = stdin().read_line(&mut s);
-        // filming::SampleInfo{ pfilm: pfilm, plens: plens}
     }
 
     /// request `n` samples in place
@@ -129,7 +120,7 @@ pub trait Filter: Send + Sync {
 /// transform an uniformly sampled `u` in $[0,1)^2$
 /// into uniform samples on a hemisphere
 #[inline]
-pub fn sample_unform_hemisphere(u: Point2f) -> Vector3f {
+pub fn sample_uniform_hemisphere(u: Point2f) -> Vector3f {
     let costheta = u.x;
     let sintheta = (1.0 as Float - costheta).max(0.0 as Float).sqrt();
     let phi = 2.0 as Float * float::pi() * u.y;
@@ -138,14 +129,14 @@ pub fn sample_unform_hemisphere(u: Point2f) -> Vector3f {
 
 /// pdf of uniform samples on a hemisphere
 #[inline]
-pub fn pdf_unform_hemisphere() -> Float {
+pub fn pdf_uniform_hemisphere() -> Float {
     0.5 as Float * float::frac_1_pi()
 }
 
 /// transform an uniformly sampled `u` in $[0,1)^2$
 /// into uniform samples on a sphere
 #[inline]
-pub fn sample_unform_sphere(u: Point2f) -> Vector3f {
+pub fn sample_uniform_sphere(u: Point2f) -> Vector3f {
     let costheta = 1.0 as Float - 2.0 as Float * u.x;
     let sintheta = (1.0 as Float - costheta).max(0.0 as Float).sqrt();
     let phi = 2.0 as Float * float::pi() * u.y;
@@ -154,7 +145,7 @@ pub fn sample_unform_sphere(u: Point2f) -> Vector3f {
 
 /// pdf of uniform samples on a hemisphere
 #[inline]
-pub fn pdf_unform_sphere() -> Float {
+pub fn pdf_uniform_sphere() -> Float {
     0.25 as Float * float::frac_1_pi()
 }
 
@@ -185,7 +176,7 @@ pub fn pdf_concentric_disk() -> Float {
 /// transform an uniformly sampled `u` in $[0,1)^2$
 /// into uniform samples on a disk
 #[inline]
-pub fn sample_unform_disk(u: Point2f) -> Point2f {
+pub fn sample_uniform_disk(u: Point2f) -> Point2f {
     let r = u.x.sqrt();
     let theta = 2.0 as Float * float::pi() * u.y;
     Point2f::new(r*theta.cos(), r*theta.sin())
@@ -193,7 +184,7 @@ pub fn sample_unform_disk(u: Point2f) -> Point2f {
 
 /// pdf of uniform samples on a disk
 #[inline]
-pub fn pdf_unform_disk() -> Float {
+pub fn pdf_uniform_disk() -> Float {
     float::pi()
 }
 

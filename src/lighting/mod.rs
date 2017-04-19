@@ -78,6 +78,7 @@ pub struct LightSample {
     pub pto: Point3f,
 }
 
+#[must_use]
 impl LightSample {
     /// get light direction vector `wi`
     #[inline]

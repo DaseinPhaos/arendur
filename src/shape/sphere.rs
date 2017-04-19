@@ -42,10 +42,6 @@ impl SphereInfo {
         // TODO: double check
         let thetamin = (zmin/radius).acos();
         let thetamax = (zmax/radius).acos();
-        // if thetamin >= thetamax {
-        //     println!("{} > {}, zmin: {}, zmax: {}, radius: {}", thetamin, thetamax, zmin, zmax, radius);
-        //     panic!();
-        // }
 
         SphereInfo {
             radius: radius,
@@ -72,24 +68,24 @@ impl SphereInfo {
         )
     }
 
-    /// test intersection in local frame, returns `t` when first hit
-    #[inline]
-    pub fn intersect_ray(&self, ray: &RawRay) -> Option<Float>
-    {
-        if let Some(t) = SphereInfo::intersect_ray_full(self.radius, ray) {
-            let p = ray.evaluate(t);
-            // TODO: refine sphere intersection
-            let mut phi = p.y.atan2(p.x);
-            if phi < (0.0 as Float) { phi += (2.0 as Float) * float::pi(); }
-            if p.z < self.zmin || p.z > self.zmax || phi > self.phimax {
-                None
-            } else {
-                Some(t)
-            }
-        } else {
-            None
-        }
-    }
+    // /// test intersection in local frame, returns `t` when first hit
+    // #[inline]
+    // pub fn intersect_ray(&self, ray: &RawRay) -> Option<Float>
+    // {
+    //     if let Some(t) = SphereInfo::intersect_ray_full(self.radius, ray) {
+    //         let p = ray.evaluate(t);
+    //         // TODO: refine sphere intersection
+    //         let mut phi = p.y.atan2(p.x);
+    //         if phi < (0.0 as Float) { phi += (2.0 as Float) * float::pi(); }
+    //         if p.z < self.zmin || p.z > self.zmax || phi > self.phimax {
+    //             None
+    //         } else {
+    //             Some(t)
+    //         }
+    //     } else {
+    //         None
+    //     }
+    // }
 
     /// test intersection against the full sphere
     pub fn intersect_ray_full(radius: Float, ray: &RawRay) -> Option<Float>
@@ -233,10 +229,18 @@ impl Shape for Sphere {
 
     fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
         if let Some(t) = SphereInfo::intersect_ray_full(self.radius, &ray) {
-            let p = ray.evaluate(t);
-            // TODO: refine sphere intersection
+            let mut p = ray.evaluate(t).to_vec();
+            // refine sphere intersection
+            p = p* self.radius / p.magnitude();
+            if p.x == 0.0 as Float && p.y == 0.0 as Float {
+                p.x = 1e-5 as Float * self.radius;
+            }
+            let p = Point3f::from_vec(p);
+
             let mut phi = p.y.atan2(p.x);
             if phi < (0.0 as Float) { phi += (2.0 as Float) * float::pi(); }
+
+            // TODO: refine test against clipping
             if p.z < self.zmin || p.z > self.zmax || phi > self.phimax {
                 None
             } else {
@@ -270,7 +274,6 @@ impl Shape for Sphere {
                         (gg*f - ff*g) * inv * dpdu + (ff*f - gg*e) * inv * dpdv
                     )
                 };
-                // println!("Intersection found");
                 Some((
                     t, SurfaceInteraction::new(
                         p, -ray.direction(), Point2f::new(u, v),

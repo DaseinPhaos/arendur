@@ -10,7 +10,6 @@
 //! which resides in certain coordinate frames.
 
 use geometry::prelude::*;
-use std::sync::Arc;
 
 pub use self::sphere::Sphere;
 pub use self::triangle::{TriangleInstance, TriangleMesh};

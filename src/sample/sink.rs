@@ -54,9 +54,7 @@ impl<T: Copy> Sink<T> {
     /// get sample value in next dimension
     #[inline]
     pub fn next_dim(&mut self) -> Option<T> {
-        //println!("\t getting next dim... idim=={}, ndim=={}, isample == {}, nsample == {}", self.idim, self.ndim, self.isample, self.nsample);
         if self.idim >= self.ndim {
-
             None
         } else {
             let isample = self.isample;

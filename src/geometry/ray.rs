@@ -59,6 +59,7 @@ pub trait Ray {
 
 /// A semi-infinite line specified by its `origin` and `dir`ection.
 #[derive(PartialEq, Copy, Clone)]
+#[must_use]
 pub struct RawRay {
     origin: Point3f,
     dir: Vector3f,
@@ -257,6 +258,7 @@ impl Permulation {
 }
 
 /// Ray with differencials
+#[must_use]
 pub struct RayDifferential {
     pub ray: RawRay,
     pub diffs: Option<(RawRay, RawRay)>,
@@ -266,7 +268,7 @@ impl RayDifferential {
     pub fn apply_transform(&self, t: &Matrix4f) -> Self
     {
         let mut diffs = self.diffs;
-        if let Some(ref mut diffs) = diffs {
+        if let Some(diffs) = diffs.as_mut() {
             diffs.0 = diffs.0.apply_transform(t);
             diffs.1 = diffs.1.apply_transform(t);
         }

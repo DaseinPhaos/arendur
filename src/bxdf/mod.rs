@@ -69,9 +69,9 @@ pub trait Bxdf {
         let mut ret = RGBSpectrumf::black();
         let nsamples = cmp::min(samples0.len(), samples1.len());
         for i in 0..nsamples {
-            let pdfo = sample::pdf_unform_hemisphere();
+            let pdfo = sample::pdf_uniform_hemisphere();
             let wo = unsafe {
-                sample::sample_unform_hemisphere(*samples0.get_unchecked(i))
+                sample::sample_uniform_hemisphere(*samples0.get_unchecked(i))
             };
             let (spec, wi, pdfi) = unsafe {
                 self.evaluate_sampled(wo, *samples1.get_unchecked(i))

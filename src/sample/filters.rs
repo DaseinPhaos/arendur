@@ -156,8 +156,8 @@ impl MitchellFilter {
 
     /// compute 1d mitchell filter value given by the original proposal
     fn mitchell_1d(x: Float, b: Float, c: Float) -> Float {
-        debug_assert!(x>=0.0 as Float);
-        debug_assert!(x<=2.0 as Float);
+        debug_assert!(x>=-0.0001 as Float);
+        debug_assert!(x<=2.0001 as Float);
         const INV_SIX: Float = 1.0 as Float / 6.0 as Float;
         if x > 1.0 as Float {
             (-b - 6.0 as Float * c) * x * x * x

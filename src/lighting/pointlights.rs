@@ -42,7 +42,7 @@ impl Light for PointLight {
     fn evaluate_sampled(&self, posw: Point3f, _sample: Point2f) -> LightSample {
         let pfrom = self.posw;
         let pto = posw;
-        let radiance = self.intensity/(pto-pfrom).magnitude();
+        let radiance = self.intensity/(pto-pfrom).magnitude2();
         LightSample {
             radiance: radiance,
             pdf: 1.0 as Float,

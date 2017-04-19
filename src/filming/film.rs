@@ -27,13 +27,21 @@ fn pidx_to_pcenter(idx: Point2<isize>) -> Point2f {
     ret
 }
 
-#[inline]
-fn pcenter_to_pidx(mut center: Point2f) -> Point2<isize> {
-    center.x -= 0.5 as Float;
-    center.y -= 0.5 as Float;
-    center.cast()
-}
+// #[inline]
+// #[allow(dead_code)]
+// fn pcenter_to_pidx(mut center: Point2f) -> Point2<isize> {
+//     center.x -= 0.5 as Float;
+//     center.y -= 0.5 as Float;
+//     center.cast()
+// }
 
+// #[inline]
+// #[allow(dead_code)]
+// fn pcenter_to_pidxf(mut center: Point2f) -> Point2f {
+//     center.x -= 0.5 as Float;
+//     center.y -= 0.5 as Float;
+//     center
+// }
 
 
 /// The mighty film
@@ -254,18 +262,15 @@ impl<'a, S> FilmTile<'a, S>
 {
     /// add a sample's contribution to every related pixels
     pub fn add_sample(&mut self, pos: Point2f, spectrum: &S) {
-        let posidxf: Point2f = pcenter_to_pidx(pos).cast();
-        let ceil = posidxf.to_vec() - self.filter_radius;
-        let floor = posidxf.to_vec() + self.filter_radius;
+        let ceil = pos.to_vec() - self.filter_radius + Vector2f::new(0.5 as Float, 0.5 as Float);
+        let floor = pos.to_vec() + self.filter_radius - Vector2f::new(0.5 as Float, 0.5 as Float);
+
         let ceilidx: Vector2<isize> = ceil.cast();
         let flooridx: Vector2<isize> = floor.cast() + Vector2::new(1, 1);
         let filter_box = BBox2::new(Point2::from_vec(ceilidx), Point2::from_vec(flooridx));
-        // println!("\t\tfilter_box:{:?}", filter_box);
-        // println!("\t\tsink_bounding:{:?}", self.sink.bounding);
+
         if let Some(relavant_box) = filter_box.intersect(&self.sink.bounding) {
-            // println!("\t\trelavant_box:{:?}", relavant_box);
             for pixel_idx in relavant_box {
-                // print!("\t\t\t{:?}", pixel_idx);
                 let pixel_pos = pidx_to_pcenter(pixel_idx);
                 let offset = Point2::from_vec(pixel_pos - pos);
                 let weight = unsafe {
@@ -277,9 +282,6 @@ impl<'a, S> FilmTile<'a, S>
                 pixel.spectrum_sum += spectrum * weight;
                 pixel.filter_weight_sum += weight;
             }
-        } else {
-            // println!("pos == {:?}", pos);
-            // println!("filter box == {:?}, bounding == {:?}", filter_box, self.sink.bounding);
         }
     }
 
@@ -338,10 +340,10 @@ pub struct Image {
 }
 
 impl Image {
-    /// convert into an boundedsink
-    fn into_inner(self) -> BoundedSink2D<RGBSpectrumf> {
-        self.inner
-    }
+    // /// convert into an boundedsink
+    // fn into_inner(self) -> BoundedSink2D<RGBSpectrumf> {
+    //     self.inner
+    // }
 
     /// construct an image with default spectrum
     pub fn new(spectrum: RGBSpectrumf, dim: Point2<u32>) -> Image {
@@ -360,7 +362,6 @@ impl Image {
 
     /// save this image to `path`
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
-        print!("saving...");
         let mut support = Vec::with_capacity(self.inner.pixels.len() * 3);
         for p in self.inner.bounding {
             let s = unsafe {

@@ -46,7 +46,7 @@ impl<T: Composable> Composable for TransformedComposable<T>
         *ray = ray.apply_transform(&*self.parent_local);
         let mut ret = self.original.intersect_ray(ray);
         if let Some(ret) = ret.as_mut() {
-            ret.apply_transform(&*self.local_parent);
+            *ret = ret.apply_transform(&*self.local_parent);
         }
         *ray = ray.apply_transform(&*self.local_parent);
         ret

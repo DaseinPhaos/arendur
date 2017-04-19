@@ -64,7 +64,8 @@ fn calculate_lighting<S: Sampler>(
                 let wi = lightsample.wi();
                 let bsdfv = bsdf.evaluate(wo, wi, BXDF_ALL);
                 if bsdfv != RGBSpectrumf::black() && !lightsample.occluded(&*scene.aggregate) {
-                    ret += bsdfv * lightsample.radiance * wi.dot(norm) / lightsample.pdf;
+                    let coontribution = bsdfv * lightsample.radiance * wi.dot(norm) / lightsample.pdf;
+                    ret += coontribution;
                     // TODO: specular reflect, specular transmit
                 }
             }
@@ -81,10 +82,10 @@ impl<S: Sampler> Renderer for WhittedRenderer<S> {
     fn render(&mut self, scene: &Scene) {
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
         
-        let mut rc = 0;
-        let mut tc = 0;
-        // tiles.par_iter_mut().for_each(|tile| {
-        for tile in &mut tiles {
+        // let mut rc = 0;
+        // let mut tc = 0;
+        tiles.par_iter_mut().for_each(|tile| {
+        // for tile in &mut tiles {
             let mut arena = Arena::new();
             let mut allocator = arena.allocator();
             let mut sampler = self.sampler.clone();
@@ -92,27 +93,20 @@ impl<S: Sampler> Renderer for WhittedRenderer<S> {
             for p in tile_bound {
                 let p: Point2<u32> = p.cast();
                 sampler.start_pixel(p);
-                if p.x == 300 && p.y == 200 {
-                    use std::io;
-                    println!("halt at midpoint");
-                    let mut s = String::new();
-                    let _ = io::stdin().read_line(&mut s);
-                }
                 loop {
                     let camera_sample_info = sampler.get_camera_sample(p);
                     let mut ray_differential = self.camera.generate_ray_differential(camera_sample_info);
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
                     let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0);
-                    if total_randiance != RGBSpectrumf::black() { rc += 1; }
-                    tc += 1;
+                    // if total_randiance != RGBSpectrumf::black() { rc += 1; }
+                    // tc += 1;
                     tile.add_sample(camera_sample_info.pfilm, &total_randiance);
                     
                     if !sampler.next_sample() { break; }
                 }
             }
-        // });
-        }
-        println!("A total of {} contributed", rc as Float/tc as Float);
+        });
+        // }
         let render_result = self.camera.get_film().collect_into(tiles);
         render_result.save(self.path.clone()).expect("saving failure");
     }

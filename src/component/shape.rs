@@ -48,9 +48,6 @@ impl<S, M> Composable for ShapedPrimitive<S, M>
             ray.set_max_extend(t);
             si.set_primitive(self);
             Some(si)
-            // transform si into parent frame
-            // let tlp = *self.shape.info().local_parent;
-            // Some(si.apply_transform(&tlp))
         } else {
             None
         }
@@ -60,7 +57,17 @@ impl<S, M> Composable for ShapedPrimitive<S, M>
 impl<S, M> Primitive for ShapedPrimitive<S, M>
     where S: Shape, M: Material
 {
+    #[inline]
     fn get_material(&self) -> &Material {
         &self.material
+    }
+
+    #[inline]
+    fn get_area_light(&self) -> Option<&Light> {
+        if let Some(ref al) = self.area_light {
+            Some(al.as_ref())
+        } else {
+            None
+        }
     }
 }
