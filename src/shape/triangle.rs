@@ -9,7 +9,8 @@
 //! Defines triangle mesh and triangle instance
 
 use geometry::prelude::*;
-use shape::{Shape, ShapeInfo};
+// use shape::{Shape, ShapeInfo};
+use super::Shape;
 use std::ops;
 
 /// A triangle mesh
@@ -20,7 +21,7 @@ pub struct TriangleMesh {
     normals: Option<Vec<Vector3f>>,
     uvs: Option<Vec<Point2f>>,
     bbox: BBox3f,
-    shapeinfo: ShapeInfo,
+    // shapeinfo: ShapeInfo,
 }
 
 impl TriangleMesh {
@@ -172,10 +173,10 @@ impl<'a> ops::Index<usize> for TriangleInstance<'a> {
 }
 
 impl<'a> Shape for TriangleInstance<'a> {
-    #[inline]
-    fn info(&self) -> &ShapeInfo {
-        &self.mesh.shapeinfo
-    }
+    // #[inline]
+    // fn info(&self) -> &ShapeInfo {
+    //     &self.mesh.shapeinfo
+    // }
 
     #[inline]
     fn bbox_local(&self) -> BBox3f {
@@ -183,10 +184,10 @@ impl<'a> Shape for TriangleInstance<'a> {
         bbox.extend(self.z())
     }
 
-    #[inline]
-    fn bbox_parent(&self) -> BBox3f {
-        self.bbox_local()
-    }
+    // #[inline]
+    // fn bbox_parent(&self) -> BBox3f {
+    //     self.bbox_local()
+    // }
 
     #[inline]
     fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
@@ -241,7 +242,7 @@ impl<'a> Shape for TriangleInstance<'a> {
                 dndu: Vector3f::zero(),
                 dndv: Vector3f::zero(),
             },
-            Some(self.info())
+            // Some(self.info())
         );
         surface_interaction.set_shading(
             self.compute_shading_at(Vector3f::new(b0, b1, b2), dpdu), true);

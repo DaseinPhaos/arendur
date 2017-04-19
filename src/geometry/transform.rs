@@ -45,7 +45,7 @@ pub trait TransformExt: Transform3<Float> + Copy {
     }
 
     #[inline]
-    fn transform_surface_interaction<'a, 'b>(&self, si: &SurfaceInteraction<'a, 'b>) -> SurfaceInteraction<'a, 'b> {
+    fn transform_surface_interaction<'b>(&self, si: &SurfaceInteraction<'b>) -> SurfaceInteraction<'b> {
         si.apply_transform(self)
     }
 
@@ -53,7 +53,7 @@ pub trait TransformExt: Transform3<Float> + Copy {
     fn transform_norm(&self, norm: Vector3f) -> Vector3f
     {
         let m = <Self as Into<Matrix4<_>>>::into(*self);
-        let inverse_transpose = m.inverse_transform().expect("Invalid inversion").transpose();
+        let inverse_transpose = m.invert().expect("Invalid inversion").transpose();
         inverse_transpose.transform_vector(norm).normalize()
     }
 }

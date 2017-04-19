@@ -7,7 +7,8 @@
 // except according to those terms.
 
 use geometry::prelude::*;
-use super::{Shape, ShapeInfo};
+// use super::{Shape, ShapeInfo};
+use super::Shape;
 
 /// A (possibly-partial) sphere, as a geometry definition
 #[derive(Copy, Clone, PartialEq)]
@@ -73,8 +74,7 @@ impl SphereInfo {
 
     /// test intersection in local frame, returns `t` when first hit
     #[inline]
-    pub fn intersect_ray<R>(&self, ray: &R) -> Option<Float>
-        where R: Ray
+    pub fn intersect_ray(&self, ray: &RawRay) -> Option<Float>
     {
         if let Some(t) = SphereInfo::intersect_ray_full(self.radius, ray) {
             let p = ray.evaluate(t);
@@ -92,11 +92,9 @@ impl SphereInfo {
     }
 
     /// test intersection against the full sphere
-    pub fn intersect_ray_full<R>(radius: Float, ray: &R) -> Option<Float>
-        where R: Ray
+    pub fn intersect_ray_full(radius: Float, ray: &RawRay) -> Option<Float>
     {
-        let origin = ray.origin();
-        let origin = Vector3f::new(origin.x, origin.y, origin.z);
+        let origin = ray.origin().to_vec();
         let direction = ray.direction();
         let a = direction.magnitude2();
         let b = (direction.mul_element_wise(origin) * (2.0 as Float)).sum();
@@ -125,60 +123,135 @@ impl SphereInfo {
     }
 }
 
-/// A (possibly-partial) sphere, as a shape
-#[derive(Clone)]
-pub struct Sphere {
-    pub info: ShapeInfo,
-    pub geometry: SphereInfo,
-}
+pub type Sphere = SphereInfo;
 
-impl Sphere {
-    /// Construct a new sphere
-    pub fn new(sphere: SphereInfo, shape_info: ShapeInfo) -> Sphere {
-        Sphere {
-            info: shape_info,
-            geometry: sphere,
-        }
-    }
-}
+// /// A (possibly-partial) sphere, as a shape
+// #[derive(Clone)]
+// pub struct Sphere {
+//     pub info: ShapeInfo,
+//     pub geometry: SphereInfo,
+// }
+
+// impl Sphere {
+//     /// Construct a new sphere
+//     pub fn new(sphere: SphereInfo, shape_info: ShapeInfo) -> Sphere {
+//         Sphere {
+//             info: shape_info,
+//             geometry: sphere,
+//         }
+//     }
+// }
+
+// impl Shape for Sphere {
+//     fn info(&self) -> &ShapeInfo {
+//         &self.info
+//     }
+
+//     fn bbox_local(&self) -> BBox3f {
+//         self.geometry.bounding()
+//     }
+
+//     fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
+//         // first, transform ray into local frame
+//         let ray = ray.apply_transform(&*self.info.parent_local);
+//         if let Some(t) = SphereInfo::intersect_ray_full(self.geometry.radius, &ray) {
+//             let p = ray.evaluate(t);
+//             // TODO: refine sphere intersection
+//             let mut phi = p.y.atan2(p.x);
+//             if phi < (0.0 as Float) { phi += (2.0 as Float) * float::pi(); }
+//             if p.z < self.geometry.zmin || p.z > self.geometry.zmax || phi > self.geometry.phimax {
+//                 None
+//             } else {
+//                 let phimax = self.geometry.phimax;
+//                 let thetamax = self.geometry.thetamax;
+//                 let thetamin = self.geometry.thetamin;
+//                 let thetadelta = thetamax - thetamin;
+//                 let u = phi / phimax;
+//                 // let theta = float::clamp(
+//                 //     (p.z / self.geometry.radius).acos(),
+//                 //     -1.0 as Float,
+//                 //     1.0 as Float
+//                 // );
+//                 let theta = (p.z / self.geometry.radius).acos();
+//                 let v = (theta - thetamin) / thetadelta;
+//                 let inv_z_radius = (1.0 as Float) / (p.x * p.x + p.y * p.y).sqrt();
+//                 let cos_phi = p.x * inv_z_radius;
+//                 let sin_phi = p.y * inv_z_radius;
+//                 let dpdu = Vector3f::new(-phimax * p.y, phimax * p.x, 0.0 as Float);
+//                 let dpdv = thetadelta * Vector3f::new(p.z * cos_phi, p.z * sin_phi, -self.geometry.radius * theta.sin());
+//                 let (dndu, dndv) = {
+//                     let dppduu = - phimax * phimax * Vector3f::new(p.x, p.y, 0.0 as Float);
+//                     let dppduv = thetadelta * p.z * phimax * Vector3f::new(-sin_phi, cos_phi, 0.0 as Float);
+//                     let dppdvv = -thetadelta * thetadelta * Vector3f::new(p.x, p.y, p.z);
+
+//                     let e = dpdu.dot(dpdu);
+//                     let f = dpdu.dot(dpdv);
+//                     let g = dpdv.dot(dpdv);
+//                     let n = dpdu.cross(dpdv).normalize();
+//                     let ee = n.dot(dppduu);
+//                     let ff = n.dot(dppduv);
+//                     let gg = n.dot(dppdvv);
+//                     let inv = (1.0 as Float) / (e * g - f * f);
+//                     (
+//                         (ff*f - ee*g) * inv * dpdu + (ee*f - ff*e) * inv * dpdv,
+//                         (gg*f - ff*g) * inv * dpdu + (ff*f - gg*e) * inv * dpdv
+//                     )
+//                 };
+//                 Some((
+//                     t, SurfaceInteraction::new(
+//                         p, -ray.direction(), Point2f::new(u, v),
+//                         DuvInfo{
+//                             dpdu: dpdu,
+//                             dpdv: dpdv,
+//                             dndu: dndu,
+//                             dndv: dndv,
+//                         },
+//                         Some(&self.info)
+//                     )
+//                 ))
+//             }
+//         } else {
+//             None
+//         }
+        
+//     }
+
+//     // fn can_intersect(&self, ray: &RawRay) -> bool {
+//     //     let ray = ray.apply_transform(&*self.info.parent_local);
+//     //     self.geometry.intersect_ray(&ray).is_some()
+//     // }
+
+//     fn surface_area(&self) -> Float {
+//         self.geometry.phimax * self.geometry.radius * (self.geometry.zmax - self.geometry.zmin)
+//     }
+// }
 
 impl Shape for Sphere {
-    fn info(&self) -> &ShapeInfo {
-        &self.info
-    }
-
     fn bbox_local(&self) -> BBox3f {
-        self.geometry.bounding()
+        self.bounding()
     }
 
     fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
-        // first, transform ray into local frame
-        let ray = ray.apply_transform(&*self.info.parent_local);
-        if let Some(t) = SphereInfo::intersect_ray_full(self.geometry.radius, &ray) {
+        if let Some(t) = SphereInfo::intersect_ray_full(self.radius, &ray) {
             let p = ray.evaluate(t);
             // TODO: refine sphere intersection
             let mut phi = p.y.atan2(p.x);
             if phi < (0.0 as Float) { phi += (2.0 as Float) * float::pi(); }
-            if p.z < self.geometry.zmin || p.z > self.geometry.zmax || phi > self.geometry.phimax {
+            if p.z < self.zmin || p.z > self.zmax || phi > self.phimax {
                 None
             } else {
-                let phimax = self.geometry.phimax;
-                let thetamax = self.geometry.thetamax;
-                let thetamin = self.geometry.thetamin;
+                let phimax = self.phimax;
+                let thetamax = self.thetamax;
+                let thetamin = self.thetamin;
                 let thetadelta = thetamax - thetamin;
                 let u = phi / phimax;
-                // let theta = float::clamp(
-                //     (p.z / self.geometry.radius).acos(),
-                //     -1.0 as Float,
-                //     1.0 as Float
-                // );
-                let theta = (p.z / self.geometry.radius).acos();
+                let theta = (p.z / self.radius).acos();
                 let v = (theta - thetamin) / thetadelta;
                 let inv_z_radius = (1.0 as Float) / (p.x * p.x + p.y * p.y).sqrt();
                 let cos_phi = p.x * inv_z_radius;
                 let sin_phi = p.y * inv_z_radius;
                 let dpdu = Vector3f::new(-phimax * p.y, phimax * p.x, 0.0 as Float);
-                let dpdv = thetadelta * Vector3f::new(p.z * cos_phi, p.z * sin_phi, -self.geometry.radius * theta.sin());
+                let dpdv = thetadelta * Vector3f::new(p.z * cos_phi, p.z * sin_phi, -self.radius * theta.sin());
                 let (dndu, dndv) = {
                     let dppduu = - phimax * phimax * Vector3f::new(p.x, p.y, 0.0 as Float);
                     let dppduv = thetadelta * p.z * phimax * Vector3f::new(-sin_phi, cos_phi, 0.0 as Float);
@@ -197,6 +270,7 @@ impl Shape for Sphere {
                         (gg*f - ff*g) * inv * dpdu + (ff*f - gg*e) * inv * dpdv
                     )
                 };
+                // println!("Intersection found");
                 Some((
                     t, SurfaceInteraction::new(
                         p, -ray.direction(), Point2f::new(u, v),
@@ -206,7 +280,6 @@ impl Shape for Sphere {
                             dndu: dndu,
                             dndv: dndv,
                         },
-                        Some(&self.info)
                     )
                 ))
             }
@@ -216,12 +289,7 @@ impl Shape for Sphere {
         
     }
 
-    fn can_intersect(&self, ray: &RawRay) -> bool {
-        let ray = ray.apply_transform(&*self.info.parent_local);
-        self.geometry.intersect_ray(&ray).is_some()
-    }
-
     fn surface_area(&self) -> Float {
-        self.geometry.phimax * self.geometry.radius * (self.geometry.zmax - self.geometry.zmin)
+        self.phimax * self.radius * (self.zmax - self.zmin)
     }
 }

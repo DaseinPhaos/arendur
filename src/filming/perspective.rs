@@ -64,14 +64,10 @@ impl PerspecCam {
 
     /// `fov` in radians
     pub fn perspective_transform(fov: Float, znear: Float, zfar: Float) -> Matrix4f {
+        assert!(znear < zfar);
+        assert!(fov < float::pi());
         let one = Float::one();
         let zero = Float::zero();
-        // let persp = Matrix4f::new(
-        //     one, zero, zero, zero,
-        //     zero, one, zero, zero,
-        //     zero, zero, zfar/(zfar-znear), -zfar*znear/(zfar-znear),
-        //     zero, zero, one, zero
-        // );
         let persp = Matrix4f::new(
             one, zero, zero, zero,
             zero, one, zero, zero,
@@ -118,7 +114,10 @@ impl Camera for PerspecCam {
     fn generate_ray_differential(&self, sample_info: SampleInfo) -> RayDifferential {
         let pfilm = Point3f::new(sample_info.pfilm.x, sample_info.pfilm.y, 0.0 as Float);
         let pview = self.proj_info.raster_view.transform_point(pfilm);
-        let mut ray = RawRay::from_od(Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float), pview.to_vec().normalize());
+        let mut ray = RawRay::from_od(
+            Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float), 
+            pview.to_vec().normalize()
+        );
 
         if let Some((r, d)) = self.lens {
             debug_assert!(r>0.0 as Float);

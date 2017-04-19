@@ -11,7 +11,7 @@
 use super::{RayDifferential, Ray};
 use super::foundamental::*;
 use super::transform::TransformExt;
-use shape::ShapeInfo;
+// use shape::ShapeInfo;
 use component::Primitive;
 // use super::float;
 
@@ -67,7 +67,7 @@ impl DuvInfo {
 
 /// Interaction at some surface denoted as $f(u, v)$
 #[derive(Clone)]
-pub struct SurfaceInteraction<'a, 'b> {
+pub struct SurfaceInteraction<'b> {
     /// Basic information about the interaction
     pub basic: InteractInfo,
     /// uv-position
@@ -78,28 +78,28 @@ pub struct SurfaceInteraction<'a, 'b> {
     pub shading_norm: Vector3f,
     /// uv-derivatives used for shading, might be different from `self.duv`
     pub shading_duv: DuvInfo,
-    /// shape information of the surface
-    pub shape_info: Option<&'a ShapeInfo>,
+    // /// shape information of the surface
+    // pub shape_info: Option<&'a ShapeInfo>,
     /// primitive hit
     pub primitive_hit: Option<&'b Primitive>,
 }
 
-impl<'a, 'b> SurfaceInteraction<'a, 'b> {
+impl<'b> SurfaceInteraction<'b> {
     /// Construct a new instance from given info
     pub fn new(
         pos: Point3f,
         wo: Vector3f,
         uv: Point2f,
         duv: DuvInfo,
-        shape_info: Option<&'a ShapeInfo>,
-    ) -> SurfaceInteraction<'a, 'b> {
+        // shape_info: Option<&'a ShapeInfo>,
+    ) -> SurfaceInteraction<'b> {
         let mut norm = duv.dpdu.cross(duv.dpdv).normalize();
 
-        if let Some(shape_info) = shape_info {
-            if shape_info.reverse_orientation ^ shape_info.swap_handedness {
-                norm = -norm;
-            }
-        }
+        // if let Some(shape_info) = shape_info {
+        //     if shape_info.reverse_orientation ^ shape_info.swap_handedness {
+        //         norm = -norm;
+        //     }
+        // }
         
         SurfaceInteraction {
             basic: InteractInfo {
@@ -111,7 +111,7 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
             duv: duv,
             shading_norm: norm,
             shading_duv: duv,
-            shape_info: shape_info,
+            // shape_info: shape_info,
             primitive_hit: None,
         }
     }
@@ -125,11 +125,11 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
         // FIXME: should update according to more cretiarias
         let mut norm = duv.dpdu.cross(duv.dpdv).normalize();
 
-        if let Some(shape_info) = self.shape_info {
-            if shape_info.reverse_orientation ^ shape_info.swap_handedness {
-                norm = -norm;
-            }
-        }
+        // if let Some(shape_info) = self.shape_info {
+        //     if shape_info.reverse_orientation ^ shape_info.swap_handedness {
+        //         norm = -norm;
+        //     }
+        // }
 
         if self.basic.norm.dot(norm) < (0.0 as Float) {
             if orient_norm_by_shading {
@@ -148,7 +148,7 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
         self.primitive_hit = Some(primitive)
     }
 
-    pub fn apply_transform<T>(&self, t: &T) -> SurfaceInteraction<'a, 'b>
+    pub fn apply_transform<T>(&self, t: &T) -> SurfaceInteraction<'b>
         where T: TransformExt
     {
         SurfaceInteraction{
@@ -158,7 +158,7 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
             shading_norm: t.transform_norm(self.shading_norm),
             shading_duv: self.shading_duv.apply_transform(t),
             // FIXME: should shape info be updated when transformed?
-            shape_info: self.shape_info,
+            // shape_info: self.shape_info,
             primitive_hit: self.primitive_hit,
         }
     }

@@ -14,28 +14,31 @@ use std::sync::Arc;
 use shape::*;
 
 /// Represents a primitive made up by a single `Shape`
-pub struct ShapedPrimitive {
-    shape: Arc<Shape>,
-    material: Arc<Material>,
+pub struct ShapedPrimitive<S, M> {
+    shape: S,
+    material: M,
     area_light: Option<Arc<Light>>,
     // TODO: medium:
 }
 
-impl ShapedPrimitive {
+impl<S, M> ShapedPrimitive<S, M>
+    where S: Shape, M: Material
+{
     /// construction
     #[inline]
-    pub fn new(shape: Arc<Shape>, material: Arc<Material>, area_light: Option<Arc<Light>>) -> ShapedPrimitive {
+    pub fn new(shape: S, material: M, area_light: Option<Arc<Light>>) -> ShapedPrimitive<S, M> {
         ShapedPrimitive{
             shape: shape, material: material, area_light: area_light,
         }
     }
 }
 
-impl Composable for ShapedPrimitive
+impl<S, M> Composable for ShapedPrimitive<S, M>
+    where S: Shape, M: Material
 {
     #[inline]
     fn bbox_parent(&self) -> BBox3f {
-        self.shape.bbox_parent()
+        self.shape.bbox_local()
     }
 
     #[inline]
@@ -44,19 +47,20 @@ impl Composable for ShapedPrimitive
         if let Some((t, mut si)) = r {
             ray.set_max_extend(t);
             si.set_primitive(self);
+            Some(si)
             // transform si into parent frame
-            let tlp = *self.shape.info().local_parent;
-
-            Some(si.apply_transform(&tlp))
+            // let tlp = *self.shape.info().local_parent;
+            // Some(si.apply_transform(&tlp))
         } else {
             None
         }
     }
 }
 
-impl Primitive for ShapedPrimitive
+impl<S, M> Primitive for ShapedPrimitive<S, M>
+    where S: Shape, M: Material
 {
     fn get_material(&self) -> &Material {
-        &*self.material
+        &self.material
     }
 }

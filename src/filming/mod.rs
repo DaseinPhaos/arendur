@@ -67,3 +67,5 @@ pub mod projective;
 pub mod ortho;
 pub mod perspective;
 pub mod film;
+#[cfg(test)]
+mod tests;

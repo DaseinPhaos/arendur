@@ -31,13 +31,13 @@ impl ProjCameraInfo {
                 resolution.x, resolution.y, 1.0 as Float
             ) * Matrix4f::from_nonuniform_scale(
                 1.0 as Float / (screen.pmax.x - screen.pmin.x),
-                1.0 as Float / (screen.pmax.y - screen.pmin.y),
+                1.0 as Float / (screen.pmin.y - screen.pmax.y),
                 1.0 as Float
             ) * Matrix4f::from_translation(
                 Vector3f::new(-screen.pmin.x, -screen.pmax.y, 0.0 as Float)
             );
-        let raster_screen = screen_raster.inverse_transform().expect("matrix inversion failure");
-        let raster_view = view_screen.inverse_transform().expect("matrix inversion failure") * raster_screen;
+        let raster_screen = screen_raster.invert().expect("matrix inversion failure");
+        let raster_view = view_screen.invert().expect("matrix inversion failure") * raster_screen;
         ProjCameraInfo {
             view_screen: view_screen,
             screen_raster: screen_raster,

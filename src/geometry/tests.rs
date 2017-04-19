@@ -52,7 +52,7 @@ mod bbox {
         let bbox = BBox2::new(Point2::new(0, 0), Point2::new(2, 2));
         let bbox1 = BBox2::new(Point2::new(1, 3), Point2::new(3, 1));
         let bbox2 = BBox2::new(Point2::new(1, 1), Point2::new(2, 2));
-        assert!(bbox.intersect(&bbox1) == bbox2);
+        assert!(bbox.intersect(&bbox1).unwrap() == bbox2);
     }
 
     #[test]
