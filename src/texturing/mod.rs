@@ -66,3 +66,4 @@ impl<'a, T: 'a> Texture for &'a T
 
 pub mod mappings;
 pub mod textures;
+pub mod prelude;

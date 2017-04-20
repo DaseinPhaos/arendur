@@ -11,49 +11,6 @@
 
 use geometry::prelude::*;
 
-pub use self::sphere::Sphere;
-pub use self::triangle::{TriangleInstance, TriangleMesh};
-
-// /// Basic information about a shape
-// /// Guarantees: 
-// /// - `local_parent.inverse() == parent_local`.
-// /// - `(local_parent.det() < 0) == swap_handedness`.
-// #[derive(Clone)]
-// pub struct ShapeInfo {
-//     /// transform from local coordinate frame into parent
-//     pub local_parent: Arc<Matrix4f>,
-//     /// transform from parent coordinate frame into local
-//     pub parent_local: Arc<Matrix4f>,
-//     /// indicates if the shape normal's orientation should be reversed
-//     pub reverse_orientation: bool,
-//     /// indicates if transforms swap handedness
-//     pub swap_handedness: bool,
-// }
-
-// impl ShapeInfo {
-//     /// Construct a new shape. Users should always use this method
-//     /// so that gurantees are met.
-//     pub fn new(local_parent: Arc<Matrix4f>, parent_local: Arc<Matrix4f>, reverse_orientation: bool) -> ShapeInfo {
-//         #[cfg(debug)]
-//         {
-//             let b = relative_eq!(local_parent, parent_local.inverse());
-//             debug_assert!(b, "invalid inpu matrix");
-//         }
-//         let swap_handedness = if local_parent.determinant() > (0.0 as Float) {
-//             true
-//         } else {
-//             false
-//         };
-//         ShapeInfo{
-//             local_parent: local_parent,
-//             parent_local: parent_local,
-//             reverse_orientation: reverse_orientation,
-//             swap_handedness: swap_handedness,
-//         }
-//     }
-// }
-
-
 /// A shape
 pub trait Shape: Sync + Send
 {
@@ -85,5 +42,6 @@ pub trait Shape: Sync + Send
 
 pub mod sphere;
 pub mod triangle;
+pub mod prelude;
 #[cfg(test)]
 mod tests;

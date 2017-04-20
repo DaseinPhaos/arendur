@@ -70,3 +70,4 @@ fn add_bumping<T: Texture<Texel=Float> + ?Sized>(si: &mut SurfaceInteraction, dx
 
 pub mod bsdf;
 pub mod matte;
+pub mod prelude;

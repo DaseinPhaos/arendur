@@ -12,29 +12,8 @@ extern crate arendur;
 extern crate cgmath;
 extern crate rand;
 
-use arendur::spectrum::*;
-use arendur::filming::*;
-use arendur::filming::film::*;
-use arendur::filming::perspective::PerspecCam;
-use arendur::renderer::Renderer;
-use arendur::renderer::scene::Scene;
-use arendur::renderer::whitted::WhittedRenderer;
-use arendur::geometry::prelude::*;
-use arendur::component::{Composable, Primitive};
-use arendur::shape::sphere::*;
-use arendur::shape::*;
-use arendur::component::shape::*;
-use arendur::component::transformed::*;
-use arendur::material::*;
-use arendur::texturing::*;
-use arendur::texturing::textures::ConstantTexture;
-use arendur::lighting::*;
-use arendur::sample::*;
-use arendur::sample::strata::StrataSampler;
-use arendur::sample::filters::*;
+use arendur::prelude::*;
 type NaiveAggregate = arendur::component::naive::Naive;
-
-
 use std::sync::Arc;
 
 fn main() {
@@ -56,7 +35,7 @@ fn main() {
     let sigma = ConstantTexture{value: 30. as Float};
 
 
-    let material0 = matte::MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
+    let material0 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
 
     let sphere0 = ShapedPrimitive::new(sphere0, material0, None);
     let sphere0 = TransformedComposable::new(sphere0, transform0, inv_transform0);
@@ -65,7 +44,7 @@ fn main() {
     let sigma = ConstantTexture{value: 1.0 as Float};
 
 
-    let material1 = matte::MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
+    let material1 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
 
     let sphere1 = ShapedPrimitive::new(sphere1, material1, None);
     let sphere1 = TransformedComposable::new(sphere1, transform1, inv_transform1);
@@ -74,27 +53,27 @@ fn main() {
     naive.append(Arc::new(sphere1));
 
     let lights: Vec<Arc<Light>> = vec![
-        // Arc::new(pointlights::PointLight::new(
+        // Arc::new(PointLight::new(
         //     Point3f::new(-10.0 as Float, 0.0 as Float, 0.0 as Float),
         //     RGBSpectrumf::new(300.7 as Float, 0.0 as Float, 0.0 as Float))
         // ),
-        // Arc::new(pointlights::PointLight::new(
+        // Arc::new(PointLight::new(
         //     Point3f::new(0.0 as Float, -10.0 as Float, 0.0 as Float),
         //     RGBSpectrumf::new(0.0 as Float, 300.0 as Float, 0.0 as Float))
         // ), 
-        // Arc::new(pointlights::PointLight::new(
+        // Arc::new(PointLight::new(
         //     Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
         //     RGBSpectrumf::new(0.0 as Float, 0.0 as Float, 300.0 as Float))
         // ), 
-        // Arc::new(pointlights::PointLight::new(
+        // Arc::new(PointLight::new(
         //     Point3f::new(0.0 as Float, 100.0 as Float, 100.0 as Float),
         //     RGBSpectrumf::new(100000.7 as Float, 0.0 as Float, 0.0 as Float))
         // ),
-        Arc::new(pointlights::PointLight::new(
+        Arc::new(PointLight::new(
             Point3f::new(0.0 as Float, -40.0 as Float, 30.0 as Float),
             RGBSpectrumf::new(0.0 as Float, 300.0 as Float, 0.0 as Float))
         ), 
-        Arc::new(pointlights::PointLight::new(
+        Arc::new(PointLight::new(
             Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
             RGBSpectrumf::new(300.0 as Float, 300.0 as Float, 300.0 as Float))
         ), 

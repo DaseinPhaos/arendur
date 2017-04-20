@@ -51,7 +51,7 @@ impl DistantLight {
 impl Light for DistantLight {
     #[inline]
     fn flags(&self) -> LightFlag {
-        LIGHIT_INFINITE
+        LIGHT_INFINITE
     }
 
     #[inline]

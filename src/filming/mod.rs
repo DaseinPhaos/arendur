@@ -63,9 +63,10 @@ pub trait Camera: Send + Sync {
     fn get_film_mut(&mut self) -> &mut Film;
 }
 
-pub mod projective;
+mod projective;
 pub mod ortho;
 pub mod perspective;
 pub mod film;
+pub mod prelude;
 #[cfg(test)]
 mod tests;

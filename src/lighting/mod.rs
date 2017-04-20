@@ -53,7 +53,7 @@ bitflags! {
         const LIGHT_DPOS = 0x1,
         const LIGHT_DDIR = 0x2,
         const LIGHT_AREA = 0x4,
-        const LIGHIT_INFINITE = 0x8,
+        const LIGHT_INFINITE = 0x8,
     }
 }
 
@@ -115,3 +115,4 @@ impl LightSample {
 pub mod pointlights;
 pub mod distantlight;
 pub mod arealights;
+pub mod prelude;

@@ -157,18 +157,18 @@ impl<T, TP> MipMap<T, TP>
         let (dx, dy) = (dx as usize, dy as usize);
         let p = if p.x >= dx || p.y >= dy {
             match self.info.wrapping {
-                WrapMode::Black => {
+                ImageWrapMode::Black => {
                     let z = <T as Zero>::zero();
                     let slice = [z, z, z, z];
                     return *TP::from_slice(&slice);
                 },
-                WrapMode::Clamp => {
+                ImageWrapMode::Clamp => {
                     (
                         if p.x >= dx {dx-1} else {p.x},
                         if p.y >= dy {dy-1} else {p.y}
                     )
                 },
-                WrapMode::Repeat => {
+                ImageWrapMode::Repeat => {
                     (p.x % dx, p.y % dy)
                 },
             }
@@ -341,7 +341,7 @@ pub struct ImageInfo {
     pub name: String,
     pub trilinear: bool,
     pub max_aniso: Float,
-    pub wrapping: WrapMode,
+    pub wrapping: ImageWrapMode,
     pub gamma: bool,
     pub scale: Float,
 }
@@ -364,7 +364,7 @@ impl Eq for ImageInfo { }
 
 /// Wrapping mode when coordinates out of bound
 #[derive(Hash, Eq, PartialEq, Copy, Clone)]
-pub enum WrapMode {
+pub enum ImageWrapMode {
     /// repeat the texture again
     Repeat,
     /// return black texel

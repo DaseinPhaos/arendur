@@ -53,3 +53,4 @@ pub mod shape;
 pub mod transformed;
 // pub mod bvh;
 pub mod naive;
+pub mod prelude;

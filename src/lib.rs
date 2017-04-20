@@ -31,3 +31,4 @@ pub mod material;
 pub mod texturing;
 pub mod lighting;
 pub mod renderer;
+pub mod prelude;

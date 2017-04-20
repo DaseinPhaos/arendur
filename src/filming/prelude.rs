@@ -6,20 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Defines `Renderer` which can render a scene
-
-use self::scene::Scene;
-
-/// A renderer
-pub trait Renderer {
-    /// render a scene
-    fn render(&mut self, scene: &Scene);
-}
-
-pub mod scene;
-pub mod whitted;
-pub mod prelude {
-    pub use super::Renderer;
-    pub use super::scene::Scene;
-    pub use super::whitted::WhittedRenderer;
-}
+pub use super::Camera;
+pub use super::film::Film;
+pub use super::ortho::OrthoCam;
+pub use super::perspective::PerspecCam;

@@ -240,4 +240,5 @@ pub fn power_heuristic(nf: usize, pdff: Float, ng: usize, pdfg: Float) -> Float 
 pub mod naive;
 pub mod strata;
 pub mod filters;
+pub mod prelude;
 mod sink;
