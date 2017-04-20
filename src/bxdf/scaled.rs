@@ -9,10 +9,12 @@
 //! Defines a scaled bxdf
 use super::*;
 
-/// A scaled bxdf
+/// A scaled bxdf. Values of the inner bxdf would be scaled by
+/// the scaling factor `scale` and be returned
 pub struct ScaledBxdf<T> {
     inner: T,
-    scale: RGBSpectrumf,
+    /// the scaling factor
+    pub scale: RGBSpectrumf,
 }
 
 impl<T: Bxdf> Bxdf for ScaledBxdf<T> {

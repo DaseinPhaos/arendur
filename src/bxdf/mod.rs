@@ -26,10 +26,16 @@ pub trait Bxdf {
     /// evaluate the function given two normalized directions
     fn evaluate(&self, wo: Vector3f, wi: Vector3f) -> RGBSpectrumf;
 
-    /// evaluate bxdf described as delta distribution
-    /// `u` is uniformly sampled from $[0,1)^2$.
-    /// returns the corresponding outgoing direction, the function value associated,
-    /// and a pdf at the outgoing direction
+    /// Given an outgoing direction `wo`, and a uniform sample
+    /// `u` from $[0,1)^2$, sample an incoming direction `wi`,
+    /// and returns it with function value evaluated as `f(wo, wi)`,
+    /// as well as the pdf associated with the incoming direction.
+    ///
+    /// The default implementation samples the incoming direction
+    /// with a cos-weighted distribution above the hemisphere,
+    /// then returns the corresponding evaluation and pdf with invocations
+    /// to `evaluate` and `pdf`. Bxdfs having better distribution descriptions
+    /// should overwrite the behavior when needed.
     #[inline]
     fn evaluate_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
         let mut wi = sample::sample_cosw_hemisphere(u);
@@ -39,7 +45,7 @@ pub trait Bxdf {
         (spectrum, wi, pdf)
     }
 
-    /// evalute pdf
+    /// evalute pdf given the incoming and outgoing direction
     #[inline]
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
         if wo.z * wi.z > 0.0 as Float {

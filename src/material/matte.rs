@@ -16,6 +16,7 @@ use bxdf::oren_nayar::OrenNayer;
 
 
 /// Matte material
+#[derive(Clone)]
 pub struct MatteMaterial {
     pub kd: Arc<Texture<Texel=RGBSpectrumf>>,
     pub sigma: Arc<Texture<Texel=Float>>,

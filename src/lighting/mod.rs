@@ -11,35 +11,53 @@
 use geometry::prelude::*;
 use spectrum::*;
 use component::Composable;
+use renderer::scene::Scene;
 
 /// A Light
 pub trait Light: Sync+ Send {
     /// return the flags of the light
     fn flags(&self) -> LightFlag;
 
-    /// test if the light is delta
+    /// test if the light has delta distribution
+    #[inline]
     fn is_delta(&self) -> bool {
         self.flags().is_delta()
     }
 
-    // /// get transforms
-    // fn local_parent(&self) -> Matrix4f;
+    /// Given a position and an incoming direction in local coordinates,
+    /// evaluate the light's radiance along that direction. This method
+    /// takes an `RayDifferential` because some light implementations
+    /// might found thouse differentials helpful.
+    ///
+    /// Default implementation yields zero radiance
+    #[inline]
+    fn evaluate_ray(&self, rd: &RayDifferential) -> RGBSpectrumf {
+        self.evaluate(rd.ray.origin(), rd.ray.direction())
+    }
 
-    // /// get transforms
-    // fn parent_local(&self) -> Matrix4f;
-
-    fn evaluate_ray(&self, _rd: &RayDifferential) -> RGBSpectrumf {
+    /// Given a position and an incoming direction in local coordinates,
+    /// evaluate the light's radiance along that direction.
+    ///
+    /// Default implementation yields zero radiance
+    #[inline]
+    fn evaluate(&self, _pos: Point3f, _wi: Vector3f) -> RGBSpectrumf {
         RGBSpectrumf::black()
     }
 
-    /// sample the light at a location in parent frame `posw`, given `sample`
-    fn evaluate_sampled(&self, posw: Point3f, sample: Point2f) -> LightSample;
+    /// Given a `pos` in local frame with a uniform `sample`
+    /// in $[0, 1)$, sample an incoming direction from the light to that
+    /// location, returns the sampling result in a `LightSample`.
+    fn evaluate_sampled(&self, pos: Point3f, sample: Point2f) -> LightSample;
 
     /// returns an estimation of total power of this light
     fn power(&self) -> RGBSpectrumf;
 
-    // /// preporcess with scene components if necessary
-    // pub fn preprocess(&mut self, )
+    /// preporcess with scene components, if necessary.
+    /// renderers should respect this requirement.
+    ///
+    /// Default implementation is noop.
+    #[inline]
+    fn preprocess(&mut self, _s: &Scene) { }
 }
 
 // /// An area light
@@ -65,7 +83,7 @@ impl LightFlag {
     }
 }
 
-/// Results of a light sample
+/// Results of a light's sampling evaluation
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct LightSample {
     /// outgoing radiance

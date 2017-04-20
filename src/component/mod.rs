@@ -36,16 +36,12 @@ pub trait Composable: Sync + Send {
 // }
 
 /// A renderable primitive
-pub trait Primitive: Composable {
-    // TODO: Add arealight accessor
-    fn get_area_light(&self) -> Option<&Light> {
-        None
-    }
+pub trait Primitive: Composable + Light {
+    /// return if the primitive can emit lights
+    fn is_emissive(&self) -> bool;
 
-    // TODO: Add material accessor
+    /// return the material associated with this primitive
     fn get_material(&self) -> &Material;
-
-    // TODO: Add bxdf computer
 }
 
 

@@ -35,6 +35,8 @@ pub trait Camera: Send + Sync {
         &self, posw: Point3f, dirw: Vector3f
     ) -> Option<(RGBSpectrumf, Point2f)>;
 
+    
+
     /// evaludate pdf from the given `posw` and `dirw`, returned as `(pdfpos, pdfdir)`
     fn pdf(&self, posw: Point3f, dirw: Vector3f) -> (Float, Float);
 

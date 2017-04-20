@@ -200,6 +200,20 @@ pub struct DxyInfo {
     pub dvdy: Float,
 }
 
+impl DxyInfo {
+    #[inline]
+    pub fn from_duv(duv: &DuvInfo) -> DxyInfo {
+        DxyInfo{
+            dpdx: duv.dpdu,
+            dpdy: duv.dpdv,
+            dudx: 1. as Float,
+            dudy: 0. as Float,
+            dvdx: 0. as Float,
+            dvdy: 1. as Float,
+        }
+    }
+}
+
 impl Default for DxyInfo {
     #[inline]
     fn default() -> DxyInfo {

@@ -35,11 +35,23 @@ impl<T: Fresnel> Bxdf for SpecularRBxdf<T> {
         BXDF_REFLECTION | BXDF_SPECULAR
     }
 
+    /// evaluate the function given two normalized directions.
+    ///
+    /// As specular surfaces are `totally` specular, this method
+    /// always returns zero factoring 
     #[inline]
     fn evaluate(&self, _wo: Vector3f, _wi: Vector3f) -> RGBSpectrumf {
         RGBSpectrumf::black()
     }
 
+    /// Given an outgoing direction `wo`, and a uniform sample
+    /// `u` from $[0,1)^2$, sample an incoming direction `wi`,
+    /// and returns it with function value evaluated as `f(wo, wi)`,
+    /// as well as the pdf associated with the incoming direction.
+    ///
+    /// Specular surfaces choose the incoming direction wrt `wo` only,
+    /// with pdf always equals to one.
+    /// Evaluation behavior are described by the fresnel factor
     #[inline]
     fn evaluate_sampled(&self, wo: Vector3f, _sample: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
         let r = Vector3f::new(-wo.x, -wo.y, wo.z);

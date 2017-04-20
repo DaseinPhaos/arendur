@@ -38,6 +38,32 @@ pub trait Shape: Sync + Send
 
     /// Return an estimation of the surface area of the shape, in local space
     fn surface_area(&self) -> Float;
+
+    /// Sample the shape, return a point and normal of the sampled point
+    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f);
+
+    /// pdf of a sampled interaction on the surface, defaults to `1/area`
+    #[inline]
+    fn pdf(&self, _p: Point3f, _n: Vector3f) -> Float {
+        1. as Float / self.surface_area()
+    }
+
+    /// Sample the shape wrt some reference point and an associated
+    /// incoming ray. defaults to ignore the references
+    fn sample_wrt(&self, _posref: Point3f, _wi: Vector3f, sample: Point2f) -> (Point3f, Vector3f) {
+        self.sample(sample)
+    }
+
+    /// Pdf wrt some reference point and an associated incoming ray
+    fn pdf_wrt(&self, pos_ref: Point3f, wi: Vector3f) -> Float {
+        let ray = RawRay::from_od(pos_ref, wi);
+        if let Some((_t, si)) = self.intersect_ray(&ray) {
+            (si.basic.pos - pos_ref).magnitude2() /
+            (wi.dot(si.basic.norm).abs()*self.surface_area())
+        } else {
+            0. as Float
+        }
+    }
 }
 
 pub mod sphere;

@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#![feature(specialization)]
+
 #[macro_use]
 extern crate bitflags;
 

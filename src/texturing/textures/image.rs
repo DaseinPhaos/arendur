@@ -116,8 +116,8 @@ impl<T> MipMap<T, RGBSpectrum<T>>
             let mut pyramid = Vec::with_capacity(miplevels as usize);
             
             for i in 0..miplevels {
-                let dx = cmp::min(np2x/(1<<i), 1);
-                let dy = cmp::min(np2y/(1<<i), 1);
+                let dx = cmp::max(np2x/(1<<i), 1);
+                let dy = cmp::max(np2y/(1<<i), 1);
                 let cb: Vec<T> = opened.resize_exact(
                     dx, dy, image::FilterType::Lanczos3
                 ).to_rgb().into_raw().into_iter().map(|x| {
@@ -143,6 +143,19 @@ impl<T> MipMap<T, RGBSpectrum<T>>
         } else {
             <T as ToNorm>::from_norm(f*scale)
         }
+    }
+
+    pub fn save(&self, idx: usize, name: &str) {
+        let buf = self.pyramid[idx].clone();
+        let dim = buf.dimensions();
+        let buf = buf.into_raw();
+        let mut target: Vec<u8> = Vec::with_capacity(buf.len());
+        for i in buf {
+            let inorm = i.to_norm();
+            target.push(<u8 as ToNorm>::from_norm(inorm));
+        }
+        let target = image::RgbImage::from_raw(dim.0, dim.1, target).unwrap();
+        target.save(name).unwrap();
     }
 }
 
@@ -300,7 +313,7 @@ impl<T, TP> MipMap<T, TP>
         // find an level such that $width\times width$ covers about
         // four texels
         let width = width.max(1e-8 as Float).log2();
-        (self.pyramid.len() - 1) as Float + width
+        (self.pyramid.len() - 1) as Float * width
     }
 }
 

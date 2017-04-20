@@ -54,8 +54,10 @@ fn calculate_lighting<S: Sampler>(
         let wo = surinter.basic.wo;
         let dxy = surinter.compute_dxy(&ray);
         if let Some(primitive) = surinter.primitive_hit {
-            if let Some(light) = primitive.get_area_light() {
-                ret += light.evaluate_ray(&ray);
+            if primitive.is_emissive() {
+                ret += primitive.evaluate_ray(&ray);
+                // let rad = primitive.evaluate_ray(&ray);
+                // print!("emission found: {:?}", rad);
             }
             let bsdf = primitive.get_material().compute_scattering(&mut surinter, &dxy, alloc);
             for light in &scene.lights {

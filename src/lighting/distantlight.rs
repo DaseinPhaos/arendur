@@ -59,11 +59,17 @@ impl Light for DistantLight {
         false
     }
 
+    /// Given a position `pos` in local frame and a uniform `sample`
+    /// in $[0, 1)$, sample an incoming direction from the light to that
+    /// location, returns the sampling result in a `LightSample`.
+    ///
+    /// Distant lights assume a uniform direction across the scene,
+    /// so the returned light sample always points to that direction.
     #[inline]
-    fn evaluate_sampled(&self, posw: Point3f, _sample: Point2f) -> LightSample {
+    fn evaluate_sampled(&self, pos: Point3f, _sample: Point2f) -> LightSample {
         let radiance = self.intensity;
-        let pfrom = posw + (-2.0 as Float * self.world_radius) * self.dir;
-        let pto = posw;
+        let pfrom = pos + (-2.0 as Float * self.world_radius) * self.dir;
+        let pto = pos;
         let pdf = 1.0 as Float;
         LightSample{
             radiance: radiance,

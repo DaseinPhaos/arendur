@@ -119,10 +119,12 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
+    #[inline]
     fn bbox_local(&self) -> BBox3f {
         self.bounding()
     }
 
+    #[inline]
     fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
         if let Some(t) = Sphere::intersect_ray_full(self.radius, &ray) {
             let mut p = ray.evaluate(t).to_vec();
@@ -188,7 +190,18 @@ impl Shape for Sphere {
         
     }
 
+    #[inline]
     fn surface_area(&self) -> Float {
         self.phimax * self.radius * (self.zmax - self.zmin)
+    }
+
+    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f) {
+        // sample.x scaled to [0, phimax]
+        let phi = sample.x * self.phimax;
+        // sample.y scaled to [thetamin, thetamax]
+        let theta = sample.y * (self.thetamax - self.thetamin) + self.thetamin;
+        let dir = Sphericalf::new(theta, phi).to_vec();
+        let pos = Point3f::from_vec(dir*self.radius);
+        (pos, dir)
     }
 }

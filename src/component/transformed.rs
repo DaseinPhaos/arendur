@@ -11,23 +11,27 @@
 use geometry::prelude::*;
 use super::*;
 use std::sync::Arc;
+use spectrum::*;
+use renderer::scene::Scene;
+use lighting::{LightFlag, LightSample};
 
 /// Component transformed from another component
+#[derive(Clone, Debug)]
 pub struct TransformedComposable<T> {
-    original: T,
+    inner: T,
     local_parent: Arc<Matrix4f>,
     parent_local: Arc<Matrix4f>,
 }
 
 impl<T: Composable> TransformedComposable<T> {
-    pub fn new(original: T, local_parent: Arc<Matrix4f>, parent_local: Arc<Matrix4f>) -> Self
+    pub fn new(inner: T, local_parent: Arc<Matrix4f>, parent_local: Arc<Matrix4f>) -> Self
     {
         #[cfg(debug)]
         {
             assert_relative_eq(*local_parent *(*parent_local), Matrix4f::identity());
         }
         TransformedComposable{
-            original: original,
+            inner: inner,
             local_parent: local_parent,
             parent_local: parent_local,
         }
@@ -38,15 +42,30 @@ impl<T: Composable> Composable for TransformedComposable<T>
 {
     #[inline]
     fn bbox_parent(&self) -> BBox3f {
-        self.original.bbox_parent().apply_transform(&*self.local_parent)
+        self.inner.bbox_parent().apply_transform(&*self.local_parent)
     }
 
     #[inline]
-    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
+    default fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
         *ray = ray.apply_transform(&*self.parent_local);
-        let mut ret = self.original.intersect_ray(ray);
+        let mut ret = self.inner.intersect_ray(ray);
         if let Some(ret) = ret.as_mut() {
             *ret = ret.apply_transform(&*self.local_parent);
+        }
+        *ray = ray.apply_transform(&*self.local_parent);
+        ret
+    }
+}
+
+impl<T: Primitive> Composable for TransformedComposable<T>
+{
+    #[inline]
+    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
+        *ray = ray.apply_transform(&*self.parent_local);
+        let mut ret = self.inner.intersect_ray(ray);
+        if let Some(ret) = ret.as_mut() {
+            *ret = ret.apply_transform(&*self.local_parent);
+            ret.primitive_hit = Some(self);
         }
         *ray = ray.apply_transform(&*self.local_parent);
         ret
@@ -56,12 +75,49 @@ impl<T: Composable> Composable for TransformedComposable<T>
 impl<T: Primitive> Primitive for TransformedComposable<T>
 {
     #[inline]
-    fn get_area_light(&self) -> Option<&Light> {
-        self.original.get_area_light()
+    fn is_emissive(&self) -> bool {
+        self.inner.is_emissive()
     }
 
     #[inline]
     fn get_material(&self) -> &Material {
-        self.original.get_material()
+        self.inner.get_material()
+    }
+}
+
+impl<T: Primitive> Light for TransformedComposable<T>
+{
+    fn flags(&self) -> LightFlag {
+        self.inner.flags()
+    }
+
+    #[inline]
+    fn evaluate_ray(&self, rd: &RayDifferential) -> RGBSpectrumf {
+        let rd = rd.apply_transform(&self.parent_local);
+        self.inner.evaluate_ray(&rd)
+    }
+
+    #[inline]
+    fn evaluate(&self, pos: Point3f, wi: Vector3f) -> RGBSpectrumf {
+        let pos = self.parent_local.transform_point(pos);
+        let wi = self.parent_local.transform_vector(wi);
+        self.inner.evaluate(pos, wi)
+    }
+
+    #[inline]
+    fn evaluate_sampled(&self, pos: Point3f, sample: Point2f) -> LightSample {
+        let pos = self.parent_local.transform_point(pos);
+        let ls = self.inner.evaluate_sampled(pos, sample);
+        ls.apply_transform(&*self.local_parent)
+    }
+
+    #[inline]
+    fn power(&self) -> RGBSpectrumf {
+        self.inner.power()
+    }
+
+    #[inline]
+    fn preprocess(&mut self, s: &Scene) {
+        self.inner.preprocess(s);
     }
 }

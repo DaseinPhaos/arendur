@@ -38,10 +38,17 @@ impl Light for PointLight {
         true
     }
 
+    /// Given a position `pos` in local frame and a uniform `sample`
+    /// in $[0, 1)$, sample an incoming direction from the light to that
+    /// location, returns the sampling result in a `LightSample`.
+    ///
+    /// Pointlights assume a uniform radiance around the sphere,
+    /// thus the returned light sample always come from the light,
+    /// with a radiance $\propto 1/d^2$. 
     #[inline]
-    fn evaluate_sampled(&self, posw: Point3f, _sample: Point2f) -> LightSample {
+    fn evaluate_sampled(&self, pos: Point3f, _sample: Point2f) -> LightSample {
         let pfrom = self.posw;
-        let pto = posw;
+        let pto = pos;
         let radiance = self.intensity/(pto-pfrom).magnitude2();
         LightSample {
             radiance: radiance,
@@ -144,13 +151,20 @@ impl Light for SpotLight {
         true
     }
 
+    /// Given a position `pos` in local frame and a uniform `sample`
+    /// in $[0, 1)$, sample an incoming direction from the light to that
+    /// location, returns the sampling result in a `LightSample`.
+    ///
+    /// Spotlights assume all points inside its viewing volume would
+    /// be lit by lights from its position. Thus the returned lightsample
+    /// always come from `self.posw` to `pos`, with radiance $\propto 1/d^2$.
     #[inline]
-    fn evaluate_sampled(&self, posw: Point3f, _sample: Point2f) -> LightSample {
+    fn evaluate_sampled(&self, pos: Point3f, _sample: Point2f) -> LightSample {
         let pfrom = self.posw;
-        let pto = posw;
+        let pto = pos;
         let dir = pto - pfrom;
-        let mag = dir.magnitude();
-        let radiance = self.intensity * self.falloff(dir/mag)/mag;
+        let mag2 = dir.magnitude2();
+        let radiance = self.intensity * self.falloff(dir/mag2.sqrt())/mag2;
         LightSample {
             radiance: radiance,
             pdf: 1.0 as Float,

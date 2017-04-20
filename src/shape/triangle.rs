@@ -12,6 +12,7 @@ use geometry::prelude::*;
 // use shape::{Shape, ShapeInfo};
 use super::Shape;
 use std::ops;
+use sample::*;
 
 /// A triangle mesh
 pub struct TriangleMesh {
@@ -255,5 +256,18 @@ impl<'a> Shape for TriangleInstance<'a> {
         let a = self.x() - self.z();
         let b = self.x() - self.z();
         (0.5 as Float) * (a.cross(b).magnitude())
+    }
+
+    #[inline]
+    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f) {
+        let barycentrc = sample_uniform_triangle(sample);
+        let p = barycentrc.x * self.x().to_vec() + barycentrc.y * self.y().to_vec() + (1. as Float - barycentrc.x - barycentrc.y) * self.z().to_vec();
+        let p = Point3f::from_vec(p);
+        let n = if let Some(ref norms) = self.mesh.normals {
+            (norms[self.vidx(0)] * barycentrc.x + norms[self.vidx(1)] * barycentrc.y + norms[self.vidx(2)] * (1. as Float - barycentrc.x - barycentrc.y))
+        } else {
+            (self.y() - self.x()).cross(self.z() - self.x())
+        };
+        (p, n.normalize())
     }
 }
