@@ -100,12 +100,14 @@ impl<T: Copy> Sink<T> {
 
     /// get current dim
     #[inline]
+    #[allow(dead_code)]
     pub fn idim(&self) -> usize {
         self.idim
     }
 
     /// get current sample
     #[inline]
+    #[allow(dead_code)]
     pub fn isample(&self) -> usize {
         self.isample
     }

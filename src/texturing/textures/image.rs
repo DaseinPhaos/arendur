@@ -18,30 +18,50 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 extern crate image;
 use self::image::GenericImage;
-use spectrum::{RGBSpectrum, ToNorm, RGBSpectrumf, Spectrum};
+use self::image::Pixel;
+use spectrum::{RGBSpectrum, ToNorm};
+use num_traits::NumCast;
 
 /// an image texture
-pub struct ImageTexture<TM: BaseNum + image::Primitive, M> {
+pub struct ImageTexture<TM, TP, M>
+    where TM: BaseNum + image::Primitive,
+          TP: Pixel<Subpixel=TM>,
+{
     mapping: M,
-    mipmap: Arc<MipMap<TM>>,
+    mipmap: Arc<MipMap<TM, TP>>,
 }
 
-unsafe impl<T: BaseNum + image::Primitive, M> Sync for ImageTexture<T, M> { }
-unsafe impl<T: BaseNum + image::Primitive, M> Send for ImageTexture<T, M> { }
+// unsafe impl<T: BaseNum + image::Primitive, M> Sync for ImageTexture<T, M> { }
+// unsafe impl<T: BaseNum + image::Primitive, M> Send for ImageTexture<T, M> { }
 
-impl<TM: BaseNum + image::Primitive + ToNorm + 'static, M: Mapping2D> Texture for ImageTexture<TM, M> {
-    type Texel = RGBSpectrumf;
+impl<TM, TP, M> Texture for ImageTexture<TM, TP, M>
+    where TM: BaseNum + image::Primitive + ToNorm + 'static + Send + Sync,
+          TP: Pixel<Subpixel=TM> + Send + Sync + 'static,
+          M: Mapping2D + Send + Sync,
+{
+    type Texel = TP;
 
     #[inline]
     fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel {
         let t2dinfo = self.mapping.map(si, dxy);
-        self.mipmap.look_up(t2dinfo.p, t2dinfo.dpdx, t2dinfo.dpdy).to_rgbf()
+        self.mipmap.look_up(t2dinfo.p, t2dinfo.dpdx, t2dinfo.dpdy)
     }
 }
 
-impl<TM: BaseNum + image::Primitive + ToNorm + 'static, M: Mapping2D> ImageTexture<TM, M> {
-    pub fn new(info: ImageInfo, mapping: M, ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM>>>) -> Option<Self> {
-        // let entry = image_table_u8.entry(info);
+impl<TM, M> ImageTexture<TM, RGBSpectrum<TM>, M>
+    where TM: BaseNum + image::Primitive + ToNorm + 'static,
+          M: Mapping2D,
+{
+    /// Contructing a new texture with image described by `info`.
+    /// The actual image would be looked up from `ref_table`.
+    /// If the `ref_table` don't contain such an image, an attempt
+    /// to construct one would be made. If succeed, the texture would
+    /// be returned.
+    pub fn new(
+        info: ImageInfo,
+        mapping: M, 
+        ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, RGBSpectrum<TM>>>>
+    ) -> Option<Self> {
         let try_strong = match ref_table.entry(info.clone()) {
             Entry::Occupied(oe) => {
                 oe.get().clone().upgrade()
@@ -71,13 +91,16 @@ impl<TM: BaseNum + image::Primitive + ToNorm + 'static, M: Mapping2D> ImageTextu
     }
 }
 
-pub struct MipMap<T: BaseNum + image::Primitive> {
+pub struct MipMap<TM: BaseNum + image::Primitive, TP: Pixel<Subpixel=TM>> {
     info: ImageInfo,
-    pyramid: Vec<image::ImageBuffer<RGBSpectrum<T>, Vec<T>>>,
+    pyramid: Vec<image::ImageBuffer<TP, Vec<TM>>>,
 }
 
-impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
-    fn new(info: ImageInfo) -> Option<MipMap<T>> {
+impl<T> MipMap<T, RGBSpectrum<T>>
+    where T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static,
+{
+    /// load a new mipmap with infomation given by `info`
+    fn new(info: ImageInfo) -> Option<MipMap<T, RGBSpectrum<T>>> {
         // treat `info.name` as filename in this case
         if let Ok(opened) = image::open(info.name.clone()) {
             let (nx, ny) = opened.dimensions();
@@ -121,9 +144,14 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
             <T as ToNorm>::from_norm(f*scale)
         }
     }
+}
 
+impl<T, TP> MipMap<T, TP>
+    where T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static,
+          TP: Pixel<Subpixel=T> + 'static
+{
     #[inline]
-    fn texel(&self, miplevel: usize, p: Point2<usize>) -> RGBSpectrum<T> {
+    fn texel(&self, miplevel: usize, p: Point2<usize>) -> TP {
         let frame = &self.pyramid[miplevel];
         let (dx, dy) = frame.dimensions();
         let (dx, dy) = (dx as usize, dy as usize);
@@ -131,7 +159,8 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
             match self.info.wrapping {
                 WrapMode::Black => {
                     let z = <T as Zero>::zero();
-                    return RGBSpectrum::new(z, z, z);
+                    let slice = [z, z, z, z];
+                    return *TP::from_slice(&slice);
                 },
                 WrapMode::Clamp => {
                     (
@@ -147,7 +176,7 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
         *frame.get_pixel(p.0 as u32, p.1 as u32)
     }
 
-    fn look_up_tri(&self, st: Point2f, width: Float) -> RGBSpectrum<T> {
+    fn look_up_tri(&self, st: Point2f, width: Float) -> TP {
         let level = self.find_level(width);
         if level < 0.0 as Float {
             self.triangle_filter(0, st)
@@ -159,11 +188,11 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
             let delta = level - floor;
             let floorc = self.triangle_filter(flooru, st);
             let ceilc = self.triangle_filter(flooru + 1, st);
-            floorc.approx_lerp(ceilc, delta)
+            approx_lerp(floorc, &ceilc, delta)
         }
     }
 
-    fn triangle_filter(&self, miplevel: usize, st: Point2f) -> RGBSpectrum<T> {
+    fn triangle_filter(&self, miplevel: usize, st: Point2f) -> TP {
         let (nx, ny) = self.pyramid[miplevel].dimensions();
         let s = st.x * nx as Float - 0.5 as Float;
         let t = st.y * ny as Float - 0.5 as Float;
@@ -172,14 +201,19 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
         let ds = s - s.floor();
         let dt = t - t.floor();
         let one = 1.0 as Float;
-        let ret = (one - ds) * (one - dt) * self.texel(miplevel, Point2::new(s0, t0)).to_rgbf() +
-        (one - ds) * dt * self.texel(miplevel, Point2::new(s0, t0 + 1)).to_rgbf() +
-        ds * (one - dt) * self.texel(miplevel, Point2::new(s0+1, t0)).to_rgbf() +
-        ds * dt * self.texel(miplevel, Point2::new(s0+1, t0+1)).to_rgbf();
-        RGBSpectrum::from_rgbf(ret)
+        add_two(
+            add_two(
+                mul_float(self.texel(miplevel, Point2::new(s0, t0)), (one - ds) * (one - dt)),
+                &mul_float(self.texel(miplevel, Point2::new(s0, t0 + 1)), (one - ds) * dt)
+            ),
+            &add_two(
+                mul_float(self.texel(miplevel, Point2::new(s0+1, t0)), ds * (one - dt)),
+                &mul_float(self.texel(miplevel, Point2::new(s0+1, t0+1)), ds * dt)
+            )
+        )
     }
 
-    fn look_up(&self, st: Point2f, dst0: Vector2f, dst1: Vector2f) -> RGBSpectrum<T> {
+    fn look_up(&self, st: Point2f, dst0: Vector2f, dst1: Vector2f) -> TP {
         if self.info.trilinear {
             let width = dst0.x.max(dst0.y).max(dst1.x).max(dst1.y);
             self.look_up_tri(st, width)
@@ -205,12 +239,12 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
                 let level = floor as usize;
                 let floorc = self.ewa_filter(level, st, dstmin, dstmaj);
                 let ceilc = self.ewa_filter(level + 1, st, dstmin, dstmaj);
-                floorc.approx_lerp(ceilc, delta)
+                approx_lerp(floorc, &ceilc, delta)
             }
         }
     }
 
-    fn ewa_filter(&self, miplevel: usize, st: Point2f, dstmin: Vector2f, dstmaj: Vector2f) -> RGBSpectrum<T> {
+    fn ewa_filter(&self, miplevel: usize, st: Point2f, dstmin: Vector2f, dstmaj: Vector2f) -> TP {
         let (nx, ny) = self.pyramid[miplevel].dimensions();
         let (nxf, nyf) = (nx as Float, ny as Float);
         let s = st.x * nxf - 0.5 as Float;
@@ -230,7 +264,7 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
         c *= inv_f;
 
         // compute bounding box
-        let det = -b * b + 4 as Float * a * c;
+        let det = -b * b + 4. as Float * a * c;
         let inv2_det = 1.0 as Float / det * 2.0 as Float;
         let usqrt = (det*c).sqrt();
         let vsqrt = (det*a).sqrt();
@@ -239,7 +273,9 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
         let t0 = (t - inv2_det * vsqrt).ceil() as usize;
         let t1 = (t + inv2_det * vsqrt).ceil() as usize;
 
-        let mut sum = RGBSpectrumf::black();
+        let z = <T as Zero>::zero();
+        let slice = [z, z, z, z];
+        let mut sum = *TP::from_slice(&slice);
         let mut sumwt = 0.0 as Float;
         for it in t0..t1 {
             let tt = it as Float - s;
@@ -250,12 +286,13 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
                     let idx = (square_radius * WEIGHT_LUT_SIZE as Float) as usize;
                     let idx = cmp::min(idx, WEIGHT_LUT_SIZE - 1);
                     let weight = WEIGHT_LUT[idx];
-                    sum += self.texel(miplevel, Point2::new(is, it)).to_rgbf() * weight;
+                    let to_add = mul_float(self.texel(miplevel, Point2::new(is, it)), weight);
+                    sum.apply2(&to_add, |a, b| a+b);
                     sumwt += weight;
                 }
             }
         }
-        RGBSpectrum::from_rgbf(sum/sumwt)
+        mul_float(sum, 1.0 as Float / sumwt)
     }
 
     #[inline]
@@ -265,9 +302,40 @@ impl<T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static> MipMap<T> {
         let width = width.max(1e-8 as Float).log2();
         (self.pyramid.len() - 1) as Float + width
     }
-
 }
 
+#[inline]
+fn approx_lerp<TM, TP>(pix0: TP, pix1: &TP, t: Float) -> TP
+    where TP: Pixel<Subpixel=TM>,
+          TM: BaseNum + image::Primitive + Copy,
+{
+    pix0.map2(pix1, |a, b| {
+        let a: Float = <Float as NumCast>::from(a).unwrap();
+        let b: Float = <Float as NumCast>::from(b).unwrap();
+        <TM as NumCast>::from(a*(1.0 as Float - t) + b * t).unwrap()
+    })
+}
+
+#[inline]
+fn mul_float<TM, TP>(pix: TP, f: Float) -> TP
+    where TP: Pixel<Subpixel=TM>,
+          TM: BaseNum + image::Primitive + Copy,
+{
+    pix.map(|a| {
+        let a : Float = <Float as NumCast>::from(a).unwrap();
+        <TM as NumCast>::from(a*f).unwrap()
+    })   
+}
+
+#[inline]
+fn add_two<TM, TP>(pix0: TP, pix1: &TP) -> TP 
+    where TP: Pixel<Subpixel=TM>,
+          TM: BaseNum + image::Primitive + Copy,
+{
+    pix0.map2(&pix1, |a, b| a+b)
+}
+
+/// Information abount an image
 #[derive(PartialEq, Clone)]
 pub struct ImageInfo {
     pub name: String,
@@ -294,13 +362,19 @@ impl Hash for ImageInfo {
 
 impl Eq for ImageInfo { }
 
+/// Wrapping mode when coordinates out of bound
 #[derive(Hash, Eq, PartialEq, Copy, Clone)]
 pub enum WrapMode {
+    /// repeat the texture again
     Repeat,
+    /// return black texel
     Black,
+    /// clamp to the boundary texel 
     Clamp,
 }
 
+// TODO:
+#[allow(dead_code)]
 fn gamma_correct(v: Float) -> Float {
     if v <= 0.0031308 as Float {
         12.92 as Float * v
@@ -316,8 +390,6 @@ fn inverse_gamma_correct(v: Float) -> Float {
         ((1.0 as Float / 1.055 as Float) * v).powf(2.4 as Float)
     }
 }
-
-// static mut image_arena: HashMap<ImageInfo, Rc<& MipMap>>
 
 const WEIGHT_LUT_SIZE: usize = 128;
 
