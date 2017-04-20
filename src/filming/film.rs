@@ -39,7 +39,7 @@ pub struct Film {
     crop_window: BBox2<isize>,
     filter: Arc<Filter>,
     filter_radius: Vector2f,
-    inv_filter_radius: Vector2f,
+    // inv_filter_radius: Vector2f,
 }
 
 impl Film {
@@ -57,16 +57,16 @@ impl Film {
             )
         );
         let filter_radius = filter.radius();
-        let inv_filter_radius = Vector2f::new(
-            1.0 as Float / filter_radius.x,
-            1.0 as Float / filter_radius.y,
-        );
+        // let inv_filter_radius = Vector2f::new(
+        //     1.0 as Float / filter_radius.x,
+        //     1.0 as Float / filter_radius.y,
+        // );
         Film{
             resolution: resolution,
             crop_window: crop_window,
             filter: filter,
             filter_radius: filter_radius,
-            inv_filter_radius: inv_filter_radius,
+            // inv_filter_radius: inv_filter_radius,
         }
     }
 
@@ -115,7 +115,7 @@ impl Film {
                 ret.push(FilmTile{
                     filter: &*self.filter,
                     filter_radius: self.filter_radius,
-                    inv_filter_radius: self.inv_filter_radius,
+                    // inv_filter_radius: self.inv_filter_radius,
                     sink: BoundedSink2D::with_value(Default::default(), bbox),
                 })
             }
@@ -142,6 +142,12 @@ impl Film {
     #[inline]
     pub fn resolutionf(&self) -> Vector2f {
         self.resolution.to_vec().cast()
+    }
+
+    /// get resolution
+    #[inline]
+    pub fn resolution(&self) -> Point2<usize> {
+        self.resolution
     }
 }
 
@@ -231,7 +237,7 @@ impl<S> BoundedSink2D<S> {
 pub struct FilmTile<'a, S> {
     filter: &'a Filter,
     filter_radius: Vector2f,
-    inv_filter_radius: Vector2f,
+    // inv_filter_radius: Vector2f,
     sink: BoundedSink2D<TilePixel<S>>,
 }
 

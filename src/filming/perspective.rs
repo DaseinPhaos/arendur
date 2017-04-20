@@ -12,6 +12,7 @@ use geometry::prelude::*;
 use super::{Camera, SampleInfo};
 use super::projective::ProjCameraInfo;
 use super::film::Film;
+use spectrum::RGBSpectrumf;
 
 /// A perspective camera
 pub struct PerspecCam {
@@ -23,6 +24,7 @@ pub struct PerspecCam {
     /// lens_radius, focal_distance; if presented
     lens: Option<(Float, Float)>,
     film: Film,
+    area: Float,
 }
 
 impl PerspecCam {
@@ -37,11 +39,22 @@ impl PerspecCam {
         film: Film
     ) -> PerspecCam {
         let parent_view = view_parent.inverse_transform().expect("matrix inversion failure");
+        let resolution = film.resolutionf();
         let proj_info = ProjCameraInfo::new(
             PerspecCam::perspective_transform(fov, znear, zfar),
-            screen,
-            film.resolutionf(),
+            screen, resolution
         );
+        
+        let mut pview_min = proj_info.raster_view.transform_point(
+            Point3f::new(0. as Float, 0. as Float, 0. as Float)
+        );
+        pview_min /= pview_min.z;
+        let mut pview_max = proj_info.raster_view.transform_point(
+            Point3f::new(resolution.x, resolution.y, 0. as Float)
+        );
+        pview_max /= pview_max.z;
+        let area = (pview_max.x - pview_min.x)*(pview_max.y - pview_min.y);
+
         let or2v = proj_info.raster_view.transform_point(
             Point3f::new(1.0 as Float, 0.0 as Float, 0.0 as Float)
         );
@@ -59,6 +72,7 @@ impl PerspecCam {
             dy: dy,
             lens: lens,
             film: film,
+            area: area,
         }
     }
 
@@ -150,5 +164,73 @@ impl Camera for PerspecCam {
     #[inline]
     fn get_film_mut(&mut self) -> &mut Film {
         &mut self.film
+    }
+
+    fn evaluate_importance(
+        &self, pos: Point3f, dir: Vector3f
+    ) -> Option<(RGBSpectrumf, Point2f)> {
+        let p2v = self.parent_view;
+        let dir_view = p2v.transform_vector(dir);
+        let costheta = dir_view.z;
+        if costheta <= 0. as Float { return None; }
+        let focus_t = if let Some(lens) = self.lens {
+            lens.1 / costheta
+        } else {
+            1. as Float / costheta
+        };
+        let pos_view = p2v.transform_point(pos);
+        let focus_view = pos_view + dir_view * focus_t;
+        let p_raster = (
+            self.proj_info.screen_raster*self.proj_info.view_screen
+        ).transform_point(focus_view);
+        let p_raster = Point2::new(p_raster.x, p_raster.y);
+        
+        let bound: BBox2<isize> = BBox2::new(Point2::new(0, 0), self.film.resolution().cast());
+        if !bound.contain_lb(p_raster.cast()) { return None; }
+
+        let costheta2 = costheta * costheta;
+        let lens_area = if let Some(lens) = self.lens {
+            float::pi() * lens.0 * lens.0
+        } else {
+            1. as Float
+        };
+        let importance = 1. as Float / (self.area * lens_area * costheta2 * costheta2);
+        Some((
+            RGBSpectrumf::new(importance, importance, importance),
+            p_raster
+        ))
+    }
+
+    fn pdf(&self, pos: Point3f, dir: Vector3f) -> (Float, Float) {
+        let ret = (0. as Float, 0. as Float);
+        let p2v = self.parent_view;
+        let dir_view = p2v.transform_vector(dir);
+        let costheta = dir_view.z;
+        if costheta <= 0. as Float { return ret; }
+        let focus_t = if let Some(lens) = self.lens {
+            lens.1 / costheta
+        } else {
+            1. as Float / costheta
+        };
+        let pos_view = p2v.transform_point(pos);
+        let focus_view = pos_view + dir_view * focus_t;
+        let p_raster = (
+            self.proj_info.screen_raster*self.proj_info.view_screen
+        ).transform_point(focus_view);
+        let p_raster = Point2::new(p_raster.x, p_raster.y);
+        
+        let bound: BBox2<isize> = BBox2::new(Point2::new(0, 0), self.film.resolution().cast());
+        if !bound.contain_lb(p_raster.cast()) { return ret; }
+
+        let lens_area = if let Some(lens) = self.lens {
+            float::pi() * lens.0 * lens.0
+        } else {
+            1. as Float
+        };
+
+        (
+            1. as Float/lens_area, // pdfpos
+            1. as Float/(self.area * costheta * costheta * costheta) // pdfdir
+        )
     }
 }

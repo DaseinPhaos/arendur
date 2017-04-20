@@ -10,6 +10,7 @@
 
 use geometry::prelude::*;
 use self::film::Film;
+use spectrum::RGBSpectrumf;
 
 /// Samples for camera to generate rays.
 #[derive(Copy, Clone, PartialEq)]
@@ -28,9 +29,14 @@ pub trait Camera: Send + Sync {
         self.parent_to_view().inverse_transform().expect("matrix inversion failure")
     }
 
-    // /// view to NDC
-    // /// NDC is defined as $[0, 1]\times [0, 1]\times [0, 1]$
-    // fn view_to_ndc(&self) -> Matrix4f;
+    /// evaluate importance, given `posw` and `dirw` of a camera ray
+    /// returns the importance and the raster position of the ray
+    fn evaluate_importance(
+        &self, posw: Point3f, dirw: Vector3f
+    ) -> Option<(RGBSpectrumf, Point2f)>;
+
+    /// evaludate pdf from the given `posw` and `dirw`, returned as `(pdfpos, pdfdir)`
+    fn pdf(&self, posw: Point3f, dirw: Vector3f) -> (Float, Float);
 
     /// generate a ray based on sample info
     fn generate_ray(&self, sample_info: SampleInfo) -> RawRay;

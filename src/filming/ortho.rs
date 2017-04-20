@@ -12,6 +12,7 @@ use geometry::prelude::*;
 use super::{Camera, SampleInfo};
 use super::projective::ProjCameraInfo;
 use super::film::Film;
+use spectrum::RGBSpectrumf;
 
 /// An orthographic camera
 pub struct OrthoCam {
@@ -72,6 +73,76 @@ impl Camera for OrthoCam {
 
     fn view_to_parent(&self) -> Matrix4f {
         self.view_parent
+    }
+
+    fn evaluate_importance(
+        &self, pos: Point3f, dir: Vector3f
+    ) -> Option<(RGBSpectrumf, Point2f)> {
+        let p2v = self.parent_view;
+        let dir_view = p2v.transform_vector(dir);
+        let costheta = dir_view.z;
+        if !relative_eq!(costheta, 1. as Float) { return None; }
+
+        let focus_t = if let Some(lens) = self.lens {
+            lens.1 / costheta
+        } else {
+            1. as Float/costheta
+        };
+        let pos_view = p2v.transform_point(pos);
+        let focus_view = pos_view + focus_t * dir_view;
+        let p_raster = (
+            self.proj_info.screen_raster*self.proj_info.view_screen
+        ).transform_point(focus_view);
+        let p_raster = Point2::new(p_raster.x, p_raster.y);
+        
+        let bound: BBox2<isize> = BBox2::new(Point2::new(0, 0), self.film.resolution().cast());
+        if !bound.contain_lb(p_raster.cast()) { return None; }
+
+        let lens_area = if let Some(lens) = self.lens {
+            float::pi() * lens.0 * lens.0
+        } else {
+            1. as Float
+        };
+        let importance = 1. as Float / lens_area;
+        Some((
+            RGBSpectrumf::new(importance, importance, importance),
+            Point2f::new(p_raster.x, p_raster.y)
+        ))
+
+    }
+
+    fn pdf(&self, pos: Point3f, dir: Vector3f) -> (Float, Float) {
+        let ret = (0. as Float, 0. as Float);
+        let p2v = self.parent_view;
+        let dir_view = p2v.transform_vector(dir);
+        let costheta = dir_view.z;
+        if !relative_eq!(costheta, 1. as Float) { return ret; }
+
+        let focus_t = if let Some(lens) = self.lens {
+            lens.1 / costheta
+        } else {
+            1. as Float/costheta
+        };
+        
+        let pos_view = p2v.transform_point(pos);
+        let focus_view = pos_view + focus_t * dir_view;
+        let p_raster = (
+            self.proj_info.screen_raster*self.proj_info.view_screen
+        ).transform_point(focus_view);
+        let p_raster = Point2::new(p_raster.x, p_raster.y);
+        
+        let bound: BBox2<isize> = BBox2::new(Point2::new(0, 0), self.film.resolution().cast());
+        if !bound.contain_lb(p_raster.cast()) { return ret; }
+
+        let lens_area = if let Some(lens) = self.lens {
+            float::pi() * lens.0 * lens.0
+        } else {
+            1. as Float
+        };
+        (
+            1. as Float / lens_area, // pdfpos
+            1. as Float, // pdfdir
+        )
     }
 
     fn generate_ray(&self, sample_info: SampleInfo) -> RawRay {
