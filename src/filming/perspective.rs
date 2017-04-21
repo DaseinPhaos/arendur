@@ -9,10 +9,11 @@
 //! defines a perspective camera
 
 use geometry::prelude::*;
-use super::{Camera, SampleInfo};
+use super::{Camera, SampleInfo, ImportanceSample};
 use super::projective::ProjCameraInfo;
 use super::film::Film;
-use spectrum::RGBSpectrumf;
+use spectrum::{RGBSpectrumf, Spectrum};
+use sample;
 
 /// A perspective camera
 pub struct PerspecCam {
@@ -103,7 +104,7 @@ impl Camera for PerspecCam {
         self.view_parent
     }
 
-    fn generate_ray(&self, sample_info: SampleInfo) -> RawRay {
+    fn generate_path(&self, sample_info: SampleInfo) -> RawRay {
         let pfilm = Point3f::new(sample_info.pfilm.x, sample_info.pfilm.y, 0.0 as Float);
         let pview = self.proj_info.raster_view.transform_point(pfilm);
         let mut ray = RawRay::from_od(Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float), pview.to_vec().normalize());
@@ -111,8 +112,7 @@ impl Camera for PerspecCam {
         if let Some((r, d)) = self.lens {
             debug_assert!(r>0.0 as Float);
             debug_assert!(d>0.0 as Float);
-            // FIXME: should be disk samples
-            let plens = sample_info.plens;
+            let plens = r * sample::sample_concentric_disk(sample_info.plens);
             let ft = d/ray.direction().z;
             let pfocus = ray.evaluate(ft);
             let new_origin = Point3f::new(plens.x, plens.y, 0.0 as Float);
@@ -125,7 +125,7 @@ impl Camera for PerspecCam {
         self.view_parent.transform_ray(&ray)
     }
 
-    fn generate_ray_differential(&self, sample_info: SampleInfo) -> RayDifferential {
+    fn generate_path_differential(&self, sample_info: SampleInfo) -> RayDifferential {
         let pfilm = Point3f::new(sample_info.pfilm.x, sample_info.pfilm.y, 0.0 as Float);
         let pview = self.proj_info.raster_view.transform_point(pfilm);
         let mut ray = RawRay::from_od(
@@ -136,8 +136,7 @@ impl Camera for PerspecCam {
         if let Some((r, d)) = self.lens {
             debug_assert!(r>0.0 as Float);
             debug_assert!(d>0.0 as Float);
-            // FIXME: should be disk samples
-            let plens = sample_info.plens;
+            let plens = r * sample::sample_concentric_disk(sample_info.plens);
             let ft = d/ray.direction().z;
             let pfocus = ray.evaluate(ft);
             let new_origin = Point3f::new(plens.x, plens.y, 0.0 as Float);
@@ -199,6 +198,42 @@ impl Camera for PerspecCam {
             RGBSpectrumf::new(importance, importance, importance),
             p_raster
         ))
+    }
+
+    fn evaluate_importance_sampled(
+        &self, posw: Point3f, sample: Point2f
+    ) -> ImportanceSample {
+        let plens = if let Some((r, _)) = self.lens {
+            r* sample::sample_concentric_disk(sample)
+        } else {
+            Point2f::new(0. as Float, 0. as Float)
+        };
+        let pfrom = self.view_parent.transform_point(
+            Point3f::new(plens.x, plens.y, 0. as Float)
+        );
+        let pto = posw;
+        let mut dir = pfrom - pto;
+        let dist2 = dir.magnitude2();
+        dir /= dist2.sqrt();
+        let importance = if let Some((i, _)) = self.evaluate_importance(pto, -dir) {
+            i
+        } else {
+            RGBSpectrumf::black()
+        };
+        let pdf = if let Some((r, _)) = self.lens {
+            let norm = self.view_parent.transform_vector(
+                Vector3f::new(0. as Float, 0. as Float, 1. as Float)
+            );
+            dist2 / (dir.dot(norm).abs()*r*r*float::pi())
+        } else {
+            1. as Float
+        };
+        ImportanceSample{
+            radiance: importance,
+            pdf: pdf,
+            pfrom: pfrom,
+            pto: posw,
+        }
     }
 
     fn pdf(&self, pos: Point3f, dir: Vector3f) -> (Float, Float) {

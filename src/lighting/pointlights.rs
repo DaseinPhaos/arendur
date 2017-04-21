@@ -10,6 +10,7 @@
 
 use super::*;
 use cgmath::Quaternion;
+use sample;
 
 /// An isotropic point light emitting same amount of light in all directions
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -58,7 +59,24 @@ impl Light for PointLight {
         }
     }
 
-    /// returns an estimation of total power of this light
+    #[inline]
+    fn generate_path(&self, samples: SampleInfo) -> PathInfo {
+        let dir = sample::sample_uniform_sphere(samples.pfilm);
+        let ray = RawRay::from_od(self.posw, dir);
+
+        PathInfo{
+            ray: ray,
+            normal: dir,
+            pdfpos: 1. as Float,
+            pdfdir: sample::pdf_uniform_sphere(),
+        }
+    }
+
+    #[inline]
+    fn pdf(&self, _pos: Point3f, _dir: Vector3f, _normal: Vector3f) -> (Float, Float) {
+        (0. as Float, sample::pdf_uniform_sphere())
+    }
+
     fn power(&self) -> RGBSpectrumf {
         self.intensity * (float::pi() * 4.0 as Float)
     }
@@ -173,7 +191,32 @@ impl Light for SpotLight {
         }
     }
 
-    /// returns an estimation of total power of this light
+    #[inline]
+    fn generate_path(&self, samples: SampleInfo) -> PathInfo {
+        let dir = sample::sample_uniform_cone(samples.pfilm, self.cost);
+        let ray = RawRay::from_od(self.posw, dir);
+
+        PathInfo{
+            ray: ray,
+            // TODO: double check if the direction should be the main ray's direction
+            normal: dir,
+            pdfpos: 1. as Float,
+            pdfdir: sample::pdf_uniform_cone(self.cost),
+        }
+    }
+
+    #[inline]
+    fn pdf(&self, _pos: Point3f, dir: Vector3f, _normal: Vector3f) -> (Float, Float) {
+        let costheta = normal::cos_theta(dir);
+        let pdfdir = if costheta >= self.cost {
+            sample::pdf_uniform_cone(self.cost)
+        } else {
+            0. as Float
+        };
+        (0. as Float, pdfdir)
+    }
+
+    #[inline]
     fn power(&self) -> RGBSpectrumf {
         self.intensity * (float::pi() * 2.0 as Float) * (
             1.0 as Float - 0.5 as Float * (self.cosf - self.cost)

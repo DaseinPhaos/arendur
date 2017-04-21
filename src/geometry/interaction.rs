@@ -128,12 +128,6 @@ impl<'b> SurfaceInteraction<'b> {
         // FIXME: should update according to more cretiarias
         let mut norm = duv.dpdu.cross(duv.dpdv).normalize();
 
-        // if let Some(shape_info) = self.shape_info {
-        //     if shape_info.reverse_orientation ^ shape_info.swap_handedness {
-        //         norm = -norm;
-        //     }
-        // }
-
         if self.basic.norm.dot(norm) < (0.0 as Float) {
             if orient_norm_by_shading {
                 norm = -norm;

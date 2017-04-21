@@ -187,4 +187,16 @@ pub mod normal {
     pub fn reflect(wo: Vector3f, n: Vector3f) -> Vector3f {
         -wo + 2.0 as Float * wo.dot(n) * n
     }
+
+    /// given `e1`, returns `e2` and `e3` that forms a basis
+    #[inline]
+    pub fn get_basis_from(dir: Vector3f) -> (Vector3f, Vector3f) {
+        let mut up = Vector3f::new(0. as Float, 0. as Float, 1. as Float);
+        if relative_eq!(up, dir) {
+            up = Vector3f::new(0. as Float, 1. as Float, 0. as Float);
+        };
+        let u = up.cross(dir).normalize();
+        let v = dir.cross(u).normalize();
+        (u, v)
+    }
 }

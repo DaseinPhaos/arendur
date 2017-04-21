@@ -9,10 +9,11 @@
 //! defines an orthographic camera
 
 use geometry::prelude::*;
-use super::{Camera, SampleInfo};
+use super::{Camera, SampleInfo, ImportanceSample};
 use super::projective::ProjCameraInfo;
 use super::film::Film;
-use spectrum::RGBSpectrumf;
+use spectrum::{RGBSpectrumf, Spectrum};
+use sample;
 
 /// An orthographic camera
 pub struct OrthoCam {
@@ -111,6 +112,39 @@ impl Camera for OrthoCam {
 
     }
 
+        fn evaluate_importance_sampled(
+        &self, posw: Point3f, _sample: Point2f
+    ) -> ImportanceSample {
+        // FIXME: account for lens distortion
+        let norm = self.view_parent.transform_vector(
+            Vector3f::new(0. as Float, 0. as Float, 1. as Float)
+        );
+        let pfrom = self.parent_view.transform_point(posw);
+        let pfrom = Point3f::new(pfrom.x, pfrom.y, 0. as Float);
+        let pfrom = self.view_parent.transform_point(pfrom);
+
+        let pto = posw;
+
+        let dist2 = norm.magnitude2();
+        let dir = norm/dist2.sqrt();
+        let importance = if let Some((i, _)) = self.evaluate_importance(pto, -dir) {
+            i
+        } else {
+            RGBSpectrumf::black()
+        };
+        let pdf = if let Some((r, _)) = self.lens {
+            dist2 / (r*r*float::pi())
+        } else {
+            1. as Float
+        };
+        ImportanceSample{
+            radiance: importance,
+            pdf: pdf,
+            pfrom: pfrom,
+            pto: posw,
+        }
+    }
+
     fn pdf(&self, pos: Point3f, dir: Vector3f) -> (Float, Float) {
         let ret = (0. as Float, 0. as Float);
         let p2v = self.parent_view;
@@ -145,15 +179,14 @@ impl Camera for OrthoCam {
         )
     }
 
-    fn generate_ray(&self, sample_info: SampleInfo) -> RawRay {
+    fn generate_path(&self, sample_info: SampleInfo) -> RawRay {
         let pfilm = Point3f::new(sample_info.pfilm.x, sample_info.pfilm.y, 0.0 as Float);
         let pview = self.proj_info.raster_view.transform_point(pfilm);
         let mut ray = RawRay::from_od(pview, Vector3f::new(0.0 as Float, 0.0 as Float, 1.0 as Float));
         if let Some((r, d)) = self.lens {
             debug_assert!(r>0.0 as Float);
             debug_assert!(d>0.0 as Float);
-            // FIXME: should be disk samples
-            let plens = sample_info.plens;
+            let plens = r * sample::sample_concentric_disk(sample_info.plens);
             let ft = d/ray.direction().z;
             let pfocus = ray.evaluate(ft);
             let new_origin = Point3f::new(plens.x, plens.y, 0.0 as Float);
@@ -166,7 +199,7 @@ impl Camera for OrthoCam {
         self.view_parent.transform_ray(&ray)
     }
 
-    fn generate_ray_differential(&self, sample_info: SampleInfo) -> RayDifferential {
+    fn generate_path_differential(&self, sample_info: SampleInfo) -> RayDifferential {
         let pfilm = Point3f::new(sample_info.pfilm.x, sample_info.pfilm.y, 0.0 as Float);
         let pview = self.proj_info.raster_view.transform_point(pfilm);
         let mut ray = RawRay::from_od(pview, Vector3f::new(0.0 as Float, 0.0 as Float, 1.0 as Float));
@@ -174,8 +207,7 @@ impl Camera for OrthoCam {
         if let Some((r, d)) = self.lens {
             debug_assert!(r>0.0 as Float);
             debug_assert!(d>0.0 as Float);
-            // FIXME: should be disk samples
-            let plens = sample_info.plens;
+            let plens = r * sample::sample_concentric_disk(sample_info.plens);
             let ft = d/ray.direction().z;
             let pfocus = ray.evaluate(ft);
             let new_origin = Point3f::new(plens.x, plens.y, 0.0 as Float);

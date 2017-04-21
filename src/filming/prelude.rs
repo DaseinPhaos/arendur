@@ -10,3 +10,5 @@ pub use super::Camera;
 pub use super::film::Film;
 pub use super::ortho::OrthoCam;
 pub use super::perspective::PerspecCam;
+pub use super::ImportanceSample;
+

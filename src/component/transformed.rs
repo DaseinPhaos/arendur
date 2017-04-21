@@ -13,7 +13,7 @@ use super::*;
 use std::sync::Arc;
 use spectrum::*;
 use renderer::scene::Scene;
-use lighting::{LightFlag, LightSample};
+use lighting::{LightFlag, LightSample, SampleInfo, PathInfo};
 
 /// Component transformed from another component
 #[derive(Clone, Debug)]
@@ -109,6 +109,19 @@ impl<T: Primitive> Light for TransformedComposable<T>
         let pos = self.parent_local.transform_point(pos);
         let ls = self.inner.evaluate_sampled(pos, sample);
         ls.apply_transform(&*self.local_parent)
+    }
+
+    #[inline]
+    fn generate_path(&self, samples: SampleInfo) -> PathInfo {
+        self.inner.generate_path(samples).apply_transform(&*self.local_parent)
+    }
+
+    #[inline]
+    fn pdf(&self, pos: Point3f, dir: Vector3f, norm: Vector3f) -> (Float, Float) {
+        let pos = self.parent_local.transform_point(pos);
+        let dir = self.parent_local.transform_vector(dir);
+        let norm = self.parent_local.transform_norm(norm);
+        self.inner.pdf(pos, dir, norm)
     }
 
     #[inline]

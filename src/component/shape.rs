@@ -14,7 +14,8 @@ use std::sync::Arc;
 use shape::*;
 use texturing::Texture;
 use spectrum::*;
-use lighting::{LightFlag, LightSample, LIGHT_AREA};
+use lighting::{LightFlag, LightSample, LIGHT_AREA, SampleInfo, PathInfo};
+use sample;
 
 /// Represents a primitive made up by a single `Shape`
 #[derive(Clone)]
@@ -121,6 +122,28 @@ impl<S, M> Light for ShapedPrimitive<S, M>
             }
         }
         ret
+    }
+
+    #[inline]
+    fn generate_path(&self, samples: SampleInfo) -> PathInfo {
+        let (pos, norm) = self.shape.sample(samples.pfilm);
+        let (u, v) = normal::get_basis_from(norm);
+        let dir = sample::sample_cosw_hemisphere(samples.plens);
+        let dir = dir.x * u + dir.y * v + dir.z * norm;
+        PathInfo{
+            ray: RawRay::from_od(pos, dir),
+            normal: norm,
+            pdfpos: self.shape.pdf(pos, norm),
+            pdfdir: sample::pdf_cosw_hemisphere(dir.z),
+        }
+    }
+
+    #[inline]
+    fn pdf(&self, pos: Point3f, dir: Vector3f, norm: Vector3f) -> (Float, Float) {
+        (
+            self.shape.pdf(pos, norm),
+            sample::pdf_cosw_hemisphere(norm.dot(dir).abs())
+        )
     }
 
     /// returns an estimation of total power of this light

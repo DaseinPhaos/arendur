@@ -11,6 +11,8 @@
 use geometry::prelude::*;
 use self::film::Film;
 use spectrum::RGBSpectrumf;
+use lighting;
+pub type ImportanceSample = lighting::LightSample;
 
 /// Samples for camera to generate rays.
 #[derive(Copy, Clone, PartialEq)]
@@ -35,26 +37,30 @@ pub trait Camera: Send + Sync {
         &self, posw: Point3f, dirw: Vector3f
     ) -> Option<(RGBSpectrumf, Point2f)>;
 
-    
+    /// Given a `posw` in the world with a uniform `sample` in $[0, 1)$,
+    /// sample an incoming direction from the camera to that `pos`,
+    /// returns the sampling result in a `ImportanceSample`.
+    fn evaluate_importance_sampled(&self, posw: Point3f, sample: Point2f) -> ImportanceSample;
 
-    /// evaludate pdf from the given `posw` and `dirw`, returned as `(pdfpos, pdfdir)`
+    /// evaludate pdf of the possibly importance sample from the
+    /// given `posw` and `dirw`, returned as `(pdfpos, pdfdir)`
     fn pdf(&self, posw: Point3f, dirw: Vector3f) -> (Float, Float);
 
-    /// generate a ray based on sample info
-    fn generate_ray(&self, sample_info: SampleInfo) -> RawRay;
+    /// generate a camera viewing ray based on sample info
+    fn generate_path(&self, sample_info: SampleInfo) -> RawRay;
 
-    /// generate a differential ray based on sample info
-    fn generate_ray_differential(&self, sample_info: SampleInfo) -> RayDifferential {
-        let ray = self.generate_ray(sample_info);
+    /// generate a differential camera viewing ray based on sample info
+    fn generate_path_differential(&self, sample_info: SampleInfo) -> RayDifferential {
+        let ray = self.generate_path(sample_info);
         let ray_dx = {
             let mut sample_info = sample_info;
             sample_info.pfilm.x += 1.0 as Float;
-            self.generate_ray(sample_info)
+            self.generate_path(sample_info)
         };
         let ray_dy = {
             let mut sample_info = sample_info;
             sample_info.pfilm.y += 1.0 as Float;
-            self.generate_ray(sample_info)
+            self.generate_path(sample_info)
         };
 
         RayDifferential{
@@ -63,12 +69,13 @@ pub trait Camera: Send + Sync {
         }
     }
 
-    // TODO: add medium
-
-    // TODO: add film
+    /// get the film associated with this camera
     fn get_film(&self) -> &Film;
 
+    /// get a mutable reference of the film associated with this camera
     fn get_film_mut(&mut self) -> &mut Film;
+
+    // TODO: add medium
 }
 
 mod projective;

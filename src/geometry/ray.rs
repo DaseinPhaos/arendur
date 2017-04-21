@@ -12,6 +12,7 @@ use super::foundamental::*;
 use super::float;
 use super::bbox::BBox3f;
 use std::mem;
+use std::fmt;
 
 /// A semi-infinite line
 pub trait Ray {
@@ -58,7 +59,7 @@ pub trait Ray {
 }
 
 /// A semi-infinite line specified by its `origin` and `dir`ection.
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 #[must_use]
 pub struct RawRay {
     origin: Point3f,
@@ -171,6 +172,12 @@ pub struct ShearingTransformCache {
     perm: Permulation,
     pub neg_o: Vector3f,
     pub shear: Vector3f,
+}
+
+impl fmt::Debug for ShearingTransformCache {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        f.write_str("RST Cache")
+    }
 }
 
 #[derive(Copy, Clone, PartialEq)]

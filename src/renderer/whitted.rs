@@ -97,7 +97,7 @@ impl<S: Sampler> Renderer for WhittedRenderer<S> {
                 sampler.start_pixel(p);
                 loop {
                     let camera_sample_info = sampler.get_camera_sample(p);
-                    let mut ray_differential = self.camera.generate_ray_differential(camera_sample_info);
+                    let mut ray_differential = self.camera.generate_path_differential(camera_sample_info);
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
                     let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0);
                     // if total_randiance != RGBSpectrumf::black() { rc += 1; }

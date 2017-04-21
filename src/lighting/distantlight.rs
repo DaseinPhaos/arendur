@@ -9,6 +9,7 @@
 //! Distant light
 
 use super::*;
+use sample;
 
 /// Distant light
 pub struct DistantLight {
@@ -77,6 +78,30 @@ impl Light for DistantLight {
             pto: pto,
             pdf: pdf,
         }
+    }
+
+    fn generate_path(&self, samples: SampleInfo) -> PathInfo {
+        let (u, v) = normal::get_basis_from(self.dir);
+
+        let pdisk = sample::sample_concentric_disk(samples.pfilm);
+        /// extend accordingly
+        let pdisk = self.world_center + self.world_radius*(pdisk.x * u + pdisk.y * v);
+        let pos = pdisk + self.dir * (-self.world_radius);
+        
+        PathInfo{
+            ray: RawRay::from_od(pos, self.dir),
+            normal: self.dir,
+            pdfpos: 1. as Float / (self.world_radius * self.world_radius * float::pi()),
+            pdfdir: 1. as Float,
+        }
+    }
+
+    #[inline]
+    fn pdf(&self, _pos: Point3f, _dir: Vector3f, _normal: Vector3f) -> (Float, Float) {
+        (
+            1. as Float / (self.world_radius * self.world_radius * float::pi()), 
+            0. as Float
+        )
     }
 
     #[inline]

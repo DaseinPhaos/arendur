@@ -12,6 +12,7 @@ use geometry::prelude::*;
 use spectrum::*;
 use component::Composable;
 use renderer::scene::Scene;
+pub use filming::SampleInfo;
 
 /// A Light
 pub trait Light: Sync+ Send {
@@ -48,6 +49,14 @@ pub trait Light: Sync+ Send {
     /// in $[0, 1)$, sample an incoming direction from the light to that
     /// location, returns the sampling result in a `LightSample`.
     fn evaluate_sampled(&self, pos: Point3f, sample: Point2f) -> LightSample;
+
+    /// Generate a photon path from the light source based on the sample info
+    fn generate_path(&self, samples: SampleInfo) -> PathInfo;
+
+    /// Given position and direction of a photon path, and the light's `normal`
+    /// return its pdfs as `(pdfpos, pdfdir)`
+    fn pdf(&self, pos: Point3f, dir: Vector3f, normal: Vector3f) -> (Float, Float);
+    
 
     /// returns an estimation of total power of this light
     fn power(&self) -> RGBSpectrumf;
@@ -130,7 +139,32 @@ impl LightSample {
     }
 }
 
+/// Information about a photon path
+#[derive(Debug, PartialEq, Copy, Clone)]
+#[must_use]
+pub struct PathInfo {
+    /// originate position and direction of this path
+    pub ray: RawRay,
+    /// light's normal vector
+    pub normal: Vector3f,
+    /// pdf wrt the originate position
+    pub pdfpos: Float,
+    /// pdf wrt the light direction
+    pub pdfdir: Float,
+}
+
+impl PathInfo {
+    #[inline]
+    pub fn apply_transform(&self, t: &Matrix4f) -> Self {
+        PathInfo{
+            ray: self.ray.apply_transform(t),
+            normal: t.transform_norm(self.normal),
+            pdfpos: self.pdfpos,
+            pdfdir: self.pdfdir,
+        }
+    }
+}
+
 pub mod pointlights;
 pub mod distantlight;
-pub mod arealights;
 pub mod prelude;
