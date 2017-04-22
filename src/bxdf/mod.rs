@@ -45,6 +45,30 @@ pub trait Bxdf {
         (spectrum, wi, pdf)
     }
 
+    /// evaluate the function given two normalized directions,
+    /// the particle being traced is camera-ray importance,
+    /// rather than light radiance.
+    ///
+    /// default implementation assumes bxdf have symmetrical scattering 
+    /// properties and just forwards the call to `self.evaluate`
+    #[inline]
+    fn evaluate_importance(&self, wo: Vector3f, wi: Vector3f) -> RGBSpectrumf {
+        self.evaluate(wo, wi)
+    }
+
+    /// Given an outgoing direction `wo`, and a uniform sample
+    /// `u` from $[0,1)^2$, sample an incoming direction `wi`,
+    /// and returns it with function value evaluated as `f(wo, wi)`,
+    /// as well as the pdf associated with the incoming direction.
+    /// The particles being traced is camera-ray importance, rather tan light radiance
+    ///
+    /// default implementation assumes bxdf have symmetrical scattering 
+    /// properties and just forwards the call to `self.evaluate_sampled`
+    #[inline]
+    fn evaluate_importance_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+        self.evaluate_sampled(wo, u)
+    }
+
     /// evalute pdf given the incoming and outgoing direction
     #[inline]
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
@@ -110,5 +134,5 @@ pub mod fresnel;
 pub mod specular;
 pub mod lambertian;
 pub mod oren_nayar;
-
+pub mod prelude;
 // TODO: Add microfacet distribution model

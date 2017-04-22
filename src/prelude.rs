@@ -18,3 +18,4 @@ pub use sample::prelude::*;
 pub use shape::prelude::*;
 pub use spectrum::{RGBSpectrum, RGBSpectrumf, Spectrum};
 pub use texturing::prelude::*;
+pub use bxdf::prelude::*;

@@ -180,6 +180,15 @@ impl<'b> SurfaceInteraction<'b> {
             Default::default()
         }
     }
+
+    #[inline]
+    pub fn is_emissive(&self) -> bool {
+        if let Some(hit) = self.primitive_hit {
+            hit.is_emissive()
+        } else {
+            false
+        }
+    }
 }
 
 /// Partial differential info about some `p(x, y)`, `u(x, y)`, `v(x, y)`
