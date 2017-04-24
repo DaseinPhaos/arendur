@@ -55,6 +55,11 @@ impl<T: Composable> Composable for TransformedComposable<T>
         *ray = ray.apply_transform(&*self.local_parent);
         ret
     }
+
+    #[inline]
+    default fn as_light(&self) -> &Light {
+        unimplemented!();
+    }
 }
 
 impl<T: Primitive> Composable for TransformedComposable<T>
@@ -69,6 +74,11 @@ impl<T: Primitive> Composable for TransformedComposable<T>
         }
         *ray = ray.apply_transform(&*self.local_parent);
         ret
+    }
+
+    #[inline]
+    fn as_light(&self) -> &Light {
+        self
     }
 }
 

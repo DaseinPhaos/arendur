@@ -20,6 +20,7 @@ use rayon::prelude::*;
 use copy_arena::{Allocator, Arena};
 use geometry::prelude::*;
 use std::path::{PathBuf, Path};
+use self::node::Node;
 
 /// A bidirectional path tracing renderer
 pub struct BPTRenderer<S> {
@@ -27,6 +28,8 @@ pub struct BPTRenderer<S> {
     camera: Arc<Camera>,
     path_len: usize,
     path: PathBuf,
+    max_depth: usize,
+    
 }
 
 mod node;

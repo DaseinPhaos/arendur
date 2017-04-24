@@ -14,6 +14,8 @@ use lighting::prelude::*;
 use material::prelude::*;
 use spectrum::{Spectrum, RGBSpectrumf};
 use bxdf::prelude::*;
+use renderer::scene::Scene;
+use std::ptr;
 
 
 pub enum Node<'a> {
@@ -146,11 +148,10 @@ impl<'a> Node<'a> {
         self.convert_density(next, pdf)
     }
 
-    #[inline]
     pub fn pdf_light(&self, next: &Node) -> Float {
         let wi = next.pos() - self.pos();
         let invdist2 = 1. as Float / wi.magnitude2();
-        let wn = wi/invdist2.sqrt();
+        let wn = wi*invdist2.sqrt();
         let mut pdf = match *self {
             Node::Light{light, ref info, ..} => light.pdf(info.pos, wn, info.norm).1,
             Node::Surface{ref si, ..} => {
@@ -169,5 +170,37 @@ impl<'a> Node<'a> {
         pdf * invdist2
     }
 
-    // TODO: pdf_light_origin
+    pub fn pdf_light_origin(&self, scene: &Scene, next: &Node) -> Float {
+        let wi = (next.pos() - self.pos()).normalize();
+        match *self {
+            Node::Light{light, ref info, ..} => {
+                let pdf_pos = light.pdf(info.pos, wi, info.norm).0;
+                let mut pdf_choice = 0. as Float;
+                for (i, l) in scene.lights.iter().enumerate() {
+                    if ptr::eq(light, l.as_ref()) {
+                        pdf_choice = scene.light_distribution.discrete_pdf(i);
+                        break;
+                    }
+                }
+                pdf_pos * pdf_choice
+            }
+            Node::Surface{ref si, ..} => {
+                if let Some(light) = si.primitive_hit {
+                    let pdf_pos = light.pdf(si.basic.pos, wi, si.basic.norm).0;
+                    let mut pdf_choice = 0. as Float;
+                    for (i, l) in scene.area_lights.iter().enumerate() {
+                        // TODO: double check if desirable
+                        if ptr::eq(light.as_light(), l.as_light()) {
+                            pdf_choice = scene.light_distribution.discrete_pdf(i+scene.lights.len());
+                            break;
+                        }
+                    }
+                    pdf_pos * pdf_choice
+                } else {
+                    0. as Float
+                }
+            },
+            _ => 0. as Float,
+        }
+    }
 }

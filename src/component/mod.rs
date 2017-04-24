@@ -28,6 +28,10 @@ pub trait Composable: Sync + Send {
         let mut ray = ray.clone();
         self.intersect_ray(&mut ray).is_some()
     }
+
+    fn as_light(&self) -> &Light {
+        unimplemented!();
+    }
 }
 
 // /// An aggregated renderable entity

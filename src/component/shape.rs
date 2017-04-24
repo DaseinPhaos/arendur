@@ -65,6 +65,11 @@ impl<S, M> Composable for ShapedPrimitive<S, M>
     fn can_intersect(&self, ray: &RawRay) -> bool {
         self.shape.can_intersect(ray)
     }
+
+    #[inline]
+    fn as_light(&self) -> &Light {
+        self
+    }
 }
 
 impl<S, M> Light for ShapedPrimitive<S, M>
