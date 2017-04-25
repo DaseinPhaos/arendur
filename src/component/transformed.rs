@@ -108,10 +108,10 @@ impl<T: Primitive> Light for TransformedComposable<T>
     }
 
     #[inline]
-    fn evaluate(&self, pos: Point3f, wi: Vector3f) -> RGBSpectrumf {
+    fn evaluate_path(&self, pos: Point3f, wi: Vector3f) -> RGBSpectrumf {
         let pos = self.parent_local.transform_point(pos);
         let wi = self.parent_local.transform_vector(wi);
-        self.inner.evaluate(pos, wi)
+        self.inner.evaluate_path(pos, wi)
     }
 
     #[inline]

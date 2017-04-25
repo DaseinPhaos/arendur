@@ -266,6 +266,7 @@ impl Permulation {
 
 /// Ray with differencials
 #[must_use]
+#[derive(Clone)]
 pub struct RayDifferential {
     pub ray: RawRay,
     pub diffs: Option<(RawRay, RawRay)>,
@@ -293,6 +294,15 @@ impl RayDifferential {
             ry.origin = origin + (ry.origin - origin) * s;
             rx.dir = dir + (rx.dir - dir) * s;
             ry.dir = dir + (ry.dir - dir) * s;
+        }
+    }
+}
+
+impl From<RawRay> for RayDifferential {
+    fn from(ray: RawRay) -> RayDifferential {
+        RayDifferential{
+            ray: ray,
+            diffs: None,
         }
     }
 }

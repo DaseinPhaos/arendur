@@ -43,4 +43,13 @@ impl Scene {
             aggregate: aggregate,
         }
     }
+
+    #[inline]
+    pub fn get_light(&self, idx: usize) -> &Light {
+        if idx < self.lights.len() {
+            self.lights[idx].as_ref()
+        } else {
+            self.area_lights[idx-self.lights.len()].as_light()
+        }
+    }
 }

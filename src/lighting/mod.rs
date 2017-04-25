@@ -33,7 +33,7 @@ pub trait Light: Sync+ Send {
     /// Default implementation yields zero radiance
     #[inline]
     fn evaluate_ray(&self, rd: &RayDifferential) -> RGBSpectrumf {
-        self.evaluate(rd.ray.origin(), rd.ray.direction())
+        self.evaluate_path(rd.ray.origin(), rd.ray.direction())
     }
 
     /// Given a position and an incoming direction in local coordinates,
@@ -41,7 +41,7 @@ pub trait Light: Sync+ Send {
     ///
     /// Default implementation yields zero radiance
     #[inline]
-    fn evaluate(&self, _pos: Point3f, _wi: Vector3f) -> RGBSpectrumf {
+    fn evaluate_path(&self, _pos: Point3f, _wi: Vector3f) -> RGBSpectrumf {
         RGBSpectrumf::black()
     }
 
@@ -151,6 +151,8 @@ pub struct PathInfo {
     pub pdfpos: Float,
     /// pdf wrt the light direction
     pub pdfdir: Float,
+    /// radiance
+    pub radiance: RGBSpectrumf,
 }
 
 impl PathInfo {
@@ -161,6 +163,7 @@ impl PathInfo {
             normal: t.transform_norm(self.normal),
             pdfpos: self.pdfpos,
             pdfdir: self.pdfdir,
+            radiance: self.radiance,
         }
     }
 }

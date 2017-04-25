@@ -42,6 +42,15 @@ pub trait Sampler: Clone + Sync + Send
         }
     }
 
+    /// convinient method to sample a light
+    #[inline]
+    fn get_light_sample(&mut self) -> filming::SampleInfo {
+        filming::SampleInfo{
+            pfilm: self.next_2d(),
+            plens: self.next_2d(),
+        }
+    }
+
     /// request `n` samples in place
     /// Default implementation uses succeeding calls to `self.next()`
     /// to fill the `buf`, which might not be ideal

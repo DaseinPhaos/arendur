@@ -115,8 +115,41 @@ impl Film {
                 ret.push(FilmTile{
                     filter: &*self.filter,
                     filter_radius: self.filter_radius,
-                    // inv_filter_radius: self.inv_filter_radius,
+                    bounding: bbox,
                     sink: BoundedSink2D::with_value(Default::default(), bbox),
+                })
+            }
+        }
+        ret
+    }
+
+    /// spawn flat tiles
+    pub fn spawn_flat_tiles<S>(&self, nx: isize, ny: isize) -> Vec<FilmTile<S>>
+        where TilePixel<S>: Clone + Default
+    {
+        assert!(nx > 0);
+        assert!(ny > 0);
+        let extend = self.crop_window.diagonal();
+        let dx = extend.x / nx;
+        let dy = extend.y / ny;
+        let lastx = dx + extend.x % dx;
+        let lasty = dy + extend.y % dy;
+        let mut ret = Vec::with_capacity((nx * ny) as usize);
+        for ix in 0..nx {
+            let cdx = if ix==nx-1 { lastx } else { dx };
+            for iy in 0..ny {
+                let cdy = if iy==ny-1 { lasty } else { dy };
+                let bbox = BBox2::new(
+                    Point2::new(ix*dx, iy*dy),
+                    Point2::new(ix*dx + cdx, iy*dy + cdy),
+                );
+                ret.push(FilmTile{
+                    filter: &*self.filter,
+                    filter_radius: self.filter_radius,
+                    bounding: bbox,
+                    sink: BoundedSink2D::with_value(
+                        Default::default(), self.crop_window
+                    ),
                 })
             }
         }
@@ -237,7 +270,7 @@ impl<S> BoundedSink2D<S> {
 pub struct FilmTile<'a, S> {
     filter: &'a Filter,
     filter_radius: Vector2f,
-    // inv_filter_radius: Vector2f,
+    bounding: BBox2<isize>,
     sink: BoundedSink2D<TilePixel<S>>,
 }
 
@@ -276,7 +309,7 @@ impl<'a, S> FilmTile<'a, S>
 
     /// get the bouding box of this tile
     pub fn bounding(&self) -> BBox2<isize> {
-        self.sink.bounding
+        self.bounding
     }
 }
 

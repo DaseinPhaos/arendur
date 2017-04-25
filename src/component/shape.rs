@@ -89,7 +89,7 @@ impl<S, M> Light for ShapedPrimitive<S, M>
     /// Given a position and an incoming direction in local coordinates,
     /// evaluate the light's radiance along that direction.
     #[inline]
-    fn evaluate(&self, pos: Point3f, wi: Vector3f) -> RGBSpectrumf {
+    fn evaluate_path(&self, pos: Point3f, wi: Vector3f) -> RGBSpectrumf {
         if let Some(ref lp) = self.lighting_profile {
             // match `wi` against surface normal
             let ray = RawRay::from_od(pos, wi);
@@ -140,6 +140,7 @@ impl<S, M> Light for ShapedPrimitive<S, M>
             normal: norm,
             pdfpos: self.shape.pdf(pos, norm),
             pdfdir: sample::pdf_cosw_hemisphere(dir.z),
+            radiance: self.evaluate_path(pos, dir),
         }
     }
 

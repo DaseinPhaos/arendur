@@ -68,7 +68,7 @@ impl DuvInfo {
 }
 
 /// Interaction at some surface denoted as $f(u, v)$
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 #[must_use]
 pub struct SurfaceInteraction<'b> {
     /// Basic information about the interaction

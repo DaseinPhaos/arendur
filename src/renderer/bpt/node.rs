@@ -16,8 +16,9 @@ use spectrum::{Spectrum, RGBSpectrumf};
 use bxdf::prelude::*;
 use renderer::scene::Scene;
 use std::ptr;
+use std::mem;
 
-
+#[derive(Copy, Clone)]
 pub enum Node<'a> {
     Camera{
         camera: &'a Camera,
@@ -203,4 +204,30 @@ impl<'a> Node<'a> {
             _ => 0. as Float,
         }
     }
+
+    #[inline]
+    pub fn get_pdf_mut(&mut self) -> &mut Float {
+        match *self {
+            Node::Camera{ref mut pdf, ..} => pdf,
+            Node::Light{ref mut pdf, ..} => pdf,
+            Node::Surface{ref mut pdf, ..} => pdf,
+            Node::Medium{ref mut pdf, ..} => pdf,
+        }
+    }
+
+    #[inline]
+    pub fn get_pdf_rev_mut(&mut self) -> &mut Float {
+        match *self {
+            Node::Camera{ref mut pdf_reversed, ..} => pdf_reversed,
+            Node::Light{ref mut pdf_reversed, ..} => pdf_reversed,
+            Node::Surface{ref mut pdf_reversed, ..} => pdf_reversed,
+            Node::Medium{ref mut pdf_reversed, ..} => pdf_reversed,
+        }
+    }
+}
+
+impl<'a> Default for Node<'a> {
+    fn default() -> Self {unsafe {
+        mem::uninitialized()
+    }}
 }

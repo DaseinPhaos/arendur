@@ -69,6 +69,7 @@ impl Light for PointLight {
             normal: dir,
             pdfpos: 1. as Float,
             pdfdir: sample::pdf_uniform_sphere(),
+            radiance: self.intensity,
         }
     }
 
@@ -202,6 +203,7 @@ impl Light for SpotLight {
             normal: dir,
             pdfpos: 1. as Float,
             pdfdir: sample::pdf_uniform_cone(self.cost),
+            radiance: self.intensity * self.falloff(dir),
         }
     }
 

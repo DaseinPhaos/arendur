@@ -93,6 +93,7 @@ impl Light for DistantLight {
             normal: self.dir,
             pdfpos: 1. as Float / (self.world_radius * self.world_radius * float::pi()),
             pdfdir: 1. as Float,
+            radiance: self.intensity,
         }
     }
 
