@@ -64,7 +64,7 @@ fn calculate_lighting<S: Sampler>(
                 let lightsample = light.evaluate_sampled(pos, sampler.next_2d());
                 if lightsample.no_effect() { continue; }
                 let wi = lightsample.wi();
-                let bsdfv = bsdf.evaluate(wo, wi, BXDF_ALL);
+                let (bsdfv, _) = bsdf.evaluate(wo, wi, BXDF_ALL);
                 if bsdfv != RGBSpectrumf::black() && !lightsample.occluded(&*scene.aggregate) {
                     let coontribution = bsdfv * lightsample.radiance * wi.dot(norm) / lightsample.pdf;
                     ret += coontribution;

@@ -30,3 +30,7 @@ path = "examples/whitted/main.rs"
 [[example]]
 name = "bpt"
 path = "examples/bpt/main.rs"
+
+[[example]]
+name = "pt"
+path = "examples/pt.rs"

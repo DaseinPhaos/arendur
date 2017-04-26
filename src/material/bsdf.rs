@@ -79,28 +79,31 @@ impl<'a> Bsdf<'a> {
     }
 
     /// evalute this bsdf. vectors given in parent frame
-    pub fn evaluate(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> RGBSpectrumf {
+    pub fn evaluate(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> (RGBSpectrumf, BxdfType) {
         let wo = self.parent_to_local(wow);
         let wi = self.parent_to_local(wiw);
         let is_reflection = wow.dot(self.ng) * wiw.dot(self.ng) > 0.0 as Float;
         let mut ret = RGBSpectrumf::black();
+        let mut rettype = BxdfType::empty();
         for bxdf in self.sink.iter() {
             if bxdf.is(types) && (
                 (is_reflection && (bxdf.kind() & BXDF_REFLECTION == BXDF_REFLECTION))
                 || (!is_reflection && (bxdf.kind() & BXDF_TRANSMISSION == BXDF_TRANSMISSION))
             ) {
                 ret += bxdf.evaluate(wo, wi);
+                rettype.insert(bxdf.kind() & types);
             }
         }
-        ret
+        (ret, rettype)
     }
 
-    pub fn evaluate_sampled(&self, wow: Vector3f, u: Point2f, types: BxdfType) -> (RGBSpectrumf, Vector3f, Float) {
+    pub fn evaluate_sampled(&self, wow: Vector3f, u: Point2f, types: BxdfType) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
         let match_count = self.have_n(types);
         let mut ret = (
             RGBSpectrumf::black(),
             Vector3f::new(0.0 as Float, 1.0 as Float, 0.0 as Float),
-            0.0 as Float
+            0.0 as Float,
+            BxdfType::empty(),
         );
         if match_count == 0 { return ret; }
         
@@ -112,7 +115,7 @@ impl<'a> Bsdf<'a> {
                 // sample the target now
                 let (f, wi, pdf) = bxdf.evaluate_sampled(wo, u);
                 if pdf == 0.0 as Float { return ret; }
-                ret = (f, wi, pdf);
+                ret = (f, wi, pdf, bxdf.kind() & types);
             }
             if bxdf.is(types) { i += 1; }
         }
@@ -133,28 +136,31 @@ impl<'a> Bsdf<'a> {
     }
 
         /// evalute this bsdf. vectors given in parent frame
-    pub fn evaluate_importance(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> RGBSpectrumf {
+    pub fn evaluate_importance(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> (RGBSpectrumf, BxdfType) {
         let wo = self.parent_to_local(wow);
         let wi = self.parent_to_local(wiw);
         let is_reflection = wow.dot(self.ng) * wiw.dot(self.ng) > 0.0 as Float;
         let mut ret = RGBSpectrumf::black();
+        let mut rettype = BxdfType::empty();
         for bxdf in self.sink.iter() {
             if bxdf.is(types) && (
                 (is_reflection && (bxdf.kind() & BXDF_REFLECTION == BXDF_REFLECTION))
                 || (!is_reflection && (bxdf.kind() & BXDF_TRANSMISSION == BXDF_TRANSMISSION))
             ) {
                 ret += bxdf.evaluate_importance(wo, wi);
+                rettype.insert(bxdf.kind() & types);
             }
         }
-        ret
+        (ret, rettype)
     }
 
-    pub fn evaluate_importance_sampled(&self, wow: Vector3f, u: Point2f, types: BxdfType) -> (RGBSpectrumf, Vector3f, Float) {
+    pub fn evaluate_importance_sampled(&self, wow: Vector3f, u: Point2f, types: BxdfType)-> (RGBSpectrumf, Vector3f, Float, BxdfType) {
         let match_count = self.have_n(types);
         let mut ret = (
             RGBSpectrumf::black(),
             Vector3f::new(0.0 as Float, 1.0 as Float, 0.0 as Float),
-            0.0 as Float
+            0.0 as Float,
+            BxdfType::empty(),
         );
         if match_count == 0 { return ret; }
         
@@ -166,7 +172,7 @@ impl<'a> Bsdf<'a> {
                 // sample the target now
                 let (f, wi, pdf) = bxdf.evaluate_importance_sampled(wo, u);
                 if pdf == 0.0 as Float { return ret; }
-                ret = (f, wi, pdf);
+                ret = (f, wi, pdf, bxdf.kind() & types);
             }
             if bxdf.is(types) { i += 1; }
         }

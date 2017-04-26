@@ -121,10 +121,11 @@ impl LightSample {
         let epsilon = Point3f::default_epsilon();
         let epsilon = Vector3f::new(epsilon, epsilon, epsilon);
         let pfrom = self.pfrom + epsilon;
-        // let pto = self.pto + (-epsilon);
+        let pto = self.pto + (-epsilon);
         let mut ray = RawRay::spawn(pfrom, self.pto);
         if let Some(si) = components.intersect_ray(&mut ray) {
-            !relative_eq!(si.basic.pos, self.pto)
+            let dis = si.basic.pos - pfrom;
+            dis.magnitude2() < (pto - pfrom).magnitude2()
         } else {
             false
         }

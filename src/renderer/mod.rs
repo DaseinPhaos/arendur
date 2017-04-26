@@ -19,9 +19,11 @@ pub trait Renderer {
 pub mod scene;
 pub mod whitted;
 pub mod bpt;
+pub mod pt;
 pub mod prelude {
     pub use super::Renderer;
     pub use super::scene::Scene;
     pub use super::whitted::WhittedRenderer;
     pub use super::bpt::BPTRenderer;
+    pub use super::pt::PTRenderer;
 }

@@ -7,13 +7,13 @@
 // except according to those terms.
 
 //! Basic geometric interaction
-
-use super::{RayDifferential, Ray};
+use cgmath::ApproxEq;
+use super::{RayDifferential, Ray, RawRay};
 use super::foundamental::*;
 use super::transform::TransformExt;
 // use shape::ShapeInfo;
 use component::Primitive;
-// use super::float;
+use spectrum::{Spectrum, RGBSpectrumf};
 
 /// Basic information about an interaction
 #[derive(PartialEq, Copy, Clone)]
@@ -188,6 +188,36 @@ impl<'b> SurfaceInteraction<'b> {
         } else {
             false
         }
+    }
+
+    #[inline]
+    pub fn spawn_ray_differential(&self, dir: Vector3f, dxy: Option<&DxyInfo>) -> RayDifferential {
+        let epsilon = Vector3f::default_epsilon();
+        let epsilon = Vector3f::new(epsilon, epsilon, epsilon);
+        let pos = self.basic.pos + epsilon;
+        let ray = RawRay::from_od(pos, dir);
+        let diffs = if let Some(dxy) = dxy {
+            let posdx = pos + dxy.dpdx;
+            let posdy = pos + dxy.dpdy;
+            Some((
+                RawRay::from_od(posdx, dir), RawRay::from_od(posdy, dir) 
+            ))
+        } else {
+            None
+        };
+        RayDifferential{
+            ray: ray, diffs: diffs,
+        }
+    }
+
+    #[inline]
+    pub fn le(&self, dir: Vector3f) -> RGBSpectrumf {
+        if let Some(hit) = self.primitive_hit {
+            if hit.is_emissive() {
+                return hit.evaluate_path(self.basic.pos, dir);
+            }
+        }
+        RGBSpectrumf::black()
     }
 }
 

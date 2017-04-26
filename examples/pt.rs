@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! whitted renderer usage example
+//! path tracing renderer usage example
 
 extern crate arendur;
 extern crate cgmath;
@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 
 fn main() {
-    println!("Whitted example");
+    println!("Path tracing example");
     use std::io;
     let mut s = String::new();
     let _ = io::stdin().read_line(&mut s);
@@ -146,7 +146,7 @@ fn main() {
             )
         )
     );
-    let mut renderer = WhittedRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testwhitted900.png");
+    let mut renderer = PTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt900.png", 8);
 
     renderer.render(&scene);
 }

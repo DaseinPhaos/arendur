@@ -145,7 +145,7 @@ fn main() {
             )
         )
     );
-    let mut renderer = BPTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testbpt300.png", 8);
+    let mut renderer = BPTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testbpt3001.png", 8);
 
     renderer.render(&scene);
 }

@@ -12,7 +12,11 @@ use component::Composable;
 use lighting::Light;
 use std::sync::Arc;
 use sample::prelude::*;
-use spectrum::Spectrum;
+use sample;
+use spectrum::{Spectrum, RGBSpectrumf};
+use material::bsdf::Bsdf;
+use bxdf::prelude::*;
+use geometry::prelude::*;
 
 /// A scene in the world
 pub struct Scene {
@@ -51,5 +55,52 @@ impl Scene {
         } else {
             self.area_lights[idx-self.lights.len()].as_light()
         }
+    }
+
+    pub fn uniform_sample_one_light<S: Sampler>(&self, si: &SurfaceInteraction, sampler: &mut S, bsdf: &Bsdf) -> RGBSpectrumf {
+        let (light, lightpdf) = self.sample_one_light(sampler.next());
+        let ulight = sampler.next_2d();
+        let uscattering = sampler.next_2d();
+        let mut ret = RGBSpectrumf::black();
+        let ls = light.evaluate_sampled(si.basic.pos, ulight);
+        let wi = ls.wi();
+        if !ls.no_effect() {
+            let mut f = bsdf.evaluate(si.basic.wo, wi, BXDF_ALL).0 * wi.dot(si.shading_norm).abs();
+            let spdf = bsdf.pdf(si.basic.wo, wi, BXDF_ALL);
+            if !f.is_black() && ls.occluded(&*self.aggregate) {
+                f = RGBSpectrumf::black();
+            }
+            if light.is_delta() {
+                ret += ls.radiance * f / ls.pdf;
+            } else {
+                let weight = sample::power_heuristic(1, ls.pdf, 1, spdf);
+                ret += ls.radiance * f * weight / ls.pdf;
+            }
+        }
+        
+        // // TODO: sample BSDF with multiple importance sampling
+        // if !light.is_delta() {
+        //     let (mut f, wi, pdf, bt) = bsdf.evaluate_sampled(
+        //         si.basic.wo, uscattering, BXDF_ALL
+        //     );
+            
+        //     f *= wi.dot(si.shading_norm).abs();
+        //     if !f.is_black() && pdf > 0. as Float {
+        //         let mut weight = 1. as Float;
+        //         if !bt.intersects(BXDF_SPECULAR) {
+        //             let lpdf = light.pdf(si.basic.pos, wi, si.shading_norm).1;
+        //             if lpdf == 0. as Float { return ret; }
+        //             weight = sample::power_heuristic(1, pdf, 1, lpdf);
+        //         }
+
+        //     }
+        // }
+        ret
+    }
+
+    #[inline]
+    pub fn sample_one_light(&self, u: Float) -> (&Light, Float) {
+        let (idx, pdf, _) = self.light_distribution.sample_discrete(u);
+        (self.get_light(idx), pdf)
     }
 }

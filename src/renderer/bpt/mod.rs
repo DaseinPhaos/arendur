@@ -76,7 +76,11 @@ impl<S: Sampler> Renderer for BPTRenderer<S> {
                             }
                             let mut pfilm_new = pfilm;
                             let mut mis_weight = 0. as Float;
-                            let lpath = connect(scene, &mut cam_nodes[0..t], &mut light_nodes[0..s], &*self.camera, &mut sampler, &mut pfilm_new, &mut mis_weight);
+                            let lpath = connect(
+                                scene, &mut cam_nodes[0..t], 
+                                &mut light_nodes[0..s], &*self.camera, 
+                                &mut sampler, &mut pfilm_new, &mut mis_weight
+                            );
                             // TODO: visualize strategies
                             if t!=1 {l+=lpath;}
                             else {tile.add_sample(pfilm_new, &lpath)};
@@ -192,7 +196,7 @@ fn random_walk<'a, S: Sampler>(
                 bounces += 1;
                 if bounces as usize >= path.len() { break; }
                 let wo = path[bounces].wo();
-                let (f, wi, pdffwd) = if mode == TransportMode::Radiance {
+                let (f, wi, pdffwd, _) = if mode == TransportMode::Radiance {
                     bsdf.evaluate_sampled(wo, sampler.next_2d(), BXDF_ALL)
                 } else {
                     bsdf.evaluate_importance_sampled(wo, sampler.next_2d(), BXDF_ALL)
@@ -266,7 +270,7 @@ fn connect<S: Sampler>(
                         wo: Vector3f::zero(),
                         norm: Vector3f::zero(),
                     },
-                    beta: RGBSpectrumf::new(1. as Float, 1. as Float, 1. as Float)/importance_sample.pdf,
+                    beta: importance_sample.radiance/importance_sample.pdf,
                     pdf: 1. as Float,
                     pdf_reversed: 0. as Float,
                 };

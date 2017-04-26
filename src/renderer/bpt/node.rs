@@ -100,9 +100,9 @@ impl<'a> Node<'a> {
         match *self {
             Node::Surface{bsdf, ref si, ..} => {
                 if mode == TransportMode::Radiance {
-                    bsdf.evaluate(si.basic.wo, wi, BXDF_ALL)
+                    bsdf.evaluate(si.basic.wo, wi, BXDF_ALL).0
                 } else {
-                    bsdf.evaluate_importance(si.basic.wo, wi, BXDF_ALL)
+                    bsdf.evaluate_importance(si.basic.wo, wi, BXDF_ALL).0
                 }
             },
             _ => RGBSpectrumf::black(),
