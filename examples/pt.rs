@@ -110,11 +110,11 @@ fn main() {
         // ),
         Arc::new(PointLight::new(
             Point3f::new(0.0 as Float, -40.0 as Float, 30.0 as Float),
-            RGBSpectrumf::new(0.0 as Float, 300.0 as Float, 0.0 as Float))
+            RGBSpectrumf::new(0.0 as Float, 1300.0 as Float, 0.0 as Float))
         ), 
         Arc::new(PointLight::new(
             Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
-            RGBSpectrumf::new(900.0 as Float, 900.0 as Float, 900.0 as Float))
+            RGBSpectrumf::new(1900.0 as Float, 1900.0 as Float, 1900.0 as Float))
         ), 
     ];
     lights.push(sphere2);
@@ -146,7 +146,7 @@ fn main() {
             )
         )
     );
-    let mut renderer = PTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt900.png", 8);
+    let mut renderer = PTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt9001.png", 8, true);
 
     renderer.render(&scene);
 }

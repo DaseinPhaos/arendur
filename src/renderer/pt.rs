@@ -27,17 +27,20 @@ pub struct PTRenderer<S> {
     camera: Arc<Camera>,
     filename: PathBuf,
     max_depth: usize,
+    multithreaded: bool,
 }
 
 impl<S: Sampler> PTRenderer<S> {
     pub fn new<P: AsRef<Path> + ?Sized>(
-        sampler: S, camera: Arc<Camera>, filename: &P, max_depth: usize
+        sampler: S, camera: Arc<Camera>, 
+        filename: &P, max_depth: usize, multithreaded: bool
     ) -> PTRenderer<S> {
         PTRenderer{
             sampler: sampler,
             camera: camera,
             filename: filename.as_ref().to_path_buf(),
             max_depth: max_depth,
+            multithreaded: multithreaded,
         }
     }
 }
@@ -102,8 +105,7 @@ fn calculate_lighting<S: Sampler>(
 impl<S: Sampler> Renderer for PTRenderer<S> {
     fn render(&mut self, scene: &Scene) {
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
-        // tiles.par_iter_mut().for_each(|tile| {
-        for tile in &mut tiles {
+        let render_tile = |tile: &mut FilmTile<_>| {
             let mut arena = Arena::new();
             let mut allocator = arena.allocator();
             let mut sampler = self.sampler.clone();
@@ -117,11 +119,14 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
                     let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0, self.max_depth);
                     tile.add_sample(camera_sample_info.pfilm, &total_randiance);
-                    
                     if !sampler.next_sample() { break; }
                 }
             }
-        // });
+        };
+        if self.multithreaded {
+            tiles.par_iter_mut().for_each(|tile| render_tile(tile));
+        } else {
+            for tile in &mut tiles { render_tile(tile); }
         }
         let render_result = self.camera.get_film().collect_into(tiles);
         render_result.save(self.filename.clone()).expect("saving failure");
