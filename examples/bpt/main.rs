@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! whitted renderer usage example
+//! bpt renderer usage example
 
 extern crate arendur;
 extern crate cgmath;
@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 
 fn main() {
-    println!("Whitted example");
+    println!("BPT example");
     use std::io;
     let mut s = String::new();
     let _ = io::stdin().read_line(&mut s);
@@ -59,7 +59,6 @@ fn main() {
     // println!("saved.");
     // let mut s = String::new();
     // let _ = io::stdin().read_line(&mut s);
-    // let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 1.0 as Float)};
     let sigma = ConstantTexture{value: 1. as Float};
 
 
@@ -110,11 +109,11 @@ fn main() {
         // ),
         Arc::new(PointLight::new(
             Point3f::new(0.0 as Float, -40.0 as Float, 30.0 as Float),
-            RGBSpectrumf::new(0.0 as Float, 30.0 as Float, 0.0 as Float))
+            RGBSpectrumf::new(0.0 as Float, 3.0 as Float, 0.0 as Float))
         ), 
         Arc::new(PointLight::new(
             Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
-            RGBSpectrumf::new(300.0 as Float, 300.0 as Float, 300.0 as Float))
+            RGBSpectrumf::new(3.0 as Float, 3.0 as Float, 3.0 as Float))
         ), 
     ];
     lights.push(sphere2);
@@ -133,7 +132,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(900, 900), 
+            Point2::new(300, 300), 
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -146,7 +145,7 @@ fn main() {
             )
         )
     );
-    let mut renderer = WhittedRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testwhitted900.png");
+    let mut renderer = BPTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testbpt300.png", 8);
 
     renderer.render(&scene);
 }

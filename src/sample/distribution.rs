@@ -31,10 +31,11 @@ impl Distribution1D {
             let lastcdf = unsafe {
                 *cdf.get_unchecked(i-1)
             };
-            let curfunc = unsafe {
+            let mut curfunc = unsafe {
                 *func.get_unchecked(i)
             };
-            assert!(curfunc>=0. as Float);
+            // assert!(curfunc>=0. as Float);
+            if curfunc < 0. as Float { curfunc = 0. as Float; }
             cdf.push(lastcdf + curfunc);
         }
         let func_integral = unsafe {

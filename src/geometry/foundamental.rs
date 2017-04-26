@@ -21,7 +21,7 @@ pub type Matrix2f = cgmath::Matrix2<Float>;
 pub type Matrix3f = cgmath::Matrix3<Float>;
 pub type Matrix4f = cgmath::Matrix4<Float>;
 pub type Basis3f = cgmath::Basis3<Float>;
-pub use cgmath::{Point2, Point3, Vector2, Vector3, Vector4, Basis3, BaseNum, BaseFloat, Matrix4, PartialOrd, Deg, Rad};
+pub use cgmath::{Point2, Point3, Vector2, Vector3, Vector4, Basis3, BaseNum, BaseFloat, Matrix4, PartialOrd, Deg, Rad, ApproxEq};
 pub use cgmath::prelude::*;
 //pub use num_traits::{Num, NumCast};
 

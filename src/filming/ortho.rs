@@ -114,7 +114,7 @@ impl Camera for OrthoCam {
 
         fn evaluate_importance_sampled(
         &self, posw: Point3f, _sample: Point2f
-    ) -> ImportanceSample {
+    ) -> (ImportanceSample, Point2f) {
         // FIXME: account for lens distortion
         let norm = self.view_parent.transform_vector(
             Vector3f::new(0. as Float, 0. as Float, 1. as Float)
@@ -127,22 +127,22 @@ impl Camera for OrthoCam {
 
         let dist2 = norm.magnitude2();
         let dir = norm/dist2.sqrt();
-        let importance = if let Some((i, _)) = self.evaluate_importance(pto, -dir) {
-            i
+        let (importance, praster) = if let Some((i, pr)) = self.evaluate_importance(pto, -dir) {
+            (i, pr)
         } else {
-            RGBSpectrumf::black()
+            (RGBSpectrumf::black(), Point2f::new(0. as Float, 0. as Float))
         };
         let pdf = if let Some((r, _)) = self.lens {
             dist2 / (r*r*float::pi())
         } else {
             1. as Float
         };
-        ImportanceSample{
+        (ImportanceSample{
             radiance: importance,
             pdf: pdf,
             pfrom: pfrom,
             pto: posw,
-        }
+        }, praster)
     }
 
     fn pdf(&self, pos: Point3f, dir: Vector3f) -> (Float, Float) {

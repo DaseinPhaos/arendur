@@ -26,3 +26,7 @@ rayon = "0.7"
 [[example]]
 name = "whitted"
 path = "examples/whitted/main.rs"
+
+[[example]]
+name = "bpt"
+path = "examples/bpt/main.rs"

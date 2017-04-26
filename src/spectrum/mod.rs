@@ -367,11 +367,15 @@ pub trait ToNorm {
 impl ToNorm for Float {
     #[inline]
     fn to_norm(self) -> Float {
+        debug_assert!(self>=0. as Float);
+        debug_assert!(self<=1. as Float);
         self
     }
 
     #[inline]
     fn from_norm(f: Float) -> Self {
+        debug_assert!(f>=0. as Float);
+        debug_assert!(f<=1. as Float);
         f
     }
 }

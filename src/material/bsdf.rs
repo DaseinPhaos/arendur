@@ -16,6 +16,7 @@ use spectrum::{RGBSpectrumf, Spectrum};
 use std::cmp;
 
 /// A bsdf
+#[derive(Copy, Clone)]
 pub struct Bsdf<'a> {
     pub eta: Float,
     /// shading normal
@@ -131,6 +132,60 @@ impl<'a> Bsdf<'a> {
         ret
     }
 
+        /// evalute this bsdf. vectors given in parent frame
+    pub fn evaluate_importance(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> RGBSpectrumf {
+        let wo = self.parent_to_local(wow);
+        let wi = self.parent_to_local(wiw);
+        let is_reflection = wow.dot(self.ng) * wiw.dot(self.ng) > 0.0 as Float;
+        let mut ret = RGBSpectrumf::black();
+        for bxdf in self.sink.iter() {
+            if bxdf.is(types) && (
+                (is_reflection && (bxdf.kind() & BXDF_REFLECTION == BXDF_REFLECTION))
+                || (!is_reflection && (bxdf.kind() & BXDF_TRANSMISSION == BXDF_TRANSMISSION))
+            ) {
+                ret += bxdf.evaluate_importance(wo, wi);
+            }
+        }
+        ret
+    }
+
+    pub fn evaluate_importance_sampled(&self, wow: Vector3f, u: Point2f, types: BxdfType) -> (RGBSpectrumf, Vector3f, Float) {
+        let match_count = self.have_n(types);
+        let mut ret = (
+            RGBSpectrumf::black(),
+            Vector3f::new(0.0 as Float, 1.0 as Float, 0.0 as Float),
+            0.0 as Float
+        );
+        if match_count == 0 { return ret; }
+        
+        let wo = self.parent_to_local(wow);
+        let idx = cmp::min((u.x * match_count as Float).floor() as usize, match_count-1);
+        let mut i = 0;
+        for bxdf in self.sink.iter() {
+            if i == idx {
+                // sample the target now
+                let (f, wi, pdf) = bxdf.evaluate_importance_sampled(wo, u);
+                if pdf == 0.0 as Float { return ret; }
+                ret = (f, wi, pdf);
+            }
+            if bxdf.is(types) { i += 1; }
+        }
+        let wi = ret.1;
+        ret.1 = self.local_to_parent(wi);
+        
+        if match_count == 1 { return ret; }
+
+        let mut pdfsum = 0.0 as Float;
+        for bxdf in self.sink.iter() {
+            if bxdf.is(types) {
+                pdfsum += bxdf.pdf(wo, wi);
+            }
+        }
+        pdfsum /= match_count as Float;
+        ret.2 /= pdfsum;
+        ret
+    }
+
     pub fn pdf(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> Float {
         let wo = self.parent_to_local(wow);
         let wi = self.parent_to_local(wiw);
@@ -167,6 +222,7 @@ impl<'a> Bsdf<'a> {
     }
 }
 
+#[derive(Copy, Clone)]
 struct BsdfSink<'a> {
     bxdfs: [Option<&'a Bxdf>; 8],
     n: usize,

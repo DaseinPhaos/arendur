@@ -326,7 +326,7 @@ impl<S> TilePixel<S>
     /// get final result
     pub fn finalize(self) -> S {
         if self.filter_weight_sum == 0.0 as Float {
-            self.spectrum_sum
+            Spectrum::black()
         } else {
             self.spectrum_sum / self.filter_weight_sum
         }

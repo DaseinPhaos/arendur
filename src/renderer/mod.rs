@@ -23,4 +23,5 @@ pub mod prelude {
     pub use super::Renderer;
     pub use super::scene::Scene;
     pub use super::whitted::WhittedRenderer;
+    pub use super::bpt::BPTRenderer;
 }

@@ -40,7 +40,7 @@ pub trait Camera: Send + Sync {
     /// Given a `posw` in the world with a uniform `sample` in $[0, 1)$,
     /// sample an incoming direction from the camera to that `pos`,
     /// returns the sampling result in a `ImportanceSample`.
-    fn evaluate_importance_sampled(&self, posw: Point3f, sample: Point2f) -> ImportanceSample;
+    fn evaluate_importance_sampled(&self, posw: Point3f, sample: Point2f) -> (ImportanceSample, Point2f);
 
     /// evaludate pdf of the possibly importance sample from the
     /// given `posw` and `dirw`, returned as `(pdfpos, pdfdir)`

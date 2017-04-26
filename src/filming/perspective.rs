@@ -202,7 +202,7 @@ impl Camera for PerspecCam {
 
     fn evaluate_importance_sampled(
         &self, posw: Point3f, sample: Point2f
-    ) -> ImportanceSample {
+    ) -> (ImportanceSample, Point2f) {
         let plens = if let Some((r, _)) = self.lens {
             r* sample::sample_concentric_disk(sample)
         } else {
@@ -215,10 +215,10 @@ impl Camera for PerspecCam {
         let mut dir = pfrom - pto;
         let dist2 = dir.magnitude2();
         dir /= dist2.sqrt();
-        let importance = if let Some((i, _)) = self.evaluate_importance(pto, -dir) {
-            i
+        let (importance, praster) = if let Some((i, pr)) = self.evaluate_importance(pto, -dir) {
+            (i, pr)
         } else {
-            RGBSpectrumf::black()
+            (RGBSpectrumf::black(), Point2f::new(0. as Float, 0. as Float))
         };
         let pdf = if let Some((r, _)) = self.lens {
             let norm = self.view_parent.transform_vector(
@@ -228,12 +228,12 @@ impl Camera for PerspecCam {
         } else {
             1. as Float
         };
-        ImportanceSample{
+        (ImportanceSample{
             radiance: importance,
             pdf: pdf,
             pfrom: pfrom,
             pto: posw,
-        }
+        }, praster)
     }
 
     fn pdf(&self, pos: Point3f, dir: Vector3f) -> (Float, Float) {

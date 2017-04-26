@@ -8,6 +8,8 @@
 
 //! implements path nodes
 
+#![allow(dead_code)]
+
 use geometry::prelude::*;
 use filming::prelude::*;
 use lighting::prelude::*;
@@ -17,6 +19,7 @@ use bxdf::prelude::*;
 use renderer::scene::Scene;
 use std::ptr;
 use std::mem;
+use super::TransportMode;
 
 #[derive(Copy, Clone)]
 pub enum Node<'a> {
@@ -81,15 +84,27 @@ impl<'a> Node<'a> {
     }
 
     #[inline(always)]
+    pub fn on_surface(&self) -> bool {
+        self.norm() != Vector3f::zero()
+    }
+
+    #[inline(always)]
     pub fn wo(&self) -> Vector3f {
         self.info().wo
     }
 
     #[inline]
-    pub fn evaluate(&self, next: &Node) -> RGBSpectrumf {
+    pub fn evaluate(&self, next: &Node, mode: TransportMode) -> RGBSpectrumf {
+
         let wi = (next.pos() - self.pos()).normalize();
         match *self {
-            Node::Surface{bsdf, ref si, ..} => bsdf.evaluate(si.basic.wo, wi, BXDF_ALL),
+            Node::Surface{bsdf, ref si, ..} => {
+                if mode == TransportMode::Radiance {
+                    bsdf.evaluate(si.basic.wo, wi, BXDF_ALL)
+                } else {
+                    bsdf.evaluate_importance(si.basic.wo, wi, BXDF_ALL)
+                }
+            },
             _ => RGBSpectrumf::black(),
         }
     }
@@ -108,6 +123,14 @@ impl<'a> Node<'a> {
         match *self {
             Node::Light{..} => true,
             Node::Surface{ref si, ..} => si.is_emissive(),
+            _ => false,
+        }
+    }
+
+    #[inline(always)]
+    pub fn is_light_node(&self) -> bool {
+        match *self {
+            Node::Light{..} => true,
             _ => false,
         }
     }
@@ -222,6 +245,55 @@ impl<'a> Node<'a> {
             Node::Light{ref mut pdf_reversed, ..} => pdf_reversed,
             Node::Surface{ref mut pdf_reversed, ..} => pdf_reversed,
             Node::Medium{ref mut pdf_reversed, ..} => pdf_reversed,
+        }
+    }
+
+    #[inline]
+    pub fn get_pdf(&self) -> Float {
+        match *self {
+            Node::Camera{pdf, ..} => pdf,
+            Node::Light{pdf, ..} => pdf,
+            Node::Surface{pdf, ..} => pdf,
+            Node::Medium{pdf, ..} => pdf,
+        }
+    }
+
+    #[inline]
+    pub fn get_pdf_rev(&self) -> Float {
+        match *self {
+            Node::Camera{pdf_reversed, ..} => pdf_reversed,
+            Node::Light{pdf_reversed, ..} => pdf_reversed,
+            Node::Surface{pdf_reversed, ..} => pdf_reversed,
+            Node::Medium{pdf_reversed, ..} => pdf_reversed,
+        }
+    }
+
+    #[inline]
+    pub fn get_beta_mut(&mut self) -> &mut RGBSpectrumf {
+        match *self {
+            Node::Camera{ref mut beta, ..} => beta,
+            Node::Light{ref mut beta, ..} => beta,
+            Node::Surface{ref mut beta, ..} => beta,
+            Node::Medium{ref mut beta, ..} => beta,
+        }
+    }
+
+    #[inline]
+    pub fn get_beta(&self) -> RGBSpectrumf {
+        match *self {
+            Node::Camera{beta, ..} => beta,
+            Node::Light{beta, ..} => beta,
+            Node::Surface{beta, ..} => beta,
+            Node::Medium{beta, ..} => beta,
+        }
+    }
+
+    #[inline]
+    pub fn as_light(&self) -> Option<&Light> {
+        match *self {
+            Node::Light{light, ..} => Some(light),
+            Node::Surface{ref si, ..} => si.primitive_hit.map(|p| p.as_light()),
+            _ => None,
         }
     }
 }

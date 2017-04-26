@@ -117,8 +117,17 @@ impl LightSample {
     /// in `Composable`, assuming they are in the same world frame
     #[inline]
     pub fn occluded<C: Composable + ?Sized>(&self, components: &C) -> bool {
-        let ray = RawRay::spawn(self.pfrom, self.pto);
-        components.can_intersect(&ray)
+        // TODO: check floating point error
+        let epsilon = Point3f::default_epsilon();
+        let epsilon = Vector3f::new(epsilon, epsilon, epsilon);
+        let pfrom = self.pfrom + epsilon;
+        // let pto = self.pto + (-epsilon);
+        let mut ray = RawRay::spawn(pfrom, self.pto);
+        if let Some(si) = components.intersect_ray(&mut ray) {
+            !relative_eq!(si.basic.pos, self.pto)
+        } else {
+            false
+        }
     }
 
     #[inline]
