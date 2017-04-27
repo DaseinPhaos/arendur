@@ -60,7 +60,7 @@ fn main() {
     // let mut s = String::new();
     // let _ = io::stdin().read_line(&mut s);
     // let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 1.0 as Float)};
-    let sigma = ConstantTexture{value: 1. as Float};
+    let sigma = ConstantTexture{value: 0. as Float};
 
 
     let material0 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
@@ -75,13 +75,15 @@ fn main() {
     let sphere1 = ShapedPrimitive::new(sphere1, material1, None);
     let sphere1 = TransformedComposable::new(sphere1, transform1, inv_transform1);
 
-    let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 1.0 as Float, 0.5 as Float)};
+    let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float)};
     let sigma = ConstantTexture{value: 1.0 as Float};
 
 
     let material2 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
 
-    let texture = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.2 as Float, 0.3 as Float)};
+    let texture = ConstantTexture{value: RGBSpectrumf::new(50.5 as Float, 50.2 as Float, 50.3 as Float)};
+
+    // let texture = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float)};
 
 
     let sphere2 = ShapedPrimitive::new(sphere2, material2, Some(Arc::new(texture)));
@@ -108,24 +110,26 @@ fn main() {
         //     Point3f::new(0.0 as Float, 100.0 as Float, 100.0 as Float),
         //     RGBSpectrumf::new(100000.7 as Float, 0.0 as Float, 0.0 as Float))
         // ),
-        Arc::new(PointLight::new(
-            Point3f::new(0.0 as Float, -40.0 as Float, 30.0 as Float),
-            RGBSpectrumf::new(0.0 as Float, 1300.0 as Float, 0.0 as Float))
-        ), 
-        Arc::new(PointLight::new(
-            Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
-            RGBSpectrumf::new(1900.0 as Float, 1900.0 as Float, 1900.0 as Float))
-        ), 
+        // Arc::new(PointLight::new(
+        //     Point3f::new(0.0 as Float, -40.0 as Float, 30.0 as Float),
+        //     RGBSpectrumf::new(0.0 as Float, 1300.0 as Float, 0.0 as Float))
+        // ), 
+        // Arc::new(PointLight::new(
+        //     Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
+        //     RGBSpectrumf::new(1900.0 as Float, 1900.0 as Float, 1900.0 as Float))
+        // ), 
     ];
     lights.push(sphere2);
     
-    let scene = Scene::new(lights, Vec::new(), Arc::new(naive));
+    let scene = Scene::new(lights, Arc::new(naive));
 
     let camera = PerspecCam::new(
         Matrix4f::identity(), 
         BBox2f::new(
             Point2f::new(-1.0 as Float, -1.0 as Float), 
             Point2f::new(1.0 as Float, 1.0 as Float)
+            // Point2f::new(0.3 as Float, 0.3 as Float), 
+            // Point2f::new(0.6 as Float, 0.6 as Float)
         ),
         0.1 as Float, 
         1000.0 as Float, 
@@ -133,7 +137,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(900, 900), 
+            Point2::new(600, 600), 
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -146,7 +150,7 @@ fn main() {
             )
         )
     );
-    let mut renderer = PTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt9001.png", 8, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(16, 16, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt90068.png", 5, true);
 
     renderer.render(&scene);
 }

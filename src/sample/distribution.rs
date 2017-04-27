@@ -27,15 +27,15 @@ impl Distribution1D {
         let func: Vec<_> = func.into_iter().collect();
         let mut cdf = Vec::with_capacity(func.len() + 1);
         cdf.push(0. as Float);
-        for i in 1..func.len() + 1 {
+        for i in 0..func.len() {
             let lastcdf = unsafe {
-                *cdf.get_unchecked(i-1)
+                *cdf.get_unchecked(i)
             };
-            let mut curfunc = unsafe {
+            let curfunc = unsafe {
                 *func.get_unchecked(i)
             };
-            // assert!(curfunc>=0. as Float);
-            if curfunc < 0. as Float { curfunc = 0. as Float; }
+            assert!(curfunc>=0. as Float);
+            // if curfunc < 0. as Float { curfunc = 0. as Float; }
             cdf.push(lastcdf + curfunc);
         }
         let func_integral = unsafe {
@@ -122,12 +122,29 @@ impl Distribution1D {
     }
 
     #[inline]
-    fn search_offset(&self, u: Float) -> usize {
+    fn search_offset(&self, mut u: Float) -> usize {
+        if u == 0. as Float { u += float::epsilon(); }
         self.cdf.binary_search_by(|v| {
             if *v < u { Ordering::Less }
             else if *v == u { Ordering::Equal }
             else { Ordering::Greater }
-        }).unwrap_or_else(|v| v)
+        }).unwrap_or_else(|v| v) - 1
+
+        // let ret = self.cdf.binary_search_by(|v| {
+        //     if *v < u { Ordering::Less }
+        //     else if *v == u { Ordering::Equal }
+        //     else { Ordering::Greater }
+        // }).unwrap_or_else(|v| v);
+
+        // if ret >= self.cdf.len() || ret == 0 {
+        //     println!("CDF: {:?}", self.cdf);
+        //     println!("u: {}, idx: {}", u, ret);
+        // }
+        // if ret == 0 {
+        //     ret
+        // } else {
+        //     ret - 1
+        // }
     }
 }
 

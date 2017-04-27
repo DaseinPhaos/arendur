@@ -195,13 +195,18 @@ impl Shape for Sphere {
         self.phimax * self.radius * (self.zmax - self.zmin)
     }
 
-    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f) {
+    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f, Float) {
         // sample.x scaled to [0, phimax]
         let phi = sample.x * self.phimax;
         // sample.y scaled to [thetamin, thetamax]
         let theta = sample.y * (self.thetamax - self.thetamin) + self.thetamin;
         let dir = Sphericalf::new(theta, phi).to_vec();
         let pos = Point3f::from_vec(dir*self.radius);
-        (pos, dir)
+        (pos, dir, 1. as Float / self.surface_area())
+
+        // use sample::sample_uniform_sphere;
+        // let dir = sample_uniform_sphere(sample);
+        // let pos = Point3f::from_vec(dir*self.radius);
+        // (pos, dir, 1. as Float / self.surface_area())
     }
 }

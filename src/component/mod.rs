@@ -24,6 +24,7 @@ pub trait Composable: Sync + Send {
     fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction>;
 
     /// test if an intersection can occur. Might be more efficient
+    #[inline]
     fn can_intersect(&self, ray: &RawRay) -> bool {
         let mut ray = ray.clone();
         self.intersect_ray(&mut ray).is_some()

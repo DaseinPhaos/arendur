@@ -202,7 +202,7 @@ pub fn pdf_uniform_disk() -> Float {
 #[inline]
 pub fn sample_cosw_hemisphere(u: Point2f) -> Vector3f {
     let d = sample_concentric_disk(u);
-    let z = (1.0 as Float - d.x*d.x - d.y*d.y).sqrt();
+    let z = (1.0 as Float - d.x*d.x - d.y*d.y).abs().sqrt();
     Vector3f::new(d.x, d.y, z)
 }
 
@@ -238,12 +238,19 @@ pub fn sample_uniform_triangle(u: Point2f) -> Vector3f {
     Vector3f::new(x, y, 1.0 as Float - x - y)
 }
 
-/// power heuristic as per
+/// power heuristic as per $\beta = 2$
 #[inline]
 pub fn power_heuristic(nf: usize, pdff: Float, ng: usize, pdfg: Float) -> Float {
     let f = nf as Float * pdff;
     let g = ng as Float * pdfg;
     (f*f)/(f*f+g*g)
+}
+
+#[inline]
+pub fn balance_heuristic(nf: usize, pdff: Float, ng: usize, pdfg: Float) -> Float {
+    let f = nf as Float * pdff;
+    let g = ng as Float * pdfg;
+    f/(f+g)
 }
 
 pub mod naive;

@@ -40,7 +40,7 @@ pub trait Shape: Sync + Send
     fn surface_area(&self) -> Float;
 
     /// Sample the shape, return a point and normal of the sampled point
-    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f);
+    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f, Float);
 
     /// pdf of a sampled interaction on the surface, defaults to `1/area`
     #[inline]
@@ -48,10 +48,19 @@ pub trait Shape: Sync + Send
         1. as Float / self.surface_area()
     }
 
-    /// Sample the shape wrt some reference point and an associated
-    /// incoming ray. defaults to ignore the references
-    fn sample_wrt(&self, _posref: Point3f, _wi: Vector3f, sample: Point2f) -> (Point3f, Vector3f) {
-        self.sample(sample)
+    /// Sample the shape wrt some reference point
+    fn sample_wrt(&self, pref: Point3f, sample: Point2f) -> (Point3f, Vector3f, Float) {
+        let (lp, lnorm, mut lpdf) = self.sample(sample);
+        let wi = lp - pref;
+        let distance2 = wi.magnitude2();
+        if relative_eq!(distance2, 0. as Float) {
+            lpdf = 0. as Float;
+        } else {
+            let wi = wi/distance2.sqrt();
+            lpdf *= distance2 / lnorm.dot(wi).abs();
+            if lpdf.is_infinite() { lpdf = 0. as Float; }
+        }
+        (lp, lnorm, lpdf)
     }
 
     /// Pdf wrt some reference point and an associated incoming ray

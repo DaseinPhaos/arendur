@@ -86,13 +86,14 @@ impl<S, M> Light for ShapedPrimitive<S, M>
         false
     }
 
-    /// Given a position and an incoming direction in local coordinates,
+    /// Given a position and an light direction in local coordinates,
     /// evaluate the light's radiance along that direction.
     #[inline]
-    fn evaluate_path(&self, pos: Point3f, wi: Vector3f) -> RGBSpectrumf {
+    fn evaluate_path(&self, pos: Point3f, dir: Vector3f) -> RGBSpectrumf {
         if let Some(ref lp) = self.lighting_profile {
+            let p = pos + dir;
             // match `wi` against surface normal
-            let ray = RawRay::from_od(pos, wi);
+            let ray = RawRay::from_od(p, -dir);
             if let Some((_t, si)) = self.shape.intersect_ray(&ray) {
                 // retrive (u, v)
                 let dxy = DxyInfo::from_duv(&si.duv);
@@ -102,27 +103,27 @@ impl<S, M> Light for ShapedPrimitive<S, M>
         RGBSpectrumf::black()
     }
 
-    /// Given a `pos` in local frame with a uniform `sample`
+    /// Given a surface `pos` and `norm` in local frame with a uniform `sample`
     /// in $[0, 1)$, sample an incoming direction from the light to that
     /// location, returns the sampling result in a `LightSample`.
-    fn evaluate_sampled(&self, pos: Point3f, sample: Point2f) -> LightSample {
-        let (sampled, norm) = self.shape.sample(sample);
+    fn evaluate_sampled(
+        &self, pos: Point3f, sample: Point2f
+    ) -> LightSample {
+        let (l_pos, l_norm, l_pdf) = self.shape.sample_wrt(pos, sample);
         let mut ret = LightSample{
             radiance: RGBSpectrumf::black(),
-            pdf: 0. as Float,
-            pfrom: sampled,
+            pdf: l_pdf,
+            pfrom: l_pos,
             pto: pos,
         };
         // match against surface normal
         if let Some(ref lp) = self.lighting_profile {
-            if (pos - sampled).dot(norm) > 0. as Float {
-                let ray = RawRay::from_od(pos, -norm);
-                // debug_assert!(self.shape.can_intersect(&ray));
-                if let Some((_t, si)) = self.shape.intersect_ray(&ray) {
-                    // print!("aha! ");
+            let ldir = pos - l_pos;
+            if ldir.dot(l_norm) > 0. as Float {
+                let ray = RawRay::from_od(pos, -ldir);
+                if let Some((_, si)) = self.shape.intersect_ray(&ray) {
                     let dxy = DxyInfo::from_duv(&si.duv);
                     ret.radiance = lp.evaluate(&si, &dxy);
-                    ret.pdf = self.shape.pdf(sampled, norm);
                 }
             }
         }
@@ -131,31 +132,36 @@ impl<S, M> Light for ShapedPrimitive<S, M>
 
     #[inline]
     fn generate_path(&self, samples: SampleInfo) -> PathInfo {
-        let (pos, norm) = self.shape.sample(samples.pfilm);
+        let (pos, norm, pdfpos) = self.shape.sample(samples.pfilm);
         let (u, v) = normal::get_basis_from(norm);
         let dir = sample::sample_cosw_hemisphere(samples.plens);
         let dir = dir.x * u + dir.y * v + dir.z * norm;
         PathInfo{
             ray: RawRay::from_od(pos, dir),
             normal: norm,
-            pdfpos: self.shape.pdf(pos, norm),
+            pdfpos: pdfpos,
             pdfdir: sample::pdf_cosw_hemisphere(dir.z),
             radiance: self.evaluate_path(pos, dir),
         }
     }
 
     #[inline]
-    fn pdf(&self, pos: Point3f, dir: Vector3f, norm: Vector3f) -> (Float, Float) {
+    fn pdf_path(&self, pos: Point3f, dir: Vector3f, norm: Vector3f) -> (Float, Float) {
         (
             self.shape.pdf(pos, norm),
             sample::pdf_cosw_hemisphere(norm.dot(dir).abs())
         )
     }
 
+    fn pdf(&self, pos: Point3f, wi: Vector3f) -> Float {
+        self.shape.pdf_wrt(pos, wi)
+    }
+
     /// returns an estimation of total power of this light
     fn power(&self) -> RGBSpectrumf {
         if self.lighting_profile.is_some() {
             // FIXME: wrong
+            debug_assert!(self.shape.surface_area() >= 0. as Float);
             RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float) * self.shape.surface_area()
         } else {
             RGBSpectrumf::black()

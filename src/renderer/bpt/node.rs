@@ -212,13 +212,13 @@ impl<'a> Node<'a> {
                 if let Some(light) = si.primitive_hit {
                     let pdf_pos = light.pdf(si.basic.pos, wi, si.basic.norm).0;
                     let mut pdf_choice = 0. as Float;
-                    for (i, l) in scene.area_lights.iter().enumerate() {
-                        // TODO: double check if desirable
-                        if ptr::eq(light.as_light(), l.as_light()) {
-                            pdf_choice = scene.light_distribution.discrete_pdf(i+scene.lights.len());
-                            break;
-                        }
-                    }
+                    // for (i, l) in scene.area_lights.iter().enumerate() {
+                    //     // TODO: double check if desirable
+                    //     if ptr::eq(light.as_light(), l.as_light()) {
+                    //         pdf_choice = scene.light_distribution.discrete_pdf(i+scene.lights.len());
+                    //         break;
+                    //     }
+                    // }
                     pdf_pos * pdf_choice
                 } else {
                     0. as Float

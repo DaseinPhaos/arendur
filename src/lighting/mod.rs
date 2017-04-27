@@ -36,12 +36,12 @@ pub trait Light: Sync+ Send {
         self.evaluate_path(rd.ray.origin(), rd.ray.direction())
     }
 
-    /// Given a position and an incoming direction in local coordinates,
-    /// evaluate the light's radiance along that direction.
+    /// Given a position on surface and an light direction in local
+    /// coordinates, evaluate the light's radiance along that direction.
     ///
     /// Default implementation yields zero radiance
     #[inline]
-    fn evaluate_path(&self, _pos: Point3f, _wi: Vector3f) -> RGBSpectrumf {
+    fn evaluate_path(&self, _pos: Point3f, _dir: Vector3f) -> RGBSpectrumf {
         RGBSpectrumf::black()
     }
 
@@ -55,8 +55,14 @@ pub trait Light: Sync+ Send {
 
     /// Given position and direction of a photon path, and the light's `normal`
     /// return its pdfs as `(pdfpos, pdfdir)`
-    fn pdf(&self, pos: Point3f, dir: Vector3f, normal: Vector3f) -> (Float, Float);
-    
+    fn pdf_path(&self, pos: Point3f, dir: Vector3f, normal: Vector3f) -> (Float, Float);
+
+    /// Given a position and lighting ray `wi` of an interaction,
+    /// return the pdf of it
+    #[inline]
+    fn pdf(&self, _pos: Point3f, _wi: Vector3f) -> Float {
+        0. as Float
+    }
 
     /// returns an estimation of total power of this light
     fn power(&self) -> RGBSpectrumf;
@@ -119,16 +125,11 @@ impl LightSample {
     pub fn occluded<C: Composable + ?Sized>(&self, components: &C) -> bool {
         // TODO: check floating point error
         let epsilon = Point3f::default_epsilon();
-        let epsilon = Vector3f::new(epsilon, epsilon, epsilon);
-        let pfrom = self.pfrom + epsilon;
-        let pto = self.pto + (-epsilon);
-        let mut ray = RawRay::spawn(pfrom, self.pto);
-        if let Some(si) = components.intersect_ray(&mut ray) {
-            let dis = si.basic.pos - pfrom;
-            dis.magnitude2() < (pto - pfrom).magnitude2()
-        } else {
-            false
-        }
+        let dir = self.pto - self.pfrom;
+        let pfrom = self.pfrom + dir*epsilon;
+        let pto = self.pto + dir*epsilon;
+        let ray = RawRay::spawn(pfrom, pto);
+        components.can_intersect(&ray)
     }
 
     #[inline]

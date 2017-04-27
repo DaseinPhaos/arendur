@@ -108,10 +108,10 @@ impl<T: Primitive> Light for TransformedComposable<T>
     }
 
     #[inline]
-    fn evaluate_path(&self, pos: Point3f, wi: Vector3f) -> RGBSpectrumf {
+    fn evaluate_path(&self, pos: Point3f, dir: Vector3f) -> RGBSpectrumf {
         let pos = self.parent_local.transform_point(pos);
-        let wi = self.parent_local.transform_vector(wi);
-        self.inner.evaluate_path(pos, wi)
+        let dir = self.parent_local.transform_vector(dir);
+        self.inner.evaluate_path(pos, dir)
     }
 
     #[inline]
@@ -127,11 +127,18 @@ impl<T: Primitive> Light for TransformedComposable<T>
     }
 
     #[inline]
-    fn pdf(&self, pos: Point3f, dir: Vector3f, norm: Vector3f) -> (Float, Float) {
+    fn pdf_path(&self, pos: Point3f, dir: Vector3f, norm: Vector3f) -> (Float, Float) {
         let pos = self.parent_local.transform_point(pos);
         let dir = self.parent_local.transform_vector(dir);
         let norm = self.parent_local.transform_norm(norm);
-        self.inner.pdf(pos, dir, norm)
+        self.inner.pdf_path(pos, dir, norm)
+    }
+
+    #[inline]
+    fn pdf(&self, pos: Point3f, wi: Vector3f) -> Float {
+        let pos = self.parent_local.transform_point(pos);
+        let wi = self.parent_local.transform_vector(wi);
+        self.inner.pdf(pos, wi)
     }
 
     #[inline]

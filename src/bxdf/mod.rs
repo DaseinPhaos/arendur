@@ -73,8 +73,7 @@ pub trait Bxdf {
     #[inline]
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
         if wo.z * wi.z > 0.0 as Float {
-            let costheta = normal::cos_theta(wi);
-            sample::pdf_cosw_hemisphere(costheta)
+            normal::cos_theta(wi).abs() * float::frac_1_pi()
         } else {
             0.0 as Float
         }

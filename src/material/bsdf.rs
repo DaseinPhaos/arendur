@@ -36,7 +36,7 @@ impl<'a> Bsdf<'a> {
     pub fn new(si: &SurfaceInteraction, eta: Float) -> Bsdf<'a> {
         let ts = si.shading_duv.dpdu.normalize();
         let ns = si.shading_norm;
-        let bs = ns.cross(ts);
+        let bs = ns.cross(ts).normalize();
         let ng = si.basic.norm;
         Bsdf{
             eta: eta, ns: ns, ng: ng, ts: ts, bs: bs, sink: Default::default(),
@@ -110,8 +110,10 @@ impl<'a> Bsdf<'a> {
         let wo = self.parent_to_local(wow);
         let idx = cmp::min((u.x * match_count as Float).floor() as usize, match_count-1);
         let mut i = 0;
+        let mut is_specular = false;
         for bxdf in self.sink.iter() {
             if i == idx {
+                is_specular = bxdf.is(BXDF_SPECULAR);
                 // sample the target now
                 let (f, wi, pdf) = bxdf.evaluate_sampled(wo, u);
                 if pdf == 0.0 as Float { return ret; }
@@ -122,7 +124,7 @@ impl<'a> Bsdf<'a> {
         let wi = ret.1;
         ret.1 = self.local_to_parent(wi);
         
-        if match_count == 1 { return ret; }
+        if match_count == 1 || is_specular { return ret; }
 
         let mut pdfsum = 0.0 as Float;
         for bxdf in self.sink.iter() {
@@ -130,8 +132,10 @@ impl<'a> Bsdf<'a> {
                 pdfsum += bxdf.pdf(wo, wi);
             }
         }
-        pdfsum /= match_count as Float;
-        ret.2 /= pdfsum;
+        if match_count > 0 {
+            pdfsum /= match_count as Float;
+        }
+        ret.2 = pdfsum;
         ret
     }
 
@@ -187,14 +191,17 @@ impl<'a> Bsdf<'a> {
                 pdfsum += bxdf.pdf(wo, wi);
             }
         }
-        pdfsum /= match_count as Float;
-        ret.2 /= pdfsum;
+        if match_count > 0 {
+            pdfsum /= match_count as Float;
+        }
+        ret.2 = pdfsum;
         ret
     }
 
     pub fn pdf(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> Float {
         let wo = self.parent_to_local(wow);
         let wi = self.parent_to_local(wiw);
+        if wo.z == 0. as Float { return 0. as Float; }
         let mut pdfsum = 0.0 as Float;
         let mut match_count = 0;
         for bxdf in self.sink.iter() {

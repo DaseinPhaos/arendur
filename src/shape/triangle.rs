@@ -259,7 +259,7 @@ impl<'a> Shape for TriangleInstance<'a> {
     }
 
     #[inline]
-    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f) {
+    fn sample(&self, sample: Point2f) -> (Point3f, Vector3f, Float) {
         let barycentrc = sample_uniform_triangle(sample);
         let p = barycentrc.x * self.x().to_vec() + barycentrc.y * self.y().to_vec() + (1. as Float - barycentrc.x - barycentrc.y) * self.z().to_vec();
         let p = Point3f::from_vec(p);
@@ -268,6 +268,6 @@ impl<'a> Shape for TriangleInstance<'a> {
         } else {
             (self.y() - self.x()).cross(self.z() - self.x())
         };
-        (p, n.normalize())
+        (p, n.normalize(), 1. as Float / self.surface_area())
     }
 }

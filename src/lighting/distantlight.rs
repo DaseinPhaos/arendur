@@ -98,7 +98,7 @@ impl Light for DistantLight {
     }
 
     #[inline]
-    fn pdf(&self, _pos: Point3f, _dir: Vector3f, _normal: Vector3f) -> (Float, Float) {
+    fn pdf_path(&self, _pos: Point3f, _dir: Vector3f, _normal: Vector3f) -> (Float, Float) {
         (
             1. as Float / (self.world_radius * self.world_radius * float::pi()), 
             0. as Float
