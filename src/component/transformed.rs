@@ -151,3 +151,112 @@ impl<T: Primitive> Light for TransformedComposable<T>
         self.inner.preprocess(s);
     }
 }
+
+impl<T: Composable> Composable for TransformedComposable<Arc<T>>
+{
+    #[inline]
+    fn bbox_parent(&self) -> BBox3f {
+        self.inner.bbox_parent().apply_transform(&*self.local_parent)
+    }
+
+    #[inline]
+    default fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
+        *ray = ray.apply_transform(&*self.parent_local);
+        let mut ret = self.inner.intersect_ray(ray);
+        if let Some(ret) = ret.as_mut() {
+            *ret = ret.apply_transform(&*self.local_parent);
+        }
+        *ray = ray.apply_transform(&*self.local_parent);
+        ret
+    }
+
+    #[inline]
+    default fn as_light(&self) -> &Light {
+        unimplemented!();
+    }
+}
+
+impl<T: Primitive> Composable for TransformedComposable<Arc<T>>
+{
+    #[inline]
+    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
+        *ray = ray.apply_transform(&*self.parent_local);
+        let mut ret = self.inner.intersect_ray(ray);
+        if let Some(ret) = ret.as_mut() {
+            *ret = ret.apply_transform(&*self.local_parent);
+            ret.primitive_hit = Some(self);
+        }
+        *ray = ray.apply_transform(&*self.local_parent);
+        ret
+    }
+
+    #[inline]
+    fn as_light(&self) -> &Light {
+        self
+    }
+}
+
+impl<T: Primitive> Primitive for TransformedComposable<Arc<T>>
+{
+    #[inline]
+    fn is_emissive(&self) -> bool {
+        self.inner.is_emissive()
+    }
+
+    #[inline]
+    fn get_material(&self) -> &Material {
+        self.inner.get_material()
+    }
+}
+
+impl<T: Primitive> Light for TransformedComposable<Arc<T>>
+{
+    fn flags(&self) -> LightFlag {
+        self.inner.flags()
+    }
+
+    #[inline]
+    fn evaluate_ray(&self, rd: &RayDifferential) -> RGBSpectrumf {
+        let rd = rd.apply_transform(&self.parent_local);
+        self.inner.evaluate_ray(&rd)
+    }
+
+    #[inline]
+    fn evaluate_path(&self, pos: Point3f, dir: Vector3f) -> RGBSpectrumf {
+        let pos = self.parent_local.transform_point(pos);
+        let dir = self.parent_local.transform_vector(dir);
+        self.inner.evaluate_path(pos, dir)
+    }
+
+    #[inline]
+    fn evaluate_sampled(&self, pos: Point3f, sample: Point2f) -> LightSample {
+        let pos = self.parent_local.transform_point(pos);
+        let ls = self.inner.evaluate_sampled(pos, sample);
+        ls.apply_transform(&*self.local_parent)
+    }
+
+    #[inline]
+    fn generate_path(&self, samples: SampleInfo) -> PathInfo {
+        self.inner.generate_path(samples).apply_transform(&*self.local_parent)
+    }
+
+    #[inline]
+    fn pdf_path(&self, pos: Point3f, dir: Vector3f, norm: Vector3f) -> (Float, Float) {
+        let pos = self.parent_local.transform_point(pos);
+        let dir = self.parent_local.transform_vector(dir);
+        let norm = self.parent_local.transform_norm(norm);
+        self.inner.pdf_path(pos, dir, norm)
+    }
+
+    #[inline]
+    fn pdf(&self, pos: Point3f, wi: Vector3f) -> Float {
+        let pos = self.parent_local.transform_point(pos);
+        let wi = self.parent_local.transform_vector(wi);
+        self.inner.pdf(pos, wi)
+    }
+
+    #[inline]
+    fn power(&self) -> RGBSpectrumf {
+        self.inner.power()
+    }
+}
