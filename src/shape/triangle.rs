@@ -9,10 +9,10 @@
 //! Defines triangle mesh and triangle instance
 
 use geometry::prelude::*;
-// use shape::{Shape, ShapeInfo};
 use super::Shape;
 use std::ops;
 use sample::*;
+use std::sync::Arc;
 
 /// A triangle mesh
 pub struct TriangleMesh {
@@ -22,7 +22,6 @@ pub struct TriangleMesh {
     normals: Option<Vec<Vector3f>>,
     uvs: Option<Vec<Point2f>>,
     bbox: BBox3f,
-    // shapeinfo: ShapeInfo,
 }
 
 impl TriangleMesh {
@@ -45,13 +44,13 @@ impl TriangleMesh {
 }
 
 /// An instance of triangle from a triangle mesh.
-pub struct TriangleInstance<'a> {
-    mesh: &'a TriangleMesh,
+pub struct TriangleInstance {
+    mesh: Arc<TriangleMesh>,
     /// ith triangle into the `parent` mesh
     idx: usize,
 }
 
-impl<'a> TriangleInstance<'a> {
+impl TriangleInstance {
     /// return points in local frame
     #[inline]
     pub fn x(&self) -> Point3f {
@@ -163,7 +162,7 @@ impl<'a> TriangleInstance<'a> {
     }
 }
 
-impl<'a> ops::Index<usize> for TriangleInstance<'a> {
+impl ops::Index<usize> for TriangleInstance {
     type Output= Point3f;
 
     #[inline]
@@ -173,7 +172,7 @@ impl<'a> ops::Index<usize> for TriangleInstance<'a> {
     }
 }
 
-impl<'a> Shape for TriangleInstance<'a> {
+impl Shape for TriangleInstance {
     // #[inline]
     // fn info(&self) -> &ShapeInfo {
     //     &self.mesh.shapeinfo
