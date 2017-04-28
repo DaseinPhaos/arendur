@@ -4,7 +4,7 @@
 
 Just Another Renderer. This time in Rust though.
 
-This is a project guided by [pbrt](http://www.pbrt.org/). Its on `0.0.2` for the time being, with only a partially implemented whitted ray tracer.
+This is a project guided by [pbrt](http://www.pbrt.org/). Its on `0.0.3` for the time being, with a functional path-tracing based renderer.
 
 To tinker with it you can either clone the source code with `git`:
 
@@ -19,10 +19,10 @@ or simply grab it from [crates.io](https:://crates.io).
 
 Before 0.1, I want the module to support:
 
-- a console interface
-- area lights
-- more materials
-- a bidirectional path tracing based renderer
+- [ ] a console interface
+- [x] area lights
+- [ ] more materials
+- [ ] a bidirectional path tracing based renderer
 
 ## Contributing
 
