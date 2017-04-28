@@ -164,6 +164,35 @@ impl<T, TP> MipMap<T, TP>
           TP: Pixel<Subpixel=T> + 'static
 {
     #[inline]
+    fn texel_isize(&self, miplevel: usize, p: Point2<isize>) -> TP {
+        let frame = &self.pyramid[miplevel];
+        let (dx, dy) = frame.dimensions();
+        let (dx, dy) = (dx as usize, dy as usize);
+        let p = if p.x as usize >= dx || p.y as usize >= dy {
+            match self.info.wrapping {
+                ImageWrapMode::Black => {
+                    let z = <T as Zero>::zero();
+                    let slice = [z, z, z, z];
+                    return *TP::from_slice(&slice);
+                },
+                ImageWrapMode::Clamp => {
+                    (
+                        if p.x as usize >= dx {dx-1} else {p.x as usize},
+                        if p.y as usize >= dy {dy-1} else {p.y as usize}
+                    )
+                },
+                ImageWrapMode::Repeat => {
+                    (
+                        (p.x % dx as isize).abs() as usize,
+                        (p.y % dy as isize).abs() as usize
+                    )
+                },
+            }
+        } else { (p.x as usize, p.y as usize) };
+        *frame.get_pixel(p.0 as u32, p.1 as u32)
+    }
+
+    #[inline]
     fn texel(&self, miplevel: usize, p: Point2<usize>) -> TP {
         let frame = &self.pyramid[miplevel];
         let (dx, dy) = frame.dimensions();
@@ -182,7 +211,10 @@ impl<T, TP> MipMap<T, TP>
                     )
                 },
                 ImageWrapMode::Repeat => {
-                    (p.x % dx, p.y % dy)
+                    (
+                        p.x % dx,
+                        p.y % dy
+                    )
                 },
             }
         } else { (p.x, p.y) };
@@ -231,7 +263,7 @@ impl<T, TP> MipMap<T, TP>
             let width = dst0.x.max(dst0.y).max(dst1.x).max(dst1.y);
             self.look_up_tri(st, width)
         } else {
-            let (dstmin, mut dstmaj) = if dst0.magnitude2() < dst1.magnitude2() {
+            let (mut dstmin, dstmaj) = if dst0.magnitude2() < dst1.magnitude2() {
                 (dst0, dst1)
             } else {
                 (dst1, dst0)
@@ -244,20 +276,23 @@ impl<T, TP> MipMap<T, TP>
                 if minor * self.info.max_aniso < major {
                     let scale = major / (minor * self.info.max_aniso);
                     minor *= scale;
-                    dstmaj *= scale;
+                    dstmin *= scale;
                 }
                 let level = self.find_level(minor).max(0.0 as Float);
                 let floor = level.floor();
                 let delta = level - floor;
                 let level = floor as usize;
-                let floorc = self.ewa_filter(level, st, dstmin, dstmaj);
-                let ceilc = self.ewa_filter(level + 1, st, dstmin, dstmaj);
+                let floorc = self.ewa_filter(level, st, dstmaj, dstmin);
+                let ceilc = self.ewa_filter(level + 1, st, dstmaj, dstmin);
                 approx_lerp(floorc, &ceilc, delta)
             }
         }
     }
 
-    fn ewa_filter(&self, miplevel: usize, st: Point2f, dstmin: Vector2f, dstmaj: Vector2f) -> TP {
+    fn ewa_filter(&self, miplevel: usize, st: Point2f, dstmaj: Vector2f, dstmin: Vector2f) -> TP {
+        if miplevel >= self.pyramid.len() {
+            return self.texel(self.pyramid.len() -1, Point2::new(0, 0));
+        }
         let (nx, ny) = self.pyramid[miplevel].dimensions();
         let (nxf, nyf) = (nx as Float, ny as Float);
         let s = st.x * nxf - 0.5 as Float;
@@ -281,30 +316,31 @@ impl<T, TP> MipMap<T, TP>
         let inv2_det = 1.0 as Float / det * 2.0 as Float;
         let usqrt = (det*c).sqrt();
         let vsqrt = (det*a).sqrt();
-        let s0 = (s - inv2_det * usqrt).ceil() as usize;
-        let s1 = (s + inv2_det * usqrt).ceil() as usize;
-        let t0 = (t - inv2_det * vsqrt).ceil() as usize;
-        let t1 = (t + inv2_det * vsqrt).ceil() as usize;
-
+        let s0 = (s - inv2_det * usqrt).ceil() as isize;
+        let s1 = (s + inv2_det * usqrt).ceil() as isize;
+        let t0 = (t - inv2_det * vsqrt).ceil() as isize;
+        let t1 = (t + inv2_det * vsqrt).ceil() as isize;
         let z = <T as Zero>::zero();
         let slice = [z, z, z, z];
         let mut sum = *TP::from_slice(&slice);
         let mut sumwt = 0.0 as Float;
-        for it in t0..t1 {
-            let tt = it as Float - s;
-            for is in s0..s1 {
-                let ss = is as Float - t;
+        for it in t0..t1+1 {
+            let tt = it as Float - t;
+            for is in s0..s1+1 {
+                let ss = is as Float - s;
                 let square_radius = a * ss * ss + b * ss * tt + c * tt * tt;
                 if square_radius < 1.0 as Float {
                     let idx = (square_radius * WEIGHT_LUT_SIZE as Float) as usize;
                     let idx = cmp::min(idx, WEIGHT_LUT_SIZE - 1);
                     let weight = WEIGHT_LUT[idx];
-                    let to_add = mul_float(self.texel(miplevel, Point2::new(is, it)), weight);
+                    debug_assert!(!weight.is_nan());
+                    let to_add = mul_float(self.texel_isize(miplevel, Point2::new(is, it)), weight);
                     sum.apply2(&to_add, |a, b| a+b);
                     sumwt += weight;
                 }
             }
         }
+        debug_assert!(!sumwt.is_nan());
         mul_float(sum, 1.0 as Float / sumwt)
     }
 

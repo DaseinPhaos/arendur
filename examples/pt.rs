@@ -47,7 +47,7 @@ fn main() {
     let kd = ImageTexture::new(
         info.clone(),
         UVMapping{
-            scaling: Vector2f::new(4. as Float, 4. as Float),
+            scaling: Vector2f::new(16. as Float, 16. as Float),
             shifting: Vector2f::new(0. as Float, 0. as Float),
         },
         &mut ref_table,
@@ -150,7 +150,7 @@ fn main() {
             )
         )
     );
-    let mut renderer = PTRenderer::new(StrataSampler::new(16, 16, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt90068.png", 5, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(16, 16, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt90071.png", 5, true);
 
     renderer.render(&scene);
 }
