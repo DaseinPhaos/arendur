@@ -21,6 +21,7 @@ use self::image::GenericImage;
 use self::image::Pixel;
 use spectrum::{RGBSpectrum, ToNorm};
 use num_traits::NumCast;
+use sample::distribution::Distribution2D;
 
 /// an image texture
 pub struct ImageTexture<TM, TP, M>
@@ -29,6 +30,21 @@ pub struct ImageTexture<TM, TP, M>
 {
     mapping: M,
     mipmap: Arc<MipMap<TM, TP>>,
+}
+
+impl<TM, TP, M> ImageTexture<TM, TP, M>
+    where TM: BaseNum + image::Primitive + 'static,
+          TP: Pixel<Subpixel=TM> + 'static,
+          M: Mapping2D
+{
+    /// Return distributions of this texture
+    pub fn distribution<F>(&self, f: F) -> Distribution2D
+        where F: FnMut(&TP) -> Float
+    {
+        let (u, _) = self.mipmap.pyramid[0].dimensions();
+        let floats: Vec<_> = self.mipmap.pyramid[0].pixels().map(f).collect();
+        Distribution2D::new(&floats, u as usize)
+    }
 }
 
 // unsafe impl<T: BaseNum + image::Primitive, M> Sync for ImageTexture<T, M> { }
@@ -45,6 +61,11 @@ impl<TM, TP, M> Texture for ImageTexture<TM, TP, M>
     fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel {
         let t2dinfo = self.mapping.map(si, dxy);
         self.mipmap.look_up(t2dinfo.p, t2dinfo.dpdx, t2dinfo.dpdy)
+    }
+
+    #[inline]
+    fn mean(&self) -> Self::Texel {
+        self.mipmap.mean
     }
 }
 
@@ -88,12 +109,13 @@ impl<TM, M> ImageTexture<TM, RGBSpectrum<TM>, M>
                 None
             }
         }
-    }
+    }    
 }
 
 pub struct MipMap<TM: BaseNum + image::Primitive, TP: Pixel<Subpixel=TM>> {
     info: ImageInfo,
     pyramid: Vec<image::ImageBuffer<TP, Vec<TM>>>,
+    mean: TP,
 }
 
 impl<T> MipMap<T, RGBSpectrum<T>>
@@ -126,9 +148,20 @@ impl<T> MipMap<T, RGBSpectrum<T>>
                 pyramid.push(image::ImageBuffer::from_raw(dx, dy, cb).unwrap());
             }
 
+            let z = <T as Zero>::zero();
+            let slice = [z, z, z, z];
+            let mut sum = *RGBSpectrum::from_slice(&slice);
+            let mut count = 0u32;
+            for p in pyramid[0].pixels() {
+                sum = add_two(sum, p);
+                count += 1;
+            }
+            let inv_count = 1. as Float / count as Float;
+
             Some(MipMap{
                 info: info,
                 pyramid: pyramid,
+                mean: mul_float(sum, inv_count),
             })
         } else {
             None
@@ -400,9 +433,8 @@ impl Hash for ImageInfo {
         self.name.hash(state);
         self.trilinear.hash(state);
         unsafe {
-            // FIXME: transmution would break on changing typedef
-            (mem::transmute::<Float, u32>(self.max_aniso)).hash(state);
-            (mem::transmute::<Float, u32>(self.scale)).hash(state);
+            (mem::transmute::<Float, FSize>(self.max_aniso)).hash(state);
+            (mem::transmute::<Float, FSize>(self.scale)).hash(state);
         }
         self.wrapping.hash(state);
         self.gamma.hash(state);

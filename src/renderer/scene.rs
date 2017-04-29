@@ -75,7 +75,6 @@ impl Scene {
             if spdf == 0. as Float {
                 f = RGBSpectrumf::black();
             }
-            // print!("spdf = {:?}", spdf);
             if !f.is_black() && ls.occluded(&*self.aggregate) {
                 f = RGBSpectrumf::black();
             }
@@ -113,7 +112,6 @@ impl Scene {
                     }
                 }
                 if !li.is_black() {
-                    // println!("li={:?}, weight={:?}, spdf={:?}, f={:?}", li, weight, pdf, f);
                     ret += f * li * weight / pdf;
                 }
             }

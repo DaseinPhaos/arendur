@@ -51,6 +51,9 @@ pub trait Texture: Send + Sync {
     /// Evaluate the texture given interaction info and partial
     /// differential info
     fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel;
+
+    /// Mean value of the texture
+    fn mean(&self) -> Self::Texel;
 }
 
 impl<'a, T: 'a> Texture for &'a T
@@ -61,6 +64,11 @@ impl<'a, T: 'a> Texture for &'a T
     #[inline]
     fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel {
         (*self).evaluate(si, dxy)
+    }
+
+    #[inline]
+    fn mean(&self) -> Self::Texel {
+        (*self).mean()
     }
 }
 

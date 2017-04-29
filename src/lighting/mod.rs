@@ -124,10 +124,10 @@ impl LightSample {
     #[inline]
     pub fn occluded<C: Composable + ?Sized>(&self, components: &C) -> bool {
         // TODO: check floating point error
-        let epsilon = Point3f::default_epsilon();
+        let epsilon = Point3f::default_epsilon()*2.0;
         let dir = self.pto - self.pfrom;
         let pfrom = self.pfrom + dir*epsilon;
-        let pto = self.pto + dir*epsilon;
+        let pto = self.pto + (-dir*epsilon);
         let ray = RawRay::spawn(pfrom, pto);
         components.can_intersect(&ray)
     }

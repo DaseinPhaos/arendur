@@ -193,8 +193,7 @@ impl<'b> SurfaceInteraction<'b> {
     #[inline]
     pub fn spawn_ray_differential(&self, dir: Vector3f, dxy: Option<&DxyInfo>) -> RayDifferential {
         let epsilon = Vector3f::default_epsilon();
-        let epsilon = Vector3f::new(epsilon, epsilon, epsilon);
-        let pos = self.basic.pos + epsilon;
+        let pos = self.basic.pos + epsilon * dir;
         let ray = RawRay::from_od(pos, dir);
         let diffs = if let Some(dxy) = dxy {
             let posdx = pos + dxy.dpdx;

@@ -24,6 +24,11 @@ impl<T: Clone + Send + Sync> Texture for ConstantTexture<T> {
     fn evaluate(&self, _si: &SurfaceInteraction, _dxy: &DxyInfo) -> T {
         self.value.clone()
     }
+
+    #[inline]
+    fn mean(&self) -> T {
+        self.value.clone()
+    }
 }
 
 /// Texture adapter that takes two textures and returns the product of their values
@@ -42,6 +47,12 @@ impl<T0: Send + Sync, T1: Send + Sync> Texture for ProductTexture<T0, T1>
     #[inline]
     fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel {
         self.t0.evaluate(si, dxy) * self.t1.evaluate(si, dxy)
+    }
+
+    #[inline]
+    // TODO: inappropriate. fix this
+    fn mean(&self) -> Self::Texel {
+        self.t0.mean() * self.t1.mean()
     }
 }
 
@@ -69,6 +80,15 @@ impl<T0: Send + Sync, T1: Send + Sync, L: Send + Sync> Texture for MixTexture<T0
         let lerp = self.l.evaluate(si, dxy);
         let t0l = self.t0.evaluate(si, dxy) * (1.0 as Float - lerp);
         let t1l = self.t1.evaluate(si, dxy) * lerp;
+        t0l + t1l
+    }
+
+    #[inline]
+    // TODO: inappropriate. fix this
+    fn mean(&self) -> Self::Texel {
+        let lerp = self.l.mean();
+        let t0l = self.t0.mean() * (1.0 as Float - lerp);
+        let t1l = self.t1.mean() * lerp;
         t0l + t1l
     }
 }

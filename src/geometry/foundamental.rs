@@ -12,6 +12,7 @@ use cgmath;
 use super::float;
 
 pub type Float = f32;
+pub type FSize = u32;
 pub type Point2f = cgmath::Point2<Float>;
 pub type Point3f = cgmath::Point3<Float>;
 pub type Vector2f = cgmath::Vector2<Float>;

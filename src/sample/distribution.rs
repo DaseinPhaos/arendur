@@ -164,7 +164,7 @@ pub struct Distribution2D {
 }
 
 impl Distribution2D {
-    pub fn new(&self, floats: &[Float], nu: usize) -> Distribution2D {
+    pub fn new(floats: &[Float], nu: usize) -> Distribution2D {
         let n = floats.len();
         assert!(nu < n);
         let nv = n / nu;

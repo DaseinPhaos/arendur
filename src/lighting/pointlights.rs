@@ -51,6 +51,7 @@ impl Light for PointLight {
         let pfrom = self.posw;
         let pto = pos;
         let radiance = self.intensity/(pto-pfrom).magnitude2();
+        // println!("pfrom={:?}, pto={:?}, radiance={:?}", pfrom, pto, radiance.inner);
         LightSample {
             radiance: radiance,
             pdf: 1.0 as Float,

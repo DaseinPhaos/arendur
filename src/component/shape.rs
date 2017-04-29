@@ -159,10 +159,9 @@ impl<S, M> Light for ShapedPrimitive<S, M>
 
     /// returns an estimation of total power of this light
     fn power(&self) -> RGBSpectrumf {
-        if self.lighting_profile.is_some() {
-            // FIXME: wrong
+        if let Some(ref lp) = self.lighting_profile {
             debug_assert!(self.shape.surface_area() >= 0. as Float);
-            RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float) * self.shape.surface_area()
+            lp.mean() * self.shape.surface_area() * float::pi()
         } else {
             RGBSpectrumf::black()
         }

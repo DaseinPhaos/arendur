@@ -108,13 +108,13 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
         let render_tile = |tile: &mut FilmTile<_>| {
             let mut arena = Arena::new();
-            let mut allocator = arena.allocator();
             let mut sampler = self.sampler.clone();
             let tile_bound = tile.bounding();
             for p in tile_bound {
                 let p: Point2<u32> = p.cast();
                 sampler.start_pixel(p);
                 loop {
+                    let mut allocator = arena.allocator();
                     let camera_sample_info = sampler.get_camera_sample(p);
                     let mut ray_differential = self.camera.generate_path_differential(camera_sample_info);
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
