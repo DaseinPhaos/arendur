@@ -16,7 +16,7 @@ use component::Primitive;
 use spectrum::{Spectrum, RGBSpectrumf};
 
 /// Basic information about an interaction
-#[derive(PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 #[must_use]
 pub struct InteractInfo {
     /// Position at which the interaction occurs
@@ -41,7 +41,7 @@ impl InteractInfo {
 }
 
 /// Differential information about some $p(u, v)$, $n(u, v)$
-#[derive(PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 #[must_use]
 pub struct DuvInfo {
     /// partial differential of position along u
@@ -87,6 +87,15 @@ pub struct SurfaceInteraction<'b> {
     pub primitive_hit: Option<&'b Primitive>,
 }
 
+use std::fmt::*;
+impl<'a> Debug for SurfaceInteraction<'a> {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "SI{{\n\tbasic: {:?}, \n\tuv:{:?}, \n\tduv:{:?}, \n\tns:{:?}", 
+            self.basic, self.uv, self.duv, self.shading_norm
+        )
+    }
+}
+
 impl<'b> SurfaceInteraction<'b> {
     /// Construct a new instance from given info
     pub fn new(
@@ -122,7 +131,7 @@ impl<'b> SurfaceInteraction<'b> {
     /// set `self.shading_`s.
     /// if `orient_norm_by_shading`, `self.norm` would be oriented
     /// according to `self.shading_norm`. Otherwise, the reverse.
-    pub fn set_shading(&mut self,duv: DuvInfo, orient_norm_by_shading: bool)
+    pub fn set_shading(&mut self, duv: DuvInfo, orient_norm_by_shading: bool)
     {
         self.duv = duv;
         // FIXME: should update according to more cretiarias
@@ -222,7 +231,7 @@ impl<'b> SurfaceInteraction<'b> {
 
 /// Partial differential info about some `p(x, y)`, `u(x, y)`, `v(x, y)`
 /// according to some `(x, y)` image space
-#[derive(PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct DxyInfo {
     pub dpdx: Vector3f,
     pub dpdy: Vector3f,

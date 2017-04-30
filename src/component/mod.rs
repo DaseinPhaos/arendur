@@ -33,6 +33,11 @@ pub trait Composable: Sync + Send {
     fn as_light(&self) -> &Light {
         unimplemented!();
     }
+
+    #[inline]
+    fn intersection_cost(&self) -> Float {
+        1.0 as Float
+    }
 }
 
 // /// An aggregated renderable entity
@@ -52,6 +57,6 @@ pub trait Primitive: Composable + Light {
 
 pub mod shape;
 pub mod transformed;
-// pub mod bvh;
+pub mod bvh;
 pub mod naive;
 pub mod prelude;

@@ -13,7 +13,7 @@ use super::Composable;
 use std::sync::Arc;
 
 pub struct Naive {
-    elements: Vec<Arc<Composable>>,
+    pub elements: Vec<Arc<Composable>>,
     bbox: BBox3f,
 }
 
@@ -51,18 +51,18 @@ impl Composable for Naive {
         self.bbox
     }
 
-    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
-        let mut min_ray = ray.clone();
+    fn intersect_ray(&self, min_ray: &mut RawRay) -> Option<SurfaceInteraction> {
         let mut final_ret = None;
+        if self.bbox_parent().intersect_ray(min_ray).is_none() {return final_ret;}
         for element in &self.elements {
-            let mut ray = ray.clone();
+            if element.bbox_parent().intersect_ray(min_ray).is_none() {continue;}
+            let mut ray = min_ray.clone();
             let ret = element.intersect_ray(&mut ray);
             if min_ray.max_extend() > ray.max_extend() { 
-                min_ray = ray;
+                *min_ray = ray;
                 final_ret = ret;
             }
         }
-        ray.set_max_extend(min_ray.max_extend());
         final_ret
     }
 }

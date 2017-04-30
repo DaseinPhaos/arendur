@@ -9,3 +9,4 @@
 pub use super::{Composable, Primitive};
 pub use super::shape::ShapedPrimitive;
 pub use super::transformed::TransformedComposable;
+pub use super::bvh::{BVHStrategy, BVH};

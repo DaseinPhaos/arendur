@@ -46,6 +46,11 @@ impl<T: Composable> Composable for TransformedComposable<T>
     }
 
     #[inline]
+    fn intersection_cost(&self) -> Float {
+        1.0 as Float + self.inner.intersection_cost()
+    }
+
+    #[inline]
     default fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
         *ray = ray.apply_transform(&*self.parent_local);
         let mut ret = self.inner.intersect_ray(ray);
@@ -157,6 +162,11 @@ impl<T: Composable> Composable for TransformedComposable<Arc<T>>
     #[inline]
     fn bbox_parent(&self) -> BBox3f {
         self.inner.bbox_parent().apply_transform(&*self.local_parent)
+    }
+
+    #[inline]
+    fn intersection_cost(&self) -> Float {
+        2.0 as Float + self.inner.intersection_cost()
     }
 
     #[inline]

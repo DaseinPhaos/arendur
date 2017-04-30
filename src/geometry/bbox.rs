@@ -444,8 +444,7 @@ impl<T: BaseNum> BBox3<T> {
     {
         let two = <T as One>::one() + <T as One>::one();
         let zero = <T as Zero>::zero();
-        let pmin: (T, T, T) = self.pmin.into();
-        let pmin: Vector3<T> = pmin.into();
+        let pmin = self.pmin.to_vec();
         let center = (self.pmax + pmin) / two;
         let radius = if self.contain(center) {
             center.distance(self.pmax)
@@ -556,11 +555,11 @@ impl BBox3f {
     }
 
     /// Construct cache for chached intersection
-    pub fn construct_ray_cache<R>(ray: R) -> (Point3f, Vector3f, Vector3<bool>, Float)
-        where R: Ray
+    pub fn construct_ray_cache<R>(ray: &R) -> (Point3f, Vector3f, Vector3<bool>, Float)
+        where R: Ray + ?Sized
     {
         let origin = ray.origin();
-        let invert_direction = ray.direction() / (1.0 as Float);
+        let invert_direction = 1.0 as Float / ray.direction();
         let zero = 0.0 as Float;
         let dir_is_neg = Vector3::new(invert_direction.x < zero, invert_direction.y < zero, invert_direction.z < zero);
         let max_extend = ray.max_extend();

@@ -107,11 +107,12 @@ fn _load_from_file_transformed(file_name: &Path, transform: Matrix4f) -> Result<
     for model in models.0 {
         if model.mesh.positions.len() == 0 { continue; }
         let mut bbox = {
-            let p = Point3f::new(
+            let mut p = Point3f::new(
                 model.mesh.positions[0] as Float,
                 model.mesh.positions[1] as Float,
                 model.mesh.positions[2] as Float
             );
+            p = transform.transform_point(p);
             BBox3f::new(p, p)
         };
         let vertices = map_f32s_to_point(&model.mesh.positions, |p| {
@@ -439,8 +440,8 @@ impl Shape for TriangleInstance {
             // Some(self.info())
         );
         surface_interaction.set_shading(
-            self.compute_shading_at(Vector3f::new(b0, b1, b2), dpdu), true);
-
+            self.compute_shading_at(Vector3f::new(b0, b1, b2), dpdu), true
+        );
         Some((t, surface_interaction))
     }
 

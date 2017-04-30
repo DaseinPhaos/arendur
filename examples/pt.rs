@@ -92,11 +92,13 @@ fn main() {
     let mut naive = NaiveAggregate::from_one(Arc::new(sphere0));
     naive.append(Arc::new(sphere1));
     naive.append(sphere2.clone());
+    std::env::set_current_dir("./target/").unwrap();
     let teapot_meshes = TriangleMesh::load_from_file_transformed(
-        "target/teapot.obj", Matrix4f::from_translation(
-            Vector3f::new(0.0 as Float, 20.0 as Float, 30.0 as Float)
-        )
+        "mitsuba.obj", Matrix4f::from_translation(
+            Vector3f::new(0.0 as Float, 5.0 as Float, 10.0 as Float)
+        ) * Matrix4f::from_scale(0.2 as Float)
     ).unwrap();
+    println!("teapot bbox{:?}", teapot_meshes[0].bounding());
     for mesh in teapot_meshes {
         for instance in mesh {
             naive.append(Arc::new(ShapedPrimitive::new(
@@ -104,6 +106,7 @@ fn main() {
             )));
         }
     }
+    let naive = BVH::new(&naive.elements, BVHStrategy::SAH);
 
     let mut lights: Vec<Arc<Light>> = vec![
         // Arc::new(PointLight::new(
@@ -153,7 +156,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(90, 90), 
+            Point2::new(1024, 1024), 
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -166,7 +169,7 @@ fn main() {
             )
         )
     );
-    let mut renderer = PTRenderer::new(StrataSampler::new(8, 8, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt900103.png", 5, false);
+    let mut renderer = PTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "testpt900123.png", 5, true);
 
     renderer.render(&scene);
 }
