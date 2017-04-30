@@ -11,6 +11,7 @@
 use geometry::prelude::*;
 use texturing::*;
 use copy_arena::Allocator;
+use std::sync::Arc;
 
 /// The material interface
 pub trait Material: Sync + Send {
@@ -21,6 +22,20 @@ pub trait Material: Sync + Send {
         dxy: &DxyInfo,
         alloc: &mut Allocator<'a>
     ) -> bsdf::Bsdf<'a>;
+}
+
+impl<T: Material> Material for Arc<T> {
+    #[inline]
+    fn compute_scattering<'a>(
+        &self,
+        si: &mut SurfaceInteraction,
+        dxy: &DxyInfo,
+        alloc: &mut Allocator<'a>
+    ) -> bsdf::Bsdf<'a> {
+        <T as Material>::compute_scattering(
+            &*self, si, dxy, alloc
+        )
+    }
 }
 
 // utility to bump a map

@@ -13,6 +13,8 @@ use super::Shape;
 use std::ops;
 use sample::*;
 use std::sync::Arc;
+use tobj;
+use std::path::Path;
 
 /// A triangle mesh
 pub struct TriangleMesh {
@@ -22,6 +24,7 @@ pub struct TriangleMesh {
     normals: Option<Vec<Vector3f>>,
     uvs: Option<Vec<Point2f>>,
     bbox: BBox3f,
+    pub name: String,
 }
 
 impl TriangleMesh {
@@ -40,6 +43,197 @@ impl TriangleMesh {
     /// bounding box, in local frame
     pub fn bounding(&self) -> BBox3f {
         self.bbox
+    }
+
+    /// load meshes from an `.obj` file
+    #[inline]
+    pub fn load_from_file<P>(file_name: &P) -> Result<Vec<TriangleMesh>, tobj::LoadError>
+        where P: AsRef<Path> + ?Sized
+    {
+        _load_from_file(file_name.as_ref())
+    }
+
+    /// load meshes from an `.obj` file, applying `transform` to it
+    pub fn load_from_file_transformed<P>(file_name: &P, transform: Matrix4f)
+        -> Result<Vec<TriangleMesh>, tobj::LoadError>
+        where P: AsRef<Path> + ?Sized
+    {
+        _load_from_file_transformed(file_name.as_ref(), transform)
+    }
+}
+
+fn _load_from_file(file_name: &Path) -> Result<Vec<TriangleMesh>, tobj::LoadError> {
+    let models = tobj::load_obj(file_name.as_ref())?;
+    let mut ret = Vec::with_capacity(models.0.len());
+    for model in models.0 {
+        if model.mesh.positions.len() == 0 { continue; }
+        let mut bbox = {
+            let p = Point3f::new(
+                model.mesh.positions[0] as Float,
+                model.mesh.positions[1] as Float,
+                model.mesh.positions[2] as Float
+            );
+            BBox3f::new(p, p)
+        };
+        let vertices = map_f32s_to_point(&model.mesh.positions, |p| {
+            bbox = bbox.extend(p);
+            p
+        });
+        let indices: Vec<_> = model.mesh.indices.into_iter().map(|i| 
+            i as usize
+        ).collect();
+        let normals = if model.mesh.normals.len() > 0 {
+            Some(map_f32s_to_vec(&model.mesh.normals, |n| n))
+        } else {
+            None
+        };
+        let uvs = if model.mesh.texcoords.len() > 0 {
+            Some(map_f32s_to_point2(&model.mesh.texcoords, |uv| uv))
+        } else {
+            None
+        };
+        let tangents = None;
+        let name = model.name;
+        ret.push(TriangleMesh{
+            vertices, indices, tangents, normals, uvs, bbox, name
+        });
+    }
+    Ok(ret)
+}
+
+fn _load_from_file_transformed(file_name: &Path, transform: Matrix4f) -> Result<Vec<TriangleMesh>, tobj::LoadError> {
+    let models = tobj::load_obj(file_name.as_ref())?;
+    let mut ret = Vec::with_capacity(models.0.len());
+    for model in models.0 {
+        if model.mesh.positions.len() == 0 { continue; }
+        let mut bbox = {
+            let p = Point3f::new(
+                model.mesh.positions[0] as Float,
+                model.mesh.positions[1] as Float,
+                model.mesh.positions[2] as Float
+            );
+            BBox3f::new(p, p)
+        };
+        let vertices = map_f32s_to_point(&model.mesh.positions, |p| {
+            let p = transform.transform_point(p);
+            bbox = bbox.extend(p);
+            p
+        });
+        let indices: Vec<_> = model.mesh.indices.into_iter().map(|i| 
+            i as usize
+        ).collect();
+        let normals = if model.mesh.normals.len() > 0 {
+            Some(map_f32s_to_vec(&model.mesh.normals, |n| transform.transform_norm(n)))
+        } else {
+            None
+        };
+        let uvs = if model.mesh.texcoords.len() > 0 {
+            Some(map_f32s_to_point2(&model.mesh.texcoords, |uv| uv))
+        } else {
+            None
+        };
+        
+        let tangents = None;
+        let name = model.name;
+        ret.push(TriangleMesh{
+            vertices, indices, tangents, normals, uvs, bbox, name
+        });
+    }
+    Ok(ret)
+}
+
+fn map_f32s_to_vec<F>(src: &[f32], mut f: F) -> Vec<Vector3f>
+    where F: FnMut(Vector3f) -> Vector3f
+{
+    let retlen = src.len()/3;
+    let mut ret = Vec::with_capacity(retlen);
+    for i in 0..retlen {
+        let v = unsafe {
+            Vector3f::new(
+                *src.get_unchecked(3*i) as Float,
+                *src.get_unchecked(3*i+1) as Float,
+                *src.get_unchecked(3*i+2) as Float
+            )
+        };
+        ret.push(f(v));
+    }
+    ret
+}
+
+fn map_f32s_to_point<F>(src: &[f32], mut f: F) -> Vec<Point3f>
+    where F: FnMut(Point3f) -> Point3f
+{
+    let retlen = src.len()/3;
+    let mut ret = Vec::with_capacity(retlen);
+    for i in 0..retlen {
+        let v = unsafe {
+            Point3f::new(
+                *src.get_unchecked(3*i) as Float,
+                *src.get_unchecked(3*i+1) as Float,
+                *src.get_unchecked(3*i+2) as Float
+            )
+        };
+        ret.push(f(v));
+    }
+    ret
+}
+
+fn map_f32s_to_point2<F>(src: &[f32], mut f: F) -> Vec<Point2f>
+    where F: FnMut(Point2f) -> Point2f
+{
+    let retlen = src.len()/2;
+    let mut ret = Vec::with_capacity(retlen);
+    for i in 0..retlen {
+        let v = unsafe {
+            Point2f::new(
+                *src.get_unchecked(2*i) as Float,
+                *src.get_unchecked(2*i+1) as Float
+            )
+        };
+        ret.push(f(v));
+    }
+    ret
+}
+
+impl IntoIterator for TriangleMesh {
+    type Item = TriangleInstance;
+    type IntoIter = TriangleInstance;
+
+    #[inline]
+    fn into_iter(self) -> TriangleInstance {
+        TriangleInstance{
+            mesh: Arc::new(self),
+            idx: 0,
+        }
+    }
+}
+
+impl Iterator for TriangleInstance {
+    type Item = TriangleInstance;
+
+    #[inline]
+    fn next(&mut self) -> Option<TriangleInstance> {
+        if self.idx + 2 < self.mesh.indices.len() {
+            let ret = TriangleInstance{
+                mesh: Arc::clone(&self.mesh),
+                idx: self.idx,
+            };
+            self.idx += 3;
+            Some(ret)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.mesh.indices.len();
+        if self.idx >= len {
+            (0, Some(0))
+        } else {
+            let remain = (len - self.idx)/3;
+            (remain, Some(remain))
+        }
     }
 }
 

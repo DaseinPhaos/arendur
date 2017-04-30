@@ -19,7 +19,7 @@ extern crate cgmath;
 extern crate image;
 extern crate num_traits;
 extern crate copy_arena;
-
+extern crate tobj;
 extern crate rayon;
 
 pub mod geometry;

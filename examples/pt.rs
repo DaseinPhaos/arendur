@@ -86,12 +86,24 @@ fn main() {
     // let texture = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float)};
 
 
-    let sphere2 = ShapedPrimitive::new(sphere2, material2, Some(Arc::new(texture)));
+    let sphere2 = ShapedPrimitive::new(sphere2, material2.clone(), Some(Arc::new(texture)));
     let sphere2 = Arc::new(TransformedComposable::new(sphere2, transform2, inv_transform2));
 
     let mut naive = NaiveAggregate::from_one(Arc::new(sphere0));
     naive.append(Arc::new(sphere1));
     naive.append(sphere2.clone());
+    let teapot_meshes = TriangleMesh::load_from_file_transformed(
+        "target/teapot.obj", Matrix4f::from_translation(
+            Vector3f::new(0.0 as Float, 20.0 as Float, 30.0 as Float)
+        )
+    ).unwrap();
+    for mesh in teapot_meshes {
+        for instance in mesh {
+            naive.append(Arc::new(ShapedPrimitive::new(
+                instance, material2.clone(), None
+            )));
+        }
+    }
 
     let mut lights: Vec<Arc<Light>> = vec![
         // Arc::new(PointLight::new(
@@ -141,7 +153,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(900, 900), 
+            Point2::new(90, 90), 
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -154,7 +166,7 @@ fn main() {
             )
         )
     );
-    let mut renderer = PTRenderer::new(StrataSampler::new(8, 8, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt900102.png", 5, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(8, 8, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "target/testpt900103.png", 5, false);
 
     renderer.render(&scene);
 }
