@@ -119,7 +119,9 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
                     let mut ray_differential = self.camera.generate_path_differential(camera_sample_info);
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
                     let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0, self.max_depth);
-                    tile.add_sample(camera_sample_info.pfilm, &total_randiance);
+                    if total_randiance.valid() {
+                        tile.add_sample(camera_sample_info.pfilm, &total_randiance);
+                    }
                     if !sampler.next_sample() { break; }
                 }
             }

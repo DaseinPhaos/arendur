@@ -344,8 +344,9 @@ impl TriangleInstance {
             shading_bitangent = shading_bitangent.normalize();
             shading_tangent = shading_bitangent.cross(shading_normal);
         } else {
-            // FIXME: degenerate
-            panic!("invalid shading")
+            let tbt = normal::get_basis_from(shading_normal);
+            shading_tangent = tbt.0;
+            shading_bitangent = tbt.1;
         };
 
         DuvInfo {

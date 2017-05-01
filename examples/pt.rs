@@ -16,17 +16,20 @@ use arendur::prelude::*;
 type NaiveAggregate = arendur::component::naive::Naive;
 use std::sync::Arc;
 use std::collections::HashMap;
+use std::time::*;
 
 fn main() {
     println!("Path tracing example");
     use std::io;
     let mut s = String::new();
     let _ = io::stdin().read_line(&mut s);
+    println!("Rendering...");
+    let sudato = Instant::now();
     let transform0 = Arc::new(Matrix4f::from_translation(Vector3f::new(12.0 as Float, 12.0 as Float, 30.0 as Float)));
     let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(-12.0 as Float, -12.0 as Float, 30.0 as Float)));
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
-    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 0.0 as Float, 20.0 as Float)));
+    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(8.0 as Float, 4.0 as Float, 35.0 as Float)));
     let inv_transform2 = Arc::new(transform2.invert().unwrap());
 
     // let sphere0 = Sphere::new(8. as Float, -7. as Float, 7. as Float, 6.28 as Float);
@@ -65,7 +68,7 @@ fn main() {
 
     let material0 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
 
-    let sphere0 = ShapedPrimitive::new(sphere0, material0, None);
+    let sphere0 = ShapedPrimitive::new(sphere0, material0.clone(), None);
     let sphere0 = TransformedComposable::new(sphere0, transform0, inv_transform0);
 
     let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 1.0 as Float)};
@@ -81,7 +84,7 @@ fn main() {
 
     let material2 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
 
-    let texture = ConstantTexture{value: RGBSpectrumf::new(50.5 as Float, 0.2 as Float, 0.3 as Float)};
+    let texture = ConstantTexture{value: RGBSpectrumf::new(15.5 as Float, 14.2 as Float, 10.3 as Float)};
 
     // let texture = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float)};
 
@@ -89,20 +92,21 @@ fn main() {
     let sphere2 = ShapedPrimitive::new(sphere2, material2.clone(), Some(Arc::new(texture)));
     let sphere2 = Arc::new(TransformedComposable::new(sphere2, transform2, inv_transform2));
 
-    let mut naive = NaiveAggregate::from_one(Arc::new(sphere0));
-    naive.append(Arc::new(sphere1));
-    naive.append(sphere2.clone());
+    let mut naive = NaiveAggregate::from_one(sphere2.clone());
+    // naive.append(Arc::new(sphere1));
+    // naive.append(sphere2.clone());
     std::env::set_current_dir("./target/").unwrap();
     let teapot_meshes = TriangleMesh::load_from_file_transformed(
         "mitsuba.obj", Matrix4f::from_translation(
-            Vector3f::new(0.0 as Float, 5.0 as Float, 10.0 as Float)
-        ) * Matrix4f::from_scale(0.2 as Float)
+            Vector3f::new(0.0 as Float, -13.0 as Float, 20.0 as Float)
+        ) * Matrix4f::from_angle_y(Rad(float::pi()))
+          * Matrix4f::from_scale(2.0 as Float)
     ).unwrap();
     println!("teapot bbox{:?}", teapot_meshes[0].bounding());
     for mesh in teapot_meshes {
         for instance in mesh {
             naive.append(Arc::new(ShapedPrimitive::new(
-                instance, material2.clone(), None
+                instance, material0.clone(), None
             )));
         }
     }
@@ -130,8 +134,8 @@ fn main() {
         //     RGBSpectrumf::new(0.0 as Float, 1300.0 as Float, 0.0 as Float))
         // ), 
         Arc::new(PointLight::new(
-            Point3f::new(0.0 as Float, 0.0 as Float, 10.0 as Float),
-            RGBSpectrumf::new(0.0 as Float, 1900.0 as Float, 1900.0 as Float))
+            Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
+            RGBSpectrumf::new(900.0 as Float, 900.0 as Float, 900.0 as Float))
         ), 
     ];
     lights.push(sphere2);
@@ -153,10 +157,10 @@ fn main() {
         0.1 as Float, 
         1000.0 as Float, 
         // float::pi()*2.0 as Float / 3.0 as Float, 
-        float::frac_pi_2(),
+        float::frac_pi_2() * 1.2 as Float,
         None, 
         Film::new(
-            Point2::new(1024, 1024), 
+            Point2::new(1200, 1080), 
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -169,7 +173,8 @@ fn main() {
             )
         )
     );
-    let mut renderer = PTRenderer::new(StrataSampler::new(9, 9, 10, rand::StdRng::new().unwrap()), Arc::new(camera), "testpt900123.png", 5, true);
-
+    let mut renderer = PTRenderer::new(StrataSampler::new(32, 32, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "mitsuba_HD1.png", 5, true);
     renderer.render(&scene);
+    let duration = sudato.elapsed();
+    println!("Done! Time used: {:.4}s", duration.as_secs() as f64 + (duration.subsec_nanos() as f64/1_000_000_000.0f64));
 }

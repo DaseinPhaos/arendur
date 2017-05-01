@@ -298,6 +298,11 @@ impl RGBSpectrumf {
     pub fn sqrt(self) -> RGBSpectrumf {
         RGBSpectrumf::new(self.inner.x.sqrt(), self.inner.y.sqrt(), self.inner.z.sqrt())   
     }
+
+    #[inline]
+    pub fn valid(&self) -> bool {
+        !self.r().is_nan() && !self.g().is_nan() && !self.b().is_nan()
+    }
 }
 
 impl Spectrum for RGBSpectrumf {
