@@ -143,6 +143,16 @@ impl<T: BaseNum> BBox2<T> {
         }
     }
 
+    /// Expand each boundary by `delta`. Note that `delta` can be negative
+    #[inline]
+    pub fn expand_by_vec(&self, delta: Vector2<T>) -> Self
+        where T: ops::Neg<Output = T> {
+        BBox2 {
+            pmin: self.pmin + (-delta),
+            pmax: self.pmax + delta,
+        }
+    }
+
     /// Return the diagonal vector, from `pmin` to `pmax`
     #[inline]
     pub fn diagonal(&self) -> Vector2<T> {
@@ -367,6 +377,16 @@ impl<T: BaseNum> BBox3<T> {
         BBox3 {
             pmin: self.pmin + (-Vector3::new(delta, delta, delta)),
             pmax: self.pmax + Vector3::new(delta, delta, delta),
+        }
+    }
+
+    /// Expand each boundary by `delta`. Note that `delta` can be negative
+    #[inline]
+    pub fn expand_by_vec(&self, delta: Vector3<T>) -> Self
+        where T: ops::Neg<Output = T> {
+        BBox3 {
+            pmin: self.pmin + (-delta),
+            pmax: self.pmax + delta,
         }
     }
 

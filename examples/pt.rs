@@ -84,7 +84,7 @@ fn main() {
 
     let material2 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
 
-    let texture = ConstantTexture{value: RGBSpectrumf::new(15.5 as Float, 14.2 as Float, 10.3 as Float)};
+    let texture = ConstantTexture{value: RGBSpectrumf::new(25.5 as Float, 24.2 as Float, 20.3 as Float)};
 
     // let texture = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float)};
 
@@ -135,7 +135,7 @@ fn main() {
         // ), 
         Arc::new(PointLight::new(
             Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
-            RGBSpectrumf::new(900.0 as Float, 900.0 as Float, 900.0 as Float))
+            RGBSpectrumf::new(190.0 as Float, 190.0 as Float, 190.0 as Float))
         ), 
     ];
     lights.push(sphere2);
@@ -160,20 +160,24 @@ fn main() {
         float::frac_pi_2() * 1.2 as Float,
         None, 
         Film::new(
-            Point2::new(1200, 1080), 
+            Point2::new(900, 810), 
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
-            ),
+            ), 
             Arc::new(
-                MitchellFilter::new(
-                    Vector2f::new(2.0 as Float, 2.0 as Float), 
-                    0.5 as Float, 0.25 as Float,
+                // MitchellFilter::new(
+                //     Vector2f::new(2.0 as Float, 2.0 as Float), 
+                //     0.5 as Float, 0.25 as Float,
+                // )
+                LanczosSincFilter::new(
+                    Vector2f::new(4.0 as Float, 4.0 as Float),
+                    3.0 as Float,
                 )
             )
         )
     );
-    let mut renderer = PTRenderer::new(StrataSampler::new(32, 32, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "mitsuba_HD1.png", 5, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(8, 8, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "mitsuba4.png", 5, true);
     renderer.render(&scene);
     let duration = sudato.elapsed();
     println!("Done! Time used: {:.4}s", duration.as_secs() as f64 + (duration.subsec_nanos() as f64/1_000_000_000.0f64));

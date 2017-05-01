@@ -76,10 +76,11 @@ impl Film {
         sink: &mut BoundedSink2D<TilePixel<RGBSpectrumf>>)
         where S: Spectrum<Scalar=Float>,
     {
-        assert!(self.crop_window == sink.bounding);
-        assert!(sink.bounding.contain_lb(tile.sink.bounding.pmin));
-        assert!(sink.bounding.contain(tile.sink.bounding.pmax));
-        for pixel_idx in tile.sink.bounding {
+        // assert!(self.crop_window == sink.bounding);
+        // assert!(sink.bounding.contain_lb(tile.sink.bounding.pmin));
+        // assert!(sink.bounding.contain(tile.sink.bounding.pmax));
+        let intersection = tile.sink.bounding.intersect(&sink.bounding);
+        for pixel_idx in intersection.expect("No intersection") {
             let (rgbspec, weight) = unsafe {
                 let s = tile.sink.get_pixel_unchecked(pixel_idx);
                 (s.spectrum_sum.to_srgb(), s.filter_weight_sum)
@@ -116,7 +117,10 @@ impl Film {
                     filter: &*self.filter,
                     filter_radius: self.filter_radius,
                     bounding: bbox,
-                    sink: BoundedSink2D::with_value(Default::default(), bbox),
+                    sink: BoundedSink2D::with_value(
+                        Default::default(), 
+                        bbox.expand_by_vec(self.filter_radius.cast())
+                    ),
                 })
             }
         }
