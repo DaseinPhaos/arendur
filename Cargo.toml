@@ -24,13 +24,13 @@ copy_arena = "0.1"
 rayon = "0.7"
 tobj = "0.1"
 
-[[example]]
-name = "whitted"
-path = "examples/whitted/main.rs"
+# [[example]]
+# name = "whitted"
+# path = "examples/whitted/main.rs"
 
-[[example]]
-name = "bpt"
-path = "examples/bpt/main.rs"
+# [[example]]
+# name = "bpt"
+# path = "examples/bpt/main.rs"
 
 [[example]]
 name = "pt"

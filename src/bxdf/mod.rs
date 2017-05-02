@@ -19,6 +19,7 @@ pub trait Bxdf {
     fn kind(&self) -> BxdfType;
 
     /// check if the type matches
+    #[inline]
     fn is(&self, t: BxdfType) -> bool {
         (self.kind().bits & t.bits) == self.kind().bits
     }
@@ -134,4 +135,4 @@ pub mod specular;
 pub mod lambertian;
 pub mod oren_nayar;
 pub mod prelude;
-// TODO: Add microfacet distribution model
+pub mod microfacet;

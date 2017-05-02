@@ -31,7 +31,7 @@ pub struct PerspecCam {
 impl PerspecCam {
     /// Construction
     pub fn new(
-        view_parent: Matrix4f,
+        parent_view: Matrix4f,
         screen: BBox2f,
         znear: Float,
         zfar: Float,
@@ -39,7 +39,7 @@ impl PerspecCam {
         lens: Option<(Float, Float)>,
         film: Film
     ) -> PerspecCam {
-        let parent_view = view_parent.inverse_transform().expect("matrix inversion failure");
+        let view_parent = parent_view.inverse_transform().expect("matrix inversion failure");
         let resolution = film.resolutionf();
         let proj_info = ProjCameraInfo::new(
             PerspecCam::perspective_transform(fov, znear, zfar),
@@ -66,14 +66,14 @@ impl PerspecCam {
             Point3f::new(0.0 as Float, 1.0 as Float, 0.0 as Float)
         ) - or2v;
         PerspecCam{
-            view_parent: view_parent,
-            parent_view: parent_view,
-            proj_info: proj_info,
-            dx: dx,
-            dy: dy,
-            lens: lens,
-            film: film,
-            area: area,
+            view_parent,
+            parent_view,
+            proj_info,
+            dx,
+            dy,
+            lens,
+            film,
+            area,
         }
     }
 
@@ -90,8 +90,22 @@ impl PerspecCam {
             zero, zero, -zfar*znear/(zfar-znear), zero
         );
 
-        let inv_tan = one/ (fov * 0.5 as Float).tan();
-        Matrix4f::from_nonuniform_scale(inv_tan, inv_tan, one) * persp
+        let inv_tan = one/ ((fov * 0.5 as Float).tan());
+        Matrix4f::from_nonuniform_scale(inv_tan, inv_tan, one) * persp     
+    }
+
+    pub fn look_from(&mut self, eye: Point3f, to: Point3f, up: Vector3f) {
+        let f = (to - eye).normalize();
+        let s = f.cross(up).normalize();
+        let u = s.cross(f);
+
+        self.view_parent = Matrix4::new(
+            s.x.clone(), u.x.clone(), f.x.clone(), Float::zero(),
+            s.y.clone(), u.y.clone(), f.y.clone(), Float::zero(),
+            s.z.clone(), u.z.clone(), f.z.clone(), Float::zero(),
+            eye.dot(s), eye.dot(u), -eye.dot(f), Float::one()
+        );
+        self.parent_view = self.view_parent.inverse_transform().unwrap();
     }
 }
 

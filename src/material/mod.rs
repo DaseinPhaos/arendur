@@ -24,7 +24,7 @@ pub trait Material: Sync + Send {
     ) -> bsdf::Bsdf<'a>;
 }
 
-impl<T: Material> Material for Arc<T> {
+impl<T: Material + ?Sized> Material for Arc<T> {
     #[inline]
     fn compute_scattering<'a>(
         &self,
@@ -85,4 +85,5 @@ fn add_bumping<T: Texture<Texel=Float> + ?Sized>(si: &mut SurfaceInteraction, dx
 
 pub mod bsdf;
 pub mod matte;
+pub mod plastic;
 pub mod prelude;

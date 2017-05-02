@@ -76,11 +76,10 @@ impl Film {
         sink: &mut BoundedSink2D<TilePixel<RGBSpectrumf>>)
         where S: Spectrum<Scalar=Float>,
     {
-        // assert!(self.crop_window == sink.bounding);
-        // assert!(sink.bounding.contain_lb(tile.sink.bounding.pmin));
-        // assert!(sink.bounding.contain(tile.sink.bounding.pmax));
-        let intersection = tile.sink.bounding.intersect(&sink.bounding);
-        for pixel_idx in intersection.expect("No intersection") {
+        assert!(self.crop_window == sink.bounding);
+        assert!(sink.bounding.contain_lb(tile.sink.bounding.pmin));
+        assert!(sink.bounding.contain(tile.sink.bounding.pmax));
+        for pixel_idx in tile.sink.bounding {
             let (rgbspec, weight) = unsafe {
                 let s = tile.sink.get_pixel_unchecked(pixel_idx);
                 (s.spectrum_sum.to_srgb(), s.filter_weight_sum)
@@ -119,7 +118,7 @@ impl Film {
                     bounding: bbox,
                     sink: BoundedSink2D::with_value(
                         Default::default(), 
-                        bbox.expand_by_vec(self.filter_radius.cast())
+                        bbox.expand_by_vec(self.filter_radius.cast()).intersect(&self.crop_window).unwrap()
                     ),
                 })
             }
@@ -370,7 +369,7 @@ impl Image {
     }
 
     /// save this image to `path`
-    pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+    pub fn save<P: AsRef<Path> + ?Sized>(&self, path: &P) -> Result<()> {
         let mut support = Vec::with_capacity(self.inner.pixels.len() * 3);
         for p in self.inner.bounding {
             let s = unsafe {

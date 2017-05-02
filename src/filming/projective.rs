@@ -26,17 +26,14 @@ impl ProjCameraInfo {
         screen: BBox2f,
         resolution: Vector2f
     ) -> ProjCameraInfo {
-        let screen_raster = 
-            Matrix4f::from_nonuniform_scale(
-                resolution.x, resolution.y, 1.0 as Float
-            ) * Matrix4f::from_nonuniform_scale(
-                1.0 as Float / (screen.pmax.x - screen.pmin.x),
-                1.0 as Float / (screen.pmin.y - screen.pmax.y),
-                1.0 as Float
-            ) * Matrix4f::from_translation(
-                Vector3f::new(-screen.pmin.x, -screen.pmax.y, 0.0 as Float)
-            );
-        let raster_screen = screen_raster.invert().expect("matrix inversion failure");
+        let raster_screen = Matrix4f::from_translation(
+            Vector3f::new(screen.pmin.x, screen.pmax.y, 0. as Float)
+        ) * Matrix4f::from_nonuniform_scale(
+            (screen.pmax.x-screen.pmin.x)/resolution.x,
+            (screen.pmin.y-screen.pmax.y)/resolution.y, 
+             1. as Float
+        );
+        let screen_raster = raster_screen.invert().unwrap();
         let raster_view = view_screen.invert().expect("matrix inversion failure") * raster_screen;
         ProjCameraInfo {
             view_screen: view_screen,

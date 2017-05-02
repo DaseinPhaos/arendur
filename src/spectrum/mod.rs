@@ -388,3 +388,7 @@ impl ToNorm for Float {
 delegate_impl_to_norm!(u8);
 delegate_impl_to_norm!(u16);
 delegate_impl_to_norm!(u32);
+
+pub mod prelude {
+    pub use super::{RGBSpectrum, RGBSpectrumf, Spectrum};
+}

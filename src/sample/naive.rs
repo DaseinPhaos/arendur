@@ -12,7 +12,6 @@
 extern crate rand;
 use self::rand::Rng;
 use geometry::prelude::*;
-use std::usize::MAX;
 use super::Sampler;
 
 // Copyright 2017 Dasein Phaos aka. Luxko
@@ -24,16 +23,28 @@ use super::Sampler;
 // except according to those terms.
 
 /// A naive sampler. Who dare use it?
-#[derive(Clone)]
 pub struct Naive {
     rng: rand::StdRng,
+    nsample: usize,
+    isample: usize,
 }
 
 impl Naive {
     #[inline]
-    pub fn new() -> Naive {
+    pub fn new(nsample: usize) -> Naive {
         Naive {
-            rng: rand::StdRng::new().unwrap()
+            rng: rand::StdRng::new().unwrap(), nsample, isample: 0,
+        }
+    }
+}
+
+impl Clone for Naive {
+    #[inline]
+    fn clone(&self) -> Self {
+        Naive {
+            rng: rand::StdRng::new().unwrap(),
+            nsample: self.nsample,
+            isample: 0,
         }
     }
 }
@@ -41,22 +52,38 @@ impl Naive {
 impl Default for Naive {
     #[inline]
     fn default() -> Self {
-        Naive::new()
+        Naive::new(16)
     }
 }
 
 impl Sampler for Naive {
-    fn start_pixel(&mut self, p: Point2<u32>) { }
+    fn start_pixel(&mut self, _p: Point2<u32>) {
+        self.isample = 0;
+    }
 
     fn next(&mut self) -> Float {
         self.rng.gen_range(0.0 as Float, 1.0 as Float)
     }
 
     fn sample_per_pixel(&self) -> usize {
-        MAX
+        self.nsample
     }
 
-    fn next_sample(&mut self) -> bool { true }
+    fn next_sample(&mut self) -> bool {
+        if self.isample < self.nsample {
+            self.isample += 1;
+            true
+        } else {
+            false
+        }
+    }
 
-    fn set_sample_index(&mut self, idx: usize) -> bool {true }
+    fn set_sample_index(&mut self, idx: usize) -> bool {
+        self.isample = idx;
+        if idx < self.nsample {
+            true
+        } else {
+            false
+        }
+    }
 }

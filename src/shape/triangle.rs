@@ -16,6 +16,8 @@ use std::sync::Arc;
 use tobj;
 use std::path::Path;
 
+pub type Model = tobj::Model;
+
 /// A triangle mesh
 pub struct TriangleMesh {
     vertices: Vec<Point3f>,
@@ -50,7 +52,12 @@ impl TriangleMesh {
     pub fn load_from_file<P>(file_name: &P) -> Result<Vec<TriangleMesh>, tobj::LoadError>
         where P: AsRef<Path> + ?Sized
     {
-        _load_from_file(file_name.as_ref())
+        let models = tobj::load_obj(file_name.as_ref())?;
+        let mut ret = Vec::with_capacity(models.0.len());
+        for model in models.0 {
+            ret.push(model.into());
+        }
+        Ok(ret)
     }
 
     /// load meshes from an `.obj` file, applying `transform` to it
@@ -58,15 +65,15 @@ impl TriangleMesh {
         -> Result<Vec<TriangleMesh>, tobj::LoadError>
         where P: AsRef<Path> + ?Sized
     {
-        _load_from_file_transformed(file_name.as_ref(), transform)
+        let models = tobj::load_obj(file_name.as_ref())?;
+        let mut ret = Vec::with_capacity(models.0.len());
+        for model in models.0 {
+            ret.push(TriangleMesh::from_model_transformed(model, transform));
+        }
+        Ok(ret)
     }
-}
 
-fn _load_from_file(file_name: &Path) -> Result<Vec<TriangleMesh>, tobj::LoadError> {
-    let models = tobj::load_obj(file_name.as_ref())?;
-    let mut ret = Vec::with_capacity(models.0.len());
-    for model in models.0 {
-        if model.mesh.positions.len() == 0 { continue; }
+    pub fn from_model(model: Model) -> TriangleMesh {
         let mut bbox = {
             let p = Point3f::new(
                 model.mesh.positions[0] as Float,
@@ -94,18 +101,12 @@ fn _load_from_file(file_name: &Path) -> Result<Vec<TriangleMesh>, tobj::LoadErro
         };
         let tangents = None;
         let name = model.name;
-        ret.push(TriangleMesh{
+        TriangleMesh{
             vertices, indices, tangents, normals, uvs, bbox, name
-        });
+        }
     }
-    Ok(ret)
-}
 
-fn _load_from_file_transformed(file_name: &Path, transform: Matrix4f) -> Result<Vec<TriangleMesh>, tobj::LoadError> {
-    let models = tobj::load_obj(file_name.as_ref())?;
-    let mut ret = Vec::with_capacity(models.0.len());
-    for model in models.0 {
-        if model.mesh.positions.len() == 0 { continue; }
+    pub fn from_model_transformed(model: Model, transform: Matrix4f) -> TriangleMesh {
         let mut bbox = {
             let mut p = Point3f::new(
                 model.mesh.positions[0] as Float,
@@ -136,11 +137,17 @@ fn _load_from_file_transformed(file_name: &Path, transform: Matrix4f) -> Result<
         
         let tangents = None;
         let name = model.name;
-        ret.push(TriangleMesh{
+        TriangleMesh{
             vertices, indices, tangents, normals, uvs, bbox, name
-        });
+        }
     }
-    Ok(ret)
+}
+
+impl From<Model> for TriangleMesh {
+    #[inline]
+    fn from(model: Model) -> TriangleMesh {
+        TriangleMesh::from_model(model)
+    }
 }
 
 fn map_f32s_to_vec<F>(src: &[f32], mut f: F) -> Vec<Vector3f>

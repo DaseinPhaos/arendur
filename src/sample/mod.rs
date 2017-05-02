@@ -77,7 +77,7 @@ pub trait Sampler: Clone + Sync + Send
 
     /// Optimal round count, as a hint
     #[inline]
-    fn round_count(&self, n: u32) -> u32 {
+    fn round_count(&self, n: usize) -> usize {
         n
     }
 
@@ -246,7 +246,7 @@ pub fn power_heuristic(nf: usize, pdff: Float, ng: usize, pdfg: Float) -> Float 
     (f*f)/(f*f+g*g)
 }
 
-#[inline]
+#[inline]   
 pub fn balance_heuristic(nf: usize, pdff: Float, ng: usize, pdfg: Float) -> Float {
     let f = nf as Float * pdff;
     let g = ng as Float * pdfg;

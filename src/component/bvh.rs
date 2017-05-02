@@ -13,6 +13,14 @@ use std::mem;
 use std::sync::Arc;
 use super::naive::Naive;
 use copy_arena::{Arena, Allocator};
+use std::path::Path;
+use tobj;
+use std::collections::HashMap;
+use material::prelude::*;
+use shape::prelude::*;
+use texturing::prelude::*;
+use spectrum::prelude::*;
+use super::shape::ShapedPrimitive;
 
 #[derive(Copy, Clone)]
 struct ComponentInfo {
@@ -79,6 +87,86 @@ impl BVH {
             components: sorted, nodes
         }
     }
+
+    /// constructs from an .obj file
+    #[inline]
+    pub fn load_obj<P>(path: &P, transform: Matrix4f) -> Result<BVH, tobj::LoadError>
+        where P: AsRef<Path> + ?Sized
+    {
+        _load_obj(path.as_ref(), transform)
+    }
+}
+
+fn _load_obj(path: &Path, transform: Matrix4f) -> Result<BVH, tobj::LoadError> {
+    let (models, mtls) = tobj::load_obj(path)?;
+    let mut texturess = HashMap::new();
+    let mut materials: Vec<Arc<Material>> = Vec::with_capacity(mtls.len()+1);
+    for mtl in mtls {
+        let diffuse = ImageTexture::new_as_arc(
+            ImageInfo{
+                name: mtl.diffuse_texture,
+                trilinear: false,
+                max_aniso: 16. as Float,
+                wrapping: ImageWrapMode::Repeat,
+                gamma: false,
+                scale: 1. as Float,
+            },
+            UVMapping{
+                scaling: Vector2f::new(1. as Float, 1. as Float),
+                shifting: Vector2f::zero(),
+            },
+            &mut texturess
+        ).unwrap_or(
+            Arc::new(ConstantTexture{value: RGBSpectrum::new(
+                mtl.diffuse[0], mtl.diffuse[1], mtl.diffuse[2]
+            ) })
+        );
+        let specular = ImageTexture::new_as_arc(
+            ImageInfo{
+                name: mtl.specular_texture,
+                trilinear: false,
+                max_aniso: 16. as Float,
+                wrapping: ImageWrapMode::Repeat,
+                gamma: false,
+                scale: 1. as Float,
+            },
+            UVMapping{
+                scaling: Vector2f::new(1. as Float, 1. as Float),
+                shifting: Vector2f::zero(),
+            },
+            &mut texturess
+        ).unwrap_or(
+            Arc::new(ConstantTexture{value: RGBSpectrum::new(
+                mtl.specular[0], mtl.specular[1], mtl.specular[2]
+            ) })
+        );
+
+        let roughness = ConstantTexture{
+            value: (mtl.shininess / 1000.).min(1.) as Float
+        };
+        // TODO: bump
+        materials.push(Arc::new(PlasticMaterial::new(
+            diffuse, specular, Arc::new(roughness), None
+        )));
+    }
+    materials.push(Arc::new(MatteMaterial::new(
+        Arc::new(ConstantTexture{
+            value: RGBSpectrumf::new(0.5 as Float, 0.6 as Float, 0.7 as Float)
+        }),
+        Arc::new(ConstantTexture{value: 0. as Float}), 
+        None
+    )));
+    let mut shapes: Vec<Arc<Composable>> = Vec::new();
+    for model in models {
+        let mid = model.mesh.material_id.unwrap_or(materials.len()-1);
+        let mesh = TriangleMesh::from_model_transformed(model, transform);
+        for shape in mesh {
+            shapes.push(Arc::new(
+                ShapedPrimitive::new(shape, materials[mid].clone(), None))
+            );
+        }
+    }
+    Ok(BVH::new(shapes.as_ref(), BVHStrategy::SAH))
 }
 
 impl Composable for BVH {
@@ -142,9 +230,9 @@ struct LinearNode {
     split_axis: usize,
 }
 
-use std::fmt::{Debug, Formatter, Result};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 impl Debug for LinearNode {
-    fn fmt(&self, fmt: &mut Formatter) -> Result {
+    fn fmt(&self, fmt: &mut Formatter) -> FmtResult {
         let t = if self.len == 0 {
             "Interior"
         } else {

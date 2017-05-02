@@ -29,7 +29,7 @@ fn main() {
     let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(-12.0 as Float, -12.0 as Float, 30.0 as Float)));
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
-    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(8.0 as Float, 4.0 as Float, 35.0 as Float)));
+    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 10.0 as Float, 20.0 as Float)));
     let inv_transform2 = Arc::new(transform2.invert().unwrap());
 
     // let sphere0 = Sphere::new(8. as Float, -7. as Float, 7. as Float, 6.28 as Float);
@@ -55,14 +55,6 @@ fn main() {
         },
         &mut ref_table,
     ).unwrap();
-    // let mipmap = ref_table[&info].upgrade().unwrap();
-    // mipmap.save(0, "0.png");
-    // mipmap.save(1, "1.png");
-    // mipmap.save(2, "2.png");
-    // println!("saved.");
-    // let mut s = String::new();
-    // let _ = io::stdin().read_line(&mut s);
-    // let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 1.0 as Float)};
     let sigma = ConstantTexture{value: 0. as Float};
 
 
@@ -71,14 +63,16 @@ fn main() {
     let sphere0 = ShapedPrimitive::new(sphere0, material0.clone(), None);
     let sphere0 = TransformedComposable::new(sphere0, transform0, inv_transform0);
 
-    let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 1.0 as Float)};
-    let sigma = ConstantTexture{value: 30. as Float};
+    let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.6 as Float, 0.7 as Float)};
+    let sigma = ConstantTexture{value: 10. as Float};
     let material1 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
+    
+    let texture = ConstantTexture{value: RGBSpectrumf::new(12.5 as Float, 14.2 as Float, 15.3 as Float)};
 
-    let sphere1 = ShapedPrimitive::new(sphere1, material1, None);
+    let sphere1 = ShapedPrimitive::new(sphere1, material1.clone(), Some(Arc::new(texture)));
     let sphere1 = TransformedComposable::new(sphere1, transform1, inv_transform1);
 
-    let kd = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float)};
+    let kd = ConstantTexture{value: RGBSpectrumf::new(0.6 as Float, 0.6 as Float, 0.6 as Float)};
     let sigma = ConstantTexture{value: 1.0 as Float};
 
 
@@ -96,21 +90,44 @@ fn main() {
     // naive.append(Arc::new(sphere1));
     // naive.append(sphere2.clone());
     std::env::set_current_dir("./target/").unwrap();
-    let teapot_meshes = TriangleMesh::load_from_file_transformed(
-        "mitsuba.obj", Matrix4f::from_translation(
-            Vector3f::new(0.0 as Float, -13.0 as Float, 20.0 as Float)
-        ) * Matrix4f::from_angle_y(Rad(float::pi()))
-          * Matrix4f::from_scale(2.0 as Float)
+    // let teapot_meshes = TriangleMesh::load_from_file_transformed(
+    //     "cbs.obj", Matrix4f::from_translation(
+    //     //     Vector3f::new(0.0 as Float, -10.0 as Float, 12.0 as Float)
+    //     // ) * Matrix4f::from_angle_y(Rad(float::pi()))
+    //     //   * Matrix4f::from_scale(2.0 as Float)
+    //         Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
+    //     ) * Matrix4f::from_angle_y(Rad(float::pi()))
+    //       * Matrix4f::from_scale(3.0 as Float)
+    // ).unwrap();
+    // println!("teapot bbox{:?}", teapot_meshes[0].bounding());
+    // let materials = vec![
+    //     material0.clone(),
+    //     material2.clone(),
+    //     material1.clone(),
+    //     material1.clone(),
+    //     material1.clone(),
+    //     material1.clone(),
+    //     material1.clone(),
+    //     material1.clone(),
+    //     material1.clone(),
+    // ];
+    // for (i, mesh) in teapot_meshes.into_iter().enumerate() {
+    //     for instance in mesh {
+    //         naive.append(Arc::new(ShapedPrimitive::new(
+    //             instance, materials[i].clone(), None
+    //         )));
+    //     }
+    // }
+    // let naive = BVH::new(&naive.elements, BVHStrategy::SAH);
+
+    let bvh = BVH::load_obj(
+        "sibenik.obj", Matrix4f::from_translation(
+            Vector3f::new(0.0 as Float, -0.0 as Float, 15.0 as Float)
+        ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
+          * Matrix4f::from_scale(1.0 as Float)
     ).unwrap();
-    println!("teapot bbox{:?}", teapot_meshes[0].bounding());
-    for mesh in teapot_meshes {
-        for instance in mesh {
-            naive.append(Arc::new(ShapedPrimitive::new(
-                instance, material0.clone(), None
-            )));
-        }
-    }
-    let naive = BVH::new(&naive.elements, BVHStrategy::SAH);
+    println!("bbox:{:?}", bvh.bbox_parent());
+    naive.append(Arc::new(bvh));
 
     let mut lights: Vec<Arc<Light>> = vec![
         // Arc::new(PointLight::new(
@@ -129,15 +146,20 @@ fn main() {
         //     Point3f::new(0.0 as Float, 100.0 as Float, 100.0 as Float),
         //     RGBSpectrumf::new(100000.7 as Float, 0.0 as Float, 0.0 as Float))
         // ),
-        // Arc::new(PointLight::new(
-        //     Point3f::new(0.0 as Float, -40.0 as Float, 30.0 as Float),
-        //     RGBSpectrumf::new(0.0 as Float, 1300.0 as Float, 0.0 as Float))
-        // ), 
+        Arc::new(SpotLight::new(
+            // Point3f::new(-8.0 as Float, 20.0 as Float, 5.0 as Float),
+            // Vector3f::new(8.0 as Float, -20.0 as Float, 10.0 as Float).normalize(),
+            Point3f::new(-5.0 as Float, 10.0 as Float, 0.0 as Float),
+            Vector3f::new(0.5 as Float, -0.5 as Float, 1.0 as Float).normalize(),
+            RGBSpectrumf::new(950.0 as Float, 730.0 as Float, 450.0 as Float),
+            float::frac_pi_4()*0.75 as Float, float::frac_pi_4()*0.25 as Float)
+        ), 
         Arc::new(PointLight::new(
             Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
-            RGBSpectrumf::new(190.0 as Float, 190.0 as Float, 190.0 as Float))
+            RGBSpectrumf::new(20.0 as Float, 20.0 as Float, 20.0 as Float))
         ), 
     ];
+    // lights.push(Arc::new(sphere1));
     lights.push(sphere2);
     
     for light in &lights {
@@ -145,9 +167,8 @@ fn main() {
     }
 
     let scene = Scene::new(lights, Arc::new(naive));
-
-    let camera = PerspecCam::new(
-        Matrix4f::identity(), 
+    let mut camera = PerspecCam::new(
+        Matrix4f::identity(),
         BBox2f::new(
             Point2f::new(-1.0 as Float, -1.0 as Float), 
             Point2f::new(1.0 as Float, 1.0 as Float)
@@ -157,10 +178,10 @@ fn main() {
         0.1 as Float, 
         1000.0 as Float, 
         // float::pi()*2.0 as Float / 3.0 as Float, 
-        float::frac_pi_2() * 1.2 as Float,
+        float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(900, 810), 
+            Point2::new(1024, 1024),
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -177,7 +198,18 @@ fn main() {
             )
         )
     );
-    let mut renderer = PTRenderer::new(StrataSampler::new(8, 8, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "mitsuba4.png", 5, true);
+    camera.look_from(
+        Point3f::origin(),
+        Point3f::new(0.0 as Float, 20.0 as Float, 155.0 as Float),
+        Vector3f::unit_y()
+    );
+    println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
+        Vector3f::unit_z()
+    ));
+    let mut renderer = PTRenderer::new(StrataSampler::new(32, 32, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "car0s1024.png", 5, true);
+
+    // use arendur::sample;
+    // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);
     renderer.render(&scene);
     let duration = sudato.elapsed();
     println!("Done! Time used: {:.4}s", duration.as_secs() as f64 + (duration.subsec_nanos() as f64/1_000_000_000.0f64));

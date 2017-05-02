@@ -70,8 +70,8 @@ impl<TM, TP, M> Texture for ImageTexture<TM, TP, M>
 }
 
 impl<TM, M> ImageTexture<TM, RGBSpectrum<TM>, M>
-    where TM: BaseNum + image::Primitive + ToNorm + 'static,
-          M: Mapping2D,
+    where TM: BaseNum + image::Primitive + ToNorm + 'static + Send + Sync,
+          M: Mapping2D + Send + Sync + 'static,
 {
     /// Contructing a new texture with image described by `info`.
     /// The actual image would be looked up from `ref_table`.
@@ -109,7 +109,19 @@ impl<TM, M> ImageTexture<TM, RGBSpectrum<TM>, M>
                 None
             }
         }
-    }    
+    }
+
+    pub fn new_as_arc(
+        info: ImageInfo,
+        mapping: M, 
+        ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, RGBSpectrum<TM>>>>
+    ) -> Option<Arc<Texture<Texel=RGBSpectrum<TM>>>> {
+        if let Some(i) = ImageTexture::new(info, mapping, ref_table) {
+            Some(Arc::new(i))
+        } else {
+            None
+        }
+    }
 }
 
 pub struct MipMap<TM: BaseNum + image::Primitive, TP: Pixel<Subpixel=TM>> {

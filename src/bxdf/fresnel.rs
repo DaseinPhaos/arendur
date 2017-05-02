@@ -10,6 +10,7 @@
 use geometry::prelude::*;
 use std::mem;
 use spectrum::{Spectrum, RGBSpectrumf};
+use super::*;
 
 /// compute fresnel reflectance for dielectrics
 fn fresnel_dielectric(mut cos_theta_i: Float, mut etai: Float, mut etat: Float) -> Float {
@@ -126,5 +127,66 @@ impl Fresnel for Noop {
     #[inline]
     fn evaluate(&self, _cos_theta_i: Float) -> RGBSpectrumf {
         RGBSpectrumf::grey_scale(1.0 as Float)
+    }
+}
+
+/// Defines a perfect transmission model described by fresnel
+#[derive(Copy, Clone, Debug)]
+pub struct FresnelBxdf {
+    pub reflectance: RGBSpectrumf,
+    pub transmitance: RGBSpectrumf,
+    pub eta0: Float,
+    pub eta1: Float,
+}
+
+impl Bxdf for FresnelBxdf {
+    #[inline]
+    fn kind(&self) -> BxdfType {
+        BXDF_REFLECTION | BXDF_TRANSMISSION | BXDF_SPECULAR
+    }
+
+    #[inline]
+    fn evaluate(&self, _wo: Vector3f, _wi: Vector3f) -> RGBSpectrumf {
+        RGBSpectrumf::black()
+    }
+
+    fn evaluate_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+        let cos_theta = normal::cos_theta(wo);
+        let f = fresnel_dielectric(cos_theta, self.eta0, self.eta1);
+        if u.x < f {
+            // reflection
+            let wi = Vector3f::new(-wo.x, -wo.y, wo.z);
+            let pdf = f;
+            assert!(pdf <= 1. as Float);
+            let f = f * self.reflectance * cos_theta.abs();
+            (f, wi, pdf)
+        } else {
+            let pdf = 1. as Float - f;
+            assert!(pdf>= 0. as Float);
+            let (etai, etao) = if cos_theta > 0. as Float {
+                (self.eta0, self.eta1)
+            } else {
+                (self.eta1, self.eta0)
+            };
+            let eta = etai/etao;
+            let sin_thetat = eta * eta * (1. as Float - cos_theta*cos_theta).sqrt();
+            if !(sin_thetat < 1. as Float) {
+                (RGBSpectrumf::black(), Vector3f::zero(), pdf)
+            } else {
+                let cos_thetat = (1. as Float - sin_thetat*sin_thetat).sqrt();
+                let wt = -eta * wo + Vector3f::new(
+                    0. as Float,
+                    0. as Float,
+                    eta*cos_theta - cos_thetat
+                );
+                let f = self.transmitance * pdf;
+                (f, wt, pdf)
+            }
+        }
+    }
+
+    #[inline]
+    fn pdf(&self, _wo: Vector3f, _wi: Vector3f) -> Float {
+        0. as Float
     }
 }

@@ -110,6 +110,6 @@ impl<S: Sampler> Renderer for WhittedRenderer<S> {
         });
         // }
         let render_result = self.camera.get_film().collect_into(tiles);
-        render_result.save(self.path.clone()).expect("saving failure");
+        render_result.save(&self.path).expect("saving failure");
     }
 }

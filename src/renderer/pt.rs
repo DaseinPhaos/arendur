@@ -132,6 +132,6 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
             for tile in &mut tiles { render_tile(tile); }
         }
         let render_result = self.camera.get_film().collect_into(tiles);
-        render_result.save(self.filename.clone()).expect("saving failure");
+        render_result.save(&self.filename).expect("saving failure");
     }
 }

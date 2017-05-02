@@ -9,3 +9,4 @@
 pub use super::Material;
 pub use super::bsdf::Bsdf;
 pub use super::matte::MatteMaterial;
+pub use super::plastic::PlasticMaterial;
