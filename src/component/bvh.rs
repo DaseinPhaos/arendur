@@ -142,12 +142,19 @@ fn _load_obj(path: &Path, transform: Matrix4f) -> Result<BVH, tobj::LoadError> {
         );
 
         let roughness = ConstantTexture{
-            value: (mtl.shininess / 1000.).min(1.) as Float
+            value: (mtl.shininess / 100.).min(1.).max(0.) as Float
         };
-        // TODO: bump
-        materials.push(Arc::new(PlasticMaterial::new(
-            diffuse, specular, Arc::new(roughness), None
-        )));
+        if specular.mean() == RGBSpectrumf::black() {
+            materials.push(Arc::new(MatteMaterial::new(
+                diffuse, Arc::new(ConstantTexture{value: 0. as Float}), 
+                None
+            )));
+        } else {
+            // TODO: bump
+            materials.push(Arc::new(PlasticMaterial::new(
+                diffuse, specular, Arc::new(roughness), None
+            )));
+        }
     }
     materials.push(Arc::new(MatteMaterial::new(
         Arc::new(ConstantTexture{
@@ -159,6 +166,7 @@ fn _load_obj(path: &Path, transform: Matrix4f) -> Result<BVH, tobj::LoadError> {
     let mut shapes: Vec<Arc<Composable>> = Vec::new();
     for model in models {
         let mid = model.mesh.material_id.unwrap_or(materials.len()-1);
+        // let mid = materials.len()-1;
         let mesh = TriangleMesh::from_model_transformed(model, transform);
         for shape in mesh {
             shapes.push(Arc::new(
@@ -503,17 +511,6 @@ fn sort_mid<'a>(
     mid: Float, split_axis: usize, ret: &mut BuildNode<'a>, bound: BBox3f
 ) {
     assert!(components.len()==ordered.len());
-    // println!("Sorting... mid={}", mid);
-    // println!("Before:");
-    // print!("\tComponents: {{\n\t\t");
-    // for c in components.iter() {
-    //     print!("{}, ", c.centroid[split_axis]);
-    // }
-    // print!("\n}}\tOrdered: {{\n\t\t");
-    // for c in ordered.iter() {
-    //     print!("{}, ", c.centroid[split_axis]);
-    // }
-    // println!("\n}}");
     let mut j = ordered.len();
     let mut i = 0;
     unsafe {
@@ -541,24 +538,9 @@ fn handle_tails<'a>(
     node_count: &mut usize, ordered: &mut [ComponentInfo], strategy: BVHStrategy,
     i: usize, split_axis: usize, ret: &mut BuildNode<'a>, bound: BBox3f
 ) {
-    // if i==0 {
-    //     // print!("0 ");
-    //     *node_count -= 1;
-    //     *ret = *recursive_build(
-    //         alloc, &mut components[i..], offset+i,
-    //         node_count, &mut ordered[i..], strategy
-    //     );
-    // } else if i == components.len() {
-    //     // print!("1 ");
-    //     *node_count -= 1;
-    //     *ret = *recursive_build(
-    //         alloc, &mut components[0..i], offset,
-    //         node_count, &mut ordered[0..i], strategy
-    //     );
     if i == 0 || i == components.len() {
         ret.to_leaf(offset, components.len(), bound);
     } else {
-        // print!("2 ");
         let child0 = recursive_build(
             alloc, &mut components[0..i], offset,
             node_count, &mut ordered[0..i], strategy

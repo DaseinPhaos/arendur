@@ -52,11 +52,6 @@ impl Scene {
 
     #[inline]
     pub fn get_light(&self, idx: usize) -> &Light {
-        // if idx < self.lights.len() {
-        //     self.lights[idx].as_ref()
-        // } else {
-        //     self.area_lights[idx-self.lights.len()].as_light()
-        // }
         self.lights[idx].as_ref()
     }
 
@@ -66,6 +61,28 @@ impl Scene {
         let (light, lightpdf) = self.sample_one_light(sampler.next());
         let ulight = sampler.next_2d();
         let uscattering = sampler.next_2d();
+        self.evaluate_direct(light, ulight, uscattering, si, bsdf)/lightpdf
+    }
+
+    pub fn uniform_sample_all_lights<S: Sampler>(
+        &self, si: &SurfaceInteraction, sampler: &mut S, bsdf: &Bsdf
+    ) -> RGBSpectrumf {
+        let mut ret = RGBSpectrumf::black();
+        for (idx, light) in self.lights.iter().enumerate() {
+            let ulight = sampler.next_2d();
+            let uscattering = sampler.next_2d();
+            let term = self.evaluate_direct(light.as_ref(), ulight, uscattering, si, bsdf)/self.light_distribution.discrete_pdf(idx);
+            if term.valid() {
+                ret += term;
+            }
+        }
+        ret
+    }
+
+    fn evaluate_direct(&self,
+        light: &Light, ulight: Point2f, uscattering: Point2f,
+        si: &SurfaceInteraction, bsdf: &Bsdf
+    ) -> RGBSpectrumf {
         let mut ret = RGBSpectrumf::black();
         let ls = light.evaluate_sampled(si.basic.pos, ulight);
         let wi = ls.wi();
@@ -98,7 +115,7 @@ impl Scene {
                 let mut weight = 1. as Float;
                 if !bt.intersects(BXDF_SPECULAR) {
                     let lpdf = light.pdf(si.basic.pos, wi);
-                    if lpdf == 0. as Float { return ret/lightpdf; }
+                    if lpdf == 0. as Float { return ret; }
                     weight = sample::power_heuristic(1, pdf, 1, lpdf);
                     // weight = sample::balance_heuristic(1, pdf, 1, lpdf);
                 }
@@ -116,7 +133,7 @@ impl Scene {
                 }
             }
         }
-        ret/lightpdf
+        ret
     }
 
     #[inline]

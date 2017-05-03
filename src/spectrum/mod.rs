@@ -301,7 +301,9 @@ impl RGBSpectrumf {
 
     #[inline]
     pub fn valid(&self) -> bool {
-        !self.r().is_nan() && !self.g().is_nan() && !self.b().is_nan()
+        !(self.r().is_nan() || self.g().is_nan() || self.b().is_nan())
+        && !(self.r().is_infinite() || self.g().is_infinite() || self.b().is_infinite())
+        && self.r() >= 0. as Float &&self.g() >= 0. as Float &&self.b() >= 0. as Float
     }
 }
 

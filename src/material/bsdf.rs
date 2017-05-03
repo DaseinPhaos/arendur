@@ -87,8 +87,8 @@ impl<'a> Bsdf<'a> {
         let mut rettype = BxdfType::empty();
         for bxdf in self.sink.iter() {
             if bxdf.is(types) && (
-                (is_reflection && (bxdf.kind() & BXDF_REFLECTION == BXDF_REFLECTION))
-                || (!is_reflection && (bxdf.kind() & BXDF_TRANSMISSION == BXDF_TRANSMISSION))
+                (is_reflection && bxdf.kind().contains(BXDF_REFLECTION))
+                || (!is_reflection && bxdf.kind().contains(BXDF_TRANSMISSION))
             ) {
                 ret += bxdf.evaluate(wo, wi);
                 rettype.insert(bxdf.kind() & types);
@@ -123,7 +123,7 @@ impl<'a> Bsdf<'a> {
         }
         let wi = ret.1;
         ret.1 = self.local_to_parent(wi);
-        
+
         if match_count == 1 || is_specular { return ret; }
 
         let mut pdfsum = 0.0 as Float;

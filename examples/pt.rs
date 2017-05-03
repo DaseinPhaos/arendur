@@ -11,6 +11,7 @@
 extern crate arendur;
 extern crate cgmath;
 extern crate rand;
+extern crate rayon;
 
 use arendur::prelude::*;
 type NaiveAggregate = arendur::component::naive::Naive;
@@ -19,6 +20,7 @@ use std::collections::HashMap;
 use std::time::*;
 
 fn main() {
+    rayon::initialize(rayon::Configuration::new().num_threads(6)).unwrap();
     println!("Path tracing example");
     use std::io;
     let mut s = String::new();
@@ -29,14 +31,14 @@ fn main() {
     let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(-12.0 as Float, -12.0 as Float, 30.0 as Float)));
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
-    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 10.0 as Float, 20.0 as Float)));
+    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 12.0 as Float, 20.0 as Float)));
     let inv_transform2 = Arc::new(transform2.invert().unwrap());
 
     // let sphere0 = Sphere::new(8. as Float, -7. as Float, 7. as Float, 6.28 as Float);
     let sphere0 = Sphere::full(8. as Float);
     // let sphere0 = Sphere::new(SphereInfo::new(20. as Float, -28. as Float, 58. as Float, 6.49 as Float), ShapeInfo::new(transform0, inv_transform0, false));
     let sphere1 = Sphere::full(8. as Float);
-    let sphere2 = Sphere::full(4. as Float);
+    let sphere2 = Sphere::full(3. as Float);
 
     let mut ref_table = HashMap::new();
     let info = ImageInfo{
@@ -129,6 +131,15 @@ fn main() {
     println!("bbox:{:?}", bvh.bbox_parent());
     naive.append(Arc::new(bvh));
 
+    // let bvh = BVH::load_obj(
+    //     "mitsuba.obj", Matrix4f::from_translation(
+    //         Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
+    //     ) * Matrix4f::from_angle_y(Rad(float::pi()))
+    //       * Matrix4f::from_scale(3.0 as Float)
+    // ).unwrap();
+    // println!("bbox:{:?}", bvh.bbox_parent());
+    // naive.append(Arc::new(bvh));
+
     let mut lights: Vec<Arc<Light>> = vec![
         // Arc::new(PointLight::new(
         //     Point3f::new(-10.0 as Float, 0.0 as Float, 0.0 as Float),
@@ -150,8 +161,8 @@ fn main() {
             // Point3f::new(-8.0 as Float, 20.0 as Float, 5.0 as Float),
             // Vector3f::new(8.0 as Float, -20.0 as Float, 10.0 as Float).normalize(),
             Point3f::new(-5.0 as Float, 10.0 as Float, 0.0 as Float),
-            Vector3f::new(0.5 as Float, -0.5 as Float, 1.0 as Float).normalize(),
-            RGBSpectrumf::new(950.0 as Float, 730.0 as Float, 450.0 as Float),
+            Vector3f::new(0.2 as Float, -0.5 as Float, 1.0 as Float).normalize(),
+            RGBSpectrumf::new(350.0 as Float, 73.0 as Float, 45.0 as Float),
             float::frac_pi_4()*0.75 as Float, float::frac_pi_4()*0.25 as Float)
         ), 
         Arc::new(PointLight::new(
@@ -170,10 +181,10 @@ fn main() {
     let mut camera = PerspecCam::new(
         Matrix4f::identity(),
         BBox2f::new(
-            Point2f::new(-1.0 as Float, -1.0 as Float), 
+            Point2f::new(-1.0 as Float, -0.875 as Float), 
             Point2f::new(1.0 as Float, 1.0 as Float)
-            // Point2f::new(0.3 as Float, 0.3 as Float), 
-            // Point2f::new(0.6 as Float, 0.6 as Float)
+            // Point2f::new(-0.2 as Float, -0.2 as Float), 
+            // Point2f::new(0.2 as Float, 0.2 as Float)
         ),
         0.1 as Float, 
         1000.0 as Float, 
@@ -181,7 +192,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(1024, 1024),
+            Point2::new(640, 640),
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -200,16 +211,17 @@ fn main() {
     );
     camera.look_from(
         Point3f::origin(),
-        Point3f::new(0.0 as Float, 20.0 as Float, 155.0 as Float),
+        Point3f::new(0.0 as Float, 0.0 as Float, 155.0 as Float),
         Vector3f::unit_y()
     );
     println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
         Vector3f::unit_z()
     ));
-    let mut renderer = PTRenderer::new(StrataSampler::new(32, 32, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "car0s1024.png", 5, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(9, 9, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "sibenik3.png", 5, true);
 
     // use arendur::sample;
     // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);
+    
     renderer.render(&scene);
     let duration = sudato.elapsed();
     println!("Done! Time used: {:.4}s", duration.as_secs() as f64 + (duration.subsec_nanos() as f64/1_000_000_000.0f64));

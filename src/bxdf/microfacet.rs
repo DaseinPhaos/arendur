@@ -185,7 +185,6 @@ impl MicrofacetDistribution for Trowbridge {
             wh
         }
     }
-
 }
 
 /// a Torrance-Sparrow bxdf
@@ -242,6 +241,19 @@ pub struct AshikhminShirleyBxdf<M> {
     pub distribution: M
 }
 
+impl<M> AshikhminShirleyBxdf<M> {
+    #[inline]
+    pub fn new(
+        diffuse: RGBSpectrumf, specular: RGBSpectrumf, distribution: M
+        ) -> AshikhminShirleyBxdf<M> {
+        AshikhminShirleyBxdf{
+            diffuse: diffuse.clamp(0. as Float, 1. as Float),
+            specular: specular.clamp(0. as Float, 1. as Float),
+            distribution
+        }
+    }
+}
+
 impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
     #[inline]
     fn kind(&self) -> BxdfType {
@@ -249,10 +261,11 @@ impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
     }
 
     fn evaluate(&self, wo: Vector3f, wi: Vector3f) -> RGBSpectrumf {
-        let wh = (wo+wi).normalize();
-        if wh.x.is_nan() || wh.y.is_nan() || wh.z.is_nan() {
+        let wh = wo+wi;
+        if relative_eq!(wh.magnitude2(), 0. as Float) {
             RGBSpectrumf::black()
         } else {
+            let wh = wh.normalize();
             let term = |w| {
                 1. as Float - (1. as Float - 0.5 as Float * normal::cos_theta(w).abs()).powi(5)
             };
@@ -263,39 +276,39 @@ impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
              * schlick(wi.dot(wh), self.specular)
              / (
                  4. as Float * wi.dot(wh).abs()
-                  * normal::cos_theta(wi).max(normal::cos_theta(wo))
+                  * normal::cos_theta(wi).abs().max(normal::cos_theta(wo).abs())
              );
             diffuse + specular
         }
     }
 
     fn evaluate_sampled(&self, wo: Vector3f, mut u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
-        if u.x < 0.5 as Float {
+        let wi = if u.x < 0.5 as Float {
             u.x *= 2. as Float;
             let wh = self.distribution.sample_wh(wo, u);
             let pdf = self.distribution.pdf(wo, wh)
              /(4. as Float * wo.dot(wh))*0.5 as Float;
             let wi = (2. as Float * wh * wo.dot(wh)- wo).normalize();
             if wo.dot(wi) <= 0. as Float {
-                (RGBSpectrumf::black(), wi, pdf)
+                return (RGBSpectrumf::black(), wi, pdf);
             } else {
-                (self.evaluate(wo, wi), wi, pdf)
+                wi
             }
         } else {
             u.x = (1. as Float - u.x) * 2. as Float;
             let mut wi = sample::sample_cosw_hemisphere(u);
-            if wo.z < 0.0 as Float {wi.z = -wi.z;}
-            let pdf = normal::cos_theta(wi) * float::frac_1_pi() * 0.5 as Float;
-            let spectrum = self.evaluate(wo, wi);
-            (spectrum, wi, pdf)
-        }
+            if wi.z < 0.0 as Float {wi.z = -wi.z;}
+            wi
+        };
+        (self.evaluate(wo, wi), wi, self.pdf(wo, wi))
     }
 
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if wo.dot(wi) < 0. as Float { return 0. as Float; }
         let wh = (wo + wi).normalize();
         0.5 as Float * (
             self.distribution.pdf(wo, wh)/(4. as Float * wo.dot(wh))
-             + normal::cos_theta(wi) * float::frac_1_pi()
+             + normal::cos_theta(wi).abs() * float::frac_1_pi()
         )
     }
 }

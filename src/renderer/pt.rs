@@ -28,6 +28,8 @@ pub struct PTRenderer<S> {
     filename: PathBuf,
     max_depth: usize,
     multithreaded: bool,
+    rr_threshold: Float,
+    min_depth: usize,
 }
 
 impl<S: Sampler> PTRenderer<S> {
@@ -41,6 +43,8 @@ impl<S: Sampler> PTRenderer<S> {
             filename: filename.as_ref().to_path_buf(),
             max_depth: max_depth,
             multithreaded: multithreaded,
+            rr_threshold: 0.05 as Float,
+            min_depth: max_depth/2,
         }
     }
 }
@@ -53,7 +57,9 @@ fn calculate_lighting<S: Sampler>(
     sampler: &mut S, 
     alloc: &mut Allocator, 
     depth: usize,
-    max_depth: usize
+    max_depth: usize,
+    min_depth: usize,
+    rr_threshold: Float
 ) -> RGBSpectrumf {
     let mut ret = RGBSpectrumf::black();
     if depth > max_depth { return ret; }
@@ -63,7 +69,10 @@ fn calculate_lighting<S: Sampler>(
     loop {
         if let Some(mut si) = scene.aggregate.intersect_ray(&mut ray.ray) {
             if bounces == 0 || specular_bounce {
-                ret += beta * si.le(-ray.ray.direction());
+                let term = si.le(-ray.ray.direction());
+                if term.valid() {
+                    ret += beta * term;
+                }
             }
             if let Some(primitive) = si.primitive_hit {
                 let dxy = si.compute_dxy(&ray);
@@ -74,9 +83,10 @@ fn calculate_lighting<S: Sampler>(
                 let mut tags = BXDF_ALL;
                 tags.remove(BXDF_SPECULAR);
                 if bsdf.have_n(tags) > 0 {
-                    let ld = beta * scene.uniform_sample_one_light(&si, sampler, &bsdf);
-                    // println!("ld == {:?}", ld);
-                    ret += ld;
+                    let term = scene.uniform_sample_one_light(&si, sampler, &bsdf);
+                    if term.valid() {
+                        ret += beta * term;
+                    }
                 }
                 // sample bsdf to get new path direction
                 let wo = -ray.ray.direction();
@@ -84,7 +94,10 @@ fn calculate_lighting<S: Sampler>(
                 specular_bounce = bt.intersects(BXDF_SPECULAR);
                 if f.is_black() || pdf == 0. as Float { break; }
                 beta *= f * (wi.dot(si.shading_norm).abs() / pdf);
-                debug_assert!(beta.inner.y >= 0. as Float);
+                if !beta.valid() {
+                    break;
+                }
+                assert!(beta.inner.y >= 0. as Float);
                 ray = si.spawn_ray_differential(wi, Some(&dxy));
 
             } else {
@@ -96,9 +109,15 @@ fn calculate_lighting<S: Sampler>(
             break;
         }
 
-        // TODO: terminate the path with Russian roulette
         bounces += 1;
         if bounces >= max_depth { break; }
+
+        // possibly terminates the path with russian roulette threshold
+        if beta.to_xyz().y < rr_threshold && bounces >= min_depth {
+            let q = rr_threshold.max(0.05 as Float);
+            if sampler.next() < q { break; }
+            beta /= 1.0 as Float - q;
+        }
     }
     ret
 }
@@ -118,9 +137,15 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
                     let camera_sample_info = sampler.get_camera_sample(p);
                     let mut ray_differential = self.camera.generate_path_differential(camera_sample_info);
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
-                    let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0, self.max_depth);
+                    let total_randiance = calculate_lighting(
+                        ray_differential, scene, &mut sampler, 
+                        &mut allocator, 0, self.max_depth,
+                        self.min_depth, self.rr_threshold
+                    );
                     if total_randiance.valid() {
                         tile.add_sample(camera_sample_info.pfilm, &total_randiance);
+                    } else {
+                        tile.add_sample(camera_sample_info.pfilm, &RGBSpectrumf::black());
                     }
                     if !sampler.next_sample() { break; }
                 }

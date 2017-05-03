@@ -52,12 +52,12 @@ impl Material for PlasticMaterial {
         let alpha = roughness_to_alpha(roughness);
         let mut ret = bsdf::Bsdf::new(si, 1.0 as Float);
         ret.add(alloc.alloc(
-            AshikhminShirleyBxdf{
+            AshikhminShirleyBxdf::new(
                 diffuse, specular,
-                distribution: Trowbridge{
+                Trowbridge{
                     ax: alpha, ay: alpha
-                },
-            }
+                }
+            )
         ));
         ret
     }
