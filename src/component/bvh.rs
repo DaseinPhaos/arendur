@@ -10,17 +10,8 @@
 
 use super::*;
 use std::mem;
-use std::sync::Arc;
 use super::naive::Naive;
 use copy_arena::{Arena, Allocator};
-use std::path::Path;
-use tobj;
-use std::collections::HashMap;
-use material::prelude::*;
-use shape::prelude::*;
-use texturing::prelude::*;
-use spectrum::prelude::*;
-use super::shape::ShapedPrimitive;
 
 #[derive(Copy, Clone)]
 struct ComponentInfo {
@@ -31,7 +22,7 @@ struct ComponentInfo {
 }
 
 impl ComponentInfo {
-    fn new(components: &[Arc<Composable>]) -> Vec<ComponentInfo> {
+    fn new(components: &[ComponentPointer]) -> Vec<ComponentInfo> {
         let mut ret = Vec::with_capacity(components.len());
         for (idx, c) in components.iter().enumerate() {
             let bound = c.bbox_parent();
@@ -59,14 +50,14 @@ pub enum BVHStrategy {
 
 /// Bounding volume hierarchy used for intersection acceleration
 pub struct BVH {
-    components: Vec<Arc<Composable>>,
+    components: Vec<ComponentPointer>,
     nodes: Vec<LinearNode>,
 }
 
 impl BVH {
     /// construction from a `Compoable` slice, with `strategy`
     pub fn new(
-        components: &[Arc<Composable>], 
+        components: &[ComponentPointer], 
         strategy: BVHStrategy
     ) -> BVH {
         let mut arena = Arena::new();
@@ -81,7 +72,7 @@ impl BVH {
         let nodes = root.flatten(node_count);
         let mut sorted = Vec::with_capacity(components.len());
         for info in ordered {
-            sorted.push(Arc::clone(&components[info.idx]));
+            sorted.push(components[info.idx].clone());
         }
         BVH{
             components: sorted, nodes
@@ -143,11 +134,11 @@ impl Composable for BVH {
     }
 }
 
-impl From<Naive> for BVH {
-    fn from(naive: Naive) -> BVH {
-        BVH::new(&naive.elements, BVHStrategy::SAH)
-    }
-}
+// impl From<Naive> for BVH {
+//     fn from(naive: Naive) -> BVH {
+//         BVH::new(&naive.elements, BVHStrategy::SAH)
+//     }
+// }
 
 #[derive(Copy, Clone)]
 struct LinearNode {

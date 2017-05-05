@@ -24,6 +24,7 @@ use std::time::*;
 fn main() {
     rayon::initialize(rayon::Configuration::new().num_threads(4)).unwrap();
     println!("Path tracing example");
+    println!("component ptr size : {}", std::mem::size_of::<arendur::component::ComponentPointer>());
     use std::io;
     let mut s = String::new();
     let _ = io::stdin().read_line(&mut s);
@@ -159,7 +160,6 @@ fn main() {
     // ).unwrap();
     // println!("bbox:{:?}", bvh.bbox_parent());
     // let naive = bvh;
-    // naive.append(Arc::new(bvh));
 
     let mut lights: Vec<Arc<Light>> = vec![
         // Arc::new(PointLight::new(
@@ -213,7 +213,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(1024, 1024),
+            Point2::new(640, 640),
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -238,7 +238,7 @@ fn main() {
     println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
         Vector3f::unit_z()
     ));
-    let mut renderer = PTRenderer::new(StrataSampler::new(16, 16, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target3.png", 5, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(1, 1, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target9.png", 5, true);
 
     // use arendur::sample;
     // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);

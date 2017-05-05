@@ -10,7 +10,7 @@
 
 use super::*;
 
-/// A lambertian reflection
+/// A lambertian bxdf.
 #[derive(Copy, Clone, Debug)]
 pub struct LambertianBxdf {
     pub reflectance: RGBSpectrumf,

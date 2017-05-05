@@ -14,7 +14,12 @@ use std::ops;
 use sample::*;
 use std::sync::Arc;
 use tobj;
-use std::path::Path;
+use lighting::{Light, LightFlag, LightSample, LIGHT_AREA, SampleInfo, PathInfo};
+use component::prelude::*;
+use material::Material;
+use texturing::prelude::*;
+use spectrum::prelude::*;
+use sample;
 
 pub type Model = tobj::Model;
 
@@ -26,6 +31,8 @@ pub struct TriangleMesh {
     normals: Option<Vec<Vector3f>>,
     uvs: Option<Vec<Point2f>>,
     bbox: BBox3f,
+    material: Arc<Material>,
+    lighting_profile: Option<Arc<Texture<Texel=RGBSpectrumf>>>,
     pub name: String,
 }
 
@@ -47,33 +54,37 @@ impl TriangleMesh {
         self.bbox
     }
 
-    /// load meshes from an `.obj` file
-    #[inline]
-    pub fn load_from_file<P>(file_name: &P) -> Result<Vec<TriangleMesh>, tobj::LoadError>
-        where P: AsRef<Path> + ?Sized
-    {
-        let models = tobj::load_obj(file_name.as_ref())?;
-        let mut ret = Vec::with_capacity(models.0.len());
-        for model in models.0 {
-            ret.push(model.into());
-        }
-        Ok(ret)
-    }
+    // /// load meshes from an `.obj` file
+    // #[inline]
+    // pub fn load_from_file<P>(file_name: &P) -> Result<Vec<TriangleMesh>, tobj::LoadError>
+    //     where P: AsRef<Path> + ?Sized
+    // {
+    //     let models = tobj::load_obj(file_name.as_ref())?;
+    //     let mut ret = Vec::with_capacity(models.0.len());
+    //     for model in models.0 {
+    //         ret.push(model.into());
+    //     }
+    //     Ok(ret)
+    // }
 
-    /// load meshes from an `.obj` file, applying `transform` to it
-    pub fn load_from_file_transformed<P>(file_name: &P, transform: Matrix4f)
-        -> Result<Vec<TriangleMesh>, tobj::LoadError>
-        where P: AsRef<Path> + ?Sized
-    {
-        let models = tobj::load_obj(file_name.as_ref())?;
-        let mut ret = Vec::with_capacity(models.0.len());
-        for model in models.0 {
-            ret.push(TriangleMesh::from_model_transformed(model, transform));
-        }
-        Ok(ret)
-    }
+    // /// load meshes from an `.obj` file, applying `transform` to it
+    // pub fn load_from_file_transformed<P>(file_name: &P, transform: Matrix4f)
+    //     -> Result<Vec<TriangleMesh>, tobj::LoadError>
+    //     where P: AsRef<Path> + ?Sized
+    // {
+    //     let models = tobj::load_obj(file_name.as_ref())?;
+    //     let mut ret = Vec::with_capacity(models.0.len());
+    //     for model in models.0 {
+    //         ret.push(TriangleMesh::from_model_transformed(model, transform));
+    //     }
+    //     Ok(ret)
+    // }
 
-    pub fn from_model(model: Model) -> TriangleMesh {
+    pub fn from_model(
+        model: Model, 
+        material: Arc<Material>, 
+        lighting_profile: Option<Arc<Texture<Texel=RGBSpectrumf>>>
+    ) -> TriangleMesh {
         let mut bbox = {
             let p = Point3f::new(
                 model.mesh.positions[0] as Float,
@@ -102,11 +113,17 @@ impl TriangleMesh {
         let tangents = None;
         let name = model.name;
         TriangleMesh{
-            vertices, indices, tangents, normals, uvs, bbox, name
+            vertices, indices, tangents, normals, 
+            uvs, bbox, name, material, lighting_profile
         }
     }
 
-    pub fn from_model_transformed(model: Model, transform: Matrix4f) -> TriangleMesh {
+    pub fn from_model_transformed(
+        model: Model,
+        transform: Matrix4f,
+        material: Arc<Material>, 
+        lighting_profile: Option<Arc<Texture<Texel=RGBSpectrumf>>>
+    ) -> TriangleMesh {
         let mut bbox = {
             let mut p = Point3f::new(
                 model.mesh.positions[0] as Float,
@@ -138,15 +155,9 @@ impl TriangleMesh {
         let tangents = None;
         let name = model.name;
         TriangleMesh{
-            vertices, indices, tangents, normals, uvs, bbox, name
+            vertices, indices, tangents, normals, 
+            uvs, bbox, name, material, lighting_profile
         }
-    }
-}
-
-impl From<Model> for TriangleMesh {
-    #[inline]
-    fn from(model: Model) -> TriangleMesh {
-        TriangleMesh::from_model(model)
     }
 }
 
@@ -246,6 +257,7 @@ impl Iterator for TriangleInstance {
 }
 
 /// An instance of triangle from a triangle mesh.
+#[derive(Clone)]
 pub struct TriangleInstance {
     mesh: Arc<TriangleMesh>,
     /// ith triangle into the `parent` mesh
@@ -376,21 +388,11 @@ impl ops::Index<usize> for TriangleInstance {
 }
 
 impl Shape for TriangleInstance {
-    // #[inline]
-    // fn info(&self) -> &ShapeInfo {
-    //     &self.mesh.shapeinfo
-    // }
-
     #[inline]
     fn bbox_local(&self) -> BBox3f {
         let bbox = BBox3f::new(self.x(), self.y());
         bbox.extend(self.z())
     }
-
-    // #[inline]
-    // fn bbox_parent(&self) -> BBox3f {
-    //     self.bbox_local()
-    // }
 
     #[inline]
     fn intersect_ray(&self, ray: &RawRay) -> Option<(Float, SurfaceInteraction)> {
@@ -471,5 +473,133 @@ impl Shape for TriangleInstance {
             (self.y() - self.x()).cross(self.z() - self.x())
         };
         (p, n.normalize(), 1. as Float / self.surface_area())
+    }
+}
+
+impl Composable for TriangleInstance {
+    #[inline]
+    fn bbox_parent(&self) -> BBox3f {
+        self.bbox_local()
+    }
+
+    #[inline]
+    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
+        let r = Shape::intersect_ray(self, ray);
+        if let Some((t, mut si)) = r {
+            ray.set_max_extend(t);
+            si.set_primitive(self);
+            Some(si)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn can_intersect(&self, ray: &RawRay) -> bool {
+        Shape::can_intersect(self, ray)
+    }
+
+    #[inline]
+    fn as_light(&self) -> &Light {
+        self
+    }
+}
+
+impl Light for TriangleInstance {
+    #[inline]
+    fn flags(&self) -> LightFlag {
+        LIGHT_AREA
+    }
+
+    #[inline]
+    fn is_delta(&self) -> bool {
+        false
+    }
+
+    #[inline]
+    fn evaluate_path(&self, pos: Point3f, dir: Vector3f) -> RGBSpectrumf {
+        if let Some(ref lp) = self.mesh.lighting_profile {
+            let p = pos + dir;
+            // match `wi` against surface normal
+            let ray = RawRay::from_od(p, -dir);
+            if let Some((_t, si)) = Shape::intersect_ray(self, &ray) {
+                // retrive (u, v)
+                let dxy = DxyInfo::from_duv(&si.duv);
+                return lp.evaluate(&si, &dxy);
+            }
+        }
+        RGBSpectrumf::black()
+    }
+
+    fn evaluate_sampled(
+        &self, pos: Point3f, sample: Point2f
+    ) -> LightSample {
+        let (l_pos, l_norm, l_pdf) = self.sample_wrt(pos, sample);
+        let mut ret = LightSample{
+            radiance: RGBSpectrumf::black(),
+            pdf: l_pdf,
+            pfrom: l_pos,
+            pto: pos,
+        };
+        // match against surface normal
+        if let Some(ref lp) = self.mesh.lighting_profile {
+            let ldir = pos - l_pos;
+            if ldir.dot(l_norm) > 0. as Float {
+                let ray = RawRay::from_od(pos, -ldir);
+                if let Some((_, si)) = Shape::intersect_ray(self, &ray) {
+                    let dxy = DxyInfo::from_duv(&si.duv);
+                    ret.radiance = lp.evaluate(&si, &dxy);
+                }
+            }
+        }
+        ret
+    }
+
+    #[inline]
+    fn generate_path(&self, samples: SampleInfo) -> PathInfo {
+        let (pos, norm, pdfpos) = self.sample(samples.pfilm);
+        let (u, v) = normal::get_basis_from(norm);
+        let dir = sample::sample_cosw_hemisphere(samples.plens);
+        let dir = dir.x * u + dir.y * v + dir.z * norm;
+        PathInfo{
+            ray: RawRay::from_od(pos, dir),
+            normal: norm,
+            pdfpos: pdfpos,
+            pdfdir: sample::pdf_cosw_hemisphere(dir.z),
+            radiance: self.evaluate_path(pos, dir),
+        }
+    }
+
+    #[inline]
+    fn pdf_path(&self, pos: Point3f, dir: Vector3f, norm: Vector3f) -> (Float, Float) {
+        (
+            Light::pdf(self, pos, norm),
+            sample::pdf_cosw_hemisphere(norm.dot(dir).abs())
+        )
+    }
+
+    fn pdf(&self, pos: Point3f, wi: Vector3f) -> Float {
+        self.pdf_wrt(pos, wi)
+    }
+
+    fn power(&self) -> RGBSpectrumf {
+        if let Some(ref lp) = self.mesh.lighting_profile {
+            debug_assert!(self.surface_area() >= 0. as Float);
+            lp.mean() * self.surface_area() * float::pi()
+        } else {
+            RGBSpectrumf::black()
+        }
+    }
+}
+
+impl Primitive for TriangleInstance {
+    #[inline]
+    fn get_material(&self) -> &Material {
+        &*self.mesh.material
+    }
+
+    #[inline]
+    fn is_emissive(&self) -> bool {
+        self.mesh.lighting_profile.is_some()
     }
 }

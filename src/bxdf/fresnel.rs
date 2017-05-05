@@ -68,7 +68,7 @@ fn fresnel_conductor(mut cos_theta_i: Float, mut etai: RGBSpectrumf, mut etat: R
 
 /// A fresnel interface
 pub trait Fresnel {
-    /// given an incoming direction, specify the reflectance
+    /// given an incoming direction, specify the reflectance factor
     fn evaluate(&self, cos_theta_i: Float) -> RGBSpectrumf;
 }
 
@@ -121,6 +121,7 @@ impl Fresnel for Dielectric {
     }
 }
 
+/// This interface always returns `Spectrum::gray_scale(1)`.
 pub struct Noop;
 
 impl Fresnel for Noop {
@@ -130,12 +131,16 @@ impl Fresnel for Noop {
     }
 }
 
-/// Defines a perfect transmission model described by fresnel
+/// Defines a perfect scattering model described by fresnel
 #[derive(Copy, Clone, Debug)]
 pub struct FresnelBxdf {
+    /// The reflectance term
     pub reflectance: RGBSpectrumf,
+    /// The transmitance term
     pub transmitance: RGBSpectrumf,
+    /// eta above
     pub eta0: Float,
+    /// eta below
     pub eta1: Float,
 }
 
@@ -157,12 +162,13 @@ impl Bxdf for FresnelBxdf {
             // reflection
             let wi = Vector3f::new(-wo.x, -wo.y, wo.z);
             let pdf = f;
-            assert!(pdf <= 1. as Float);
+            debug_assert!(pdf <= 1. as Float);
             let f = f * self.reflectance * cos_theta.abs();
             (f, wi, pdf)
         } else {
+            // transmition
             let pdf = 1. as Float - f;
-            assert!(pdf>= 0. as Float);
+            debug_assert!(pdf>= 0. as Float);
             let (etai, etao) = if cos_theta > 0. as Float {
                 (self.eta0, self.eta1)
             } else {

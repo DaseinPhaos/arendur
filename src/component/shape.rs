@@ -11,7 +11,6 @@
 use geometry::prelude::*;
 use super::*;
 use std::sync::Arc;
-use shape::*;
 use texturing::Texture;
 use spectrum::*;
 use lighting::{LightFlag, LightSample, LIGHT_AREA, SampleInfo, PathInfo};

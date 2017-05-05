@@ -8,9 +8,16 @@
 
 //! Defines renderable components in the world.
 
-use geometry::prelude::*;
+use std::path::Path;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tobj;
 use lighting::Light;
-use material::Material;
+use geometry::prelude::*;
+use material::prelude::*;
+use shape::prelude::*;
+use texturing::prelude::*;
+use spectrum::prelude::*;
 
 /// A renderable composable component.
 pub trait Composable: Sync + Send {
@@ -55,7 +62,7 @@ pub trait Primitive: Composable + Light {
 }
 
 /// Load an `.obj` file into a vector
-pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<Arc<Composable>>, tobj::LoadError> {
+pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer>, tobj::LoadError> {
     let (models, mtls) = tobj::load_obj(path)?;
     let mut texturess = HashMap::new();
     let mut materials: Vec<Arc<Material>> = Vec::with_capacity(mtls.len()+1);
@@ -125,20 +132,86 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<Arc<Composable>>
         Arc::new(ConstantTexture{value: 0. as Float}), 
         None
     )));
-    let mut shapes: Vec<Arc<Composable>> = Vec::new();
+    let mut shapes: Vec<ComponentPointer> = Vec::new();
     for model in models {
         let mid = model.mesh.material_id.unwrap_or(materials.len()-1);
         // let mid = materials.len()-1;
-        let mesh = TriangleMesh::from_model_transformed(model, transform);
+        let mesh = TriangleMesh::from_model_transformed(model, transform, materials[mid].clone(), None);
         for shape in mesh {
-            shapes.push(Arc::new(
-                ShapedPrimitive::new(shape, materials[mid].clone(), None))
+            shapes.push(
+                shape.into()
             );
         }
     }
     Ok(shapes)
 }
 
+/// A thread-safe pointer to a composable component
+/// We introduce this to increase data locality of the
+/// widely used triangle components
+#[derive(Clone)]
+pub enum ComponentPointer {
+    Triangle(TriangleInstance),
+    Arc(Arc<Composable>),
+}
+
+impl Composable for ComponentPointer {
+    /// returns bounding box in parent frame.
+    #[inline]
+    fn bbox_parent(&self) -> BBox3f {
+        match *self {
+            ComponentPointer::Arc(ref arc) => arc.bbox_parent(),
+            ComponentPointer::Triangle(ref t) => Composable::bbox_parent(t),
+        }
+    }
+
+    #[inline]
+    fn intersect_ray(&self, ray: &mut RawRay) -> Option<SurfaceInteraction> {
+        match *self {
+            ComponentPointer::Arc(ref arc) => arc.intersect_ray(ray),
+            ComponentPointer::Triangle(ref t) => Composable::intersect_ray(t, ray),
+        }
+    }
+
+    /// test if an intersection can occur. Might be more efficient
+    #[inline]
+    fn can_intersect(&self, ray: &RawRay) -> bool {
+        match *self {
+            ComponentPointer::Arc(ref arc) => arc.can_intersect(ray),
+            ComponentPointer::Triangle(ref t) => Composable::can_intersect(t, ray),
+        }
+    }
+
+    #[inline]
+    fn as_light(&self) -> &Light {
+        match *self {
+            ComponentPointer::Arc(ref arc) => arc.as_light(),
+            ComponentPointer::Triangle(ref t) => t.as_light(),
+        }
+    }
+
+    #[inline]
+    fn intersection_cost(&self) -> Float {
+        match *self {
+            ComponentPointer::Arc(ref arc) => arc.intersection_cost(),
+            ComponentPointer::Triangle(ref t) => t.intersection_cost(),
+        }
+    }
+}
+
+impl From<Arc<Composable>> for ComponentPointer {
+    #[inline]
+    fn from(arc: Arc<Composable>) -> ComponentPointer {
+        ComponentPointer::Arc(arc)
+    }
+}
+
+impl From<TriangleInstance> for ComponentPointer {
+    #[inline]
+    fn from(t: TriangleInstance) -> ComponentPointer {
+        ComponentPointer::Triangle(t)
+    }
+}
 
 pub mod shape;
 pub mod transformed;
