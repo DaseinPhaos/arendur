@@ -68,10 +68,10 @@ impl Scene {
         &self, si: &SurfaceInteraction, sampler: &mut S, bsdf: &Bsdf
     ) -> RGBSpectrumf {
         let mut ret = RGBSpectrumf::black();
-        for (idx, light) in self.lights.iter().enumerate() {
+        for light in self.lights.iter() {
             let ulight = sampler.next_2d();
             let uscattering = sampler.next_2d();
-            let term = self.evaluate_direct(light.as_ref(), ulight, uscattering, si, bsdf)/self.light_distribution.discrete_pdf(idx);
+            let term = self.evaluate_direct(light.as_ref(), ulight, uscattering, si, bsdf);
             if term.valid() {
                 ret += term;
             }

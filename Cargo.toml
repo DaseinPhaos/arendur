@@ -12,6 +12,8 @@ homepage = "https://github.com/DaseinPhaos/arendur"
 readme = "README.md"
 
 keywords = ["cg", "rendering"]
+categories = ["rendering"]
+
 
 [dependencies]
 num-traits = "0.1"
@@ -23,6 +25,10 @@ lazy_static = "0.2"
 copy_arena = "0.1"
 rayon = "0.7"
 tobj = "0.1"
+flame = {version="*", optional=true}
+
+[features]
+default = []
 
 # [[example]]
 # name = "whitted"

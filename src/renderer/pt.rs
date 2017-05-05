@@ -20,6 +20,7 @@ use rayon::prelude::*;
 use copy_arena::{Allocator, Arena};
 use geometry::prelude::*;
 use std::path::{PathBuf, Path};
+profile_use!();
 
 /// A path tracing renderer
 pub struct PTRenderer<S> {
@@ -70,9 +71,10 @@ fn calculate_lighting<S: Sampler>(
         if let Some(mut si) = scene.aggregate.intersect_ray(&mut ray.ray) {
             if bounces == 0 || specular_bounce {
                 let term = si.le(-ray.ray.direction());
-                if term.valid() {
-                    ret += beta * term;
-                }
+                // if term.valid() {
+                //     ret += beta * term;
+                // }
+                ret += beta * term;
             }
             if let Some(primitive) = si.primitive_hit {
                 let dxy = si.compute_dxy(&ray);
@@ -83,10 +85,11 @@ fn calculate_lighting<S: Sampler>(
                 let mut tags = BXDF_ALL;
                 tags.remove(BXDF_SPECULAR);
                 if bsdf.have_n(tags) > 0 {
-                    let term = scene.uniform_sample_one_light(&si, sampler, &bsdf);
-                    if term.valid() {
-                        ret += beta * term;
-                    }
+                    let term = scene.uniform_sample_all_lights(&si, sampler, &bsdf);
+                    // if term.valid() {
+                    //     ret += beta * term;
+                    // }
+                    ret += beta * term;
                 }
                 // sample bsdf to get new path direction
                 let wo = -ray.ray.direction();
@@ -124,6 +127,7 @@ fn calculate_lighting<S: Sampler>(
 
 impl<S: Sampler> Renderer for PTRenderer<S> {
     fn render(&mut self, scene: &Scene) {
+        profile_start!("pt rendering");
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
         let render_tile = |tile: &mut FilmTile<_>| {
             let mut arena = Arena::new();
@@ -137,16 +141,21 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
                     let camera_sample_info = sampler.get_camera_sample(p);
                     let mut ray_differential = self.camera.generate_path_differential(camera_sample_info);
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
+                    profile_start!("pt light calculation");
                     let total_randiance = calculate_lighting(
                         ray_differential, scene, &mut sampler, 
                         &mut allocator, 0, self.max_depth,
                         self.min_depth, self.rr_threshold
                     );
+                    profile_end!("pt light calculation");
+
+                    profile_start!("pt add sample");
                     if total_randiance.valid() {
                         tile.add_sample(camera_sample_info.pfilm, &total_randiance);
                     } else {
                         tile.add_sample(camera_sample_info.pfilm, &RGBSpectrumf::black());
                     }
+                    profile_end!("pt add sample");
                     if !sampler.next_sample() { break; }
                 }
             }
@@ -157,6 +166,8 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
             for tile in &mut tiles { render_tile(tile); }
         }
         let render_result = self.camera.get_film().collect_into(tiles);
+        profile_end!("pt rendering");
         render_result.save(&self.filename).expect("saving failure");
+        profile_dump!("pt rendering results.html");
     }
 }

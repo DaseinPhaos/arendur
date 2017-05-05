@@ -21,6 +21,47 @@ extern crate num_traits;
 extern crate copy_arena;
 extern crate tobj;
 extern crate rayon;
+#[cfg(feature = "flame")]
+extern crate flame;
+
+macro_rules! profile_use {
+    () => (
+        #[cfg(feature = "flame")]
+        use flame;
+    )
+}
+
+macro_rules! profile_start {
+    ($name:expr) => {
+        #[cfg(feature = "flame")]
+        flame::start($name);
+    }
+}
+
+macro_rules! profile_end {
+    ($name:expr) => {
+        #[cfg(feature = "flame")]
+        flame::end($name);
+    }
+}
+
+macro_rules! profile_dump {
+    ($name:expr) => {
+        #[cfg(feature = "flame")]
+        {
+            use std::fs::File;
+            if let Ok(mut file) = File::create($name) {
+                if let Ok(_) = flame::dump_html(&mut file) {
+                    println!("Dumping profiling to {} succeeded.", $name);
+                } else {
+                    println!("Dumping profiling to {} failed.", $name);
+                }
+            } else {
+                println!("Creating {} failed.", $name);
+            }
+        }
+    }
+}
 
 pub mod geometry;
 pub mod shape;

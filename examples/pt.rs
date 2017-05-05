@@ -12,6 +12,8 @@ extern crate arendur;
 extern crate cgmath;
 extern crate rand;
 extern crate rayon;
+#[cfg(feature = "flame")]
+extern crate flame;
 
 use arendur::prelude::*;
 type NaiveAggregate = arendur::component::naive::Naive;
@@ -20,7 +22,7 @@ use std::collections::HashMap;
 use std::time::*;
 
 fn main() {
-    rayon::initialize(rayon::Configuration::new().num_threads(6)).unwrap();
+    rayon::initialize(rayon::Configuration::new().num_threads(4)).unwrap();
     println!("Path tracing example");
     use std::io;
     let mut s = String::new();
@@ -28,7 +30,7 @@ fn main() {
     println!("Rendering...");
     let sudato = Instant::now();
     let transform0 = Arc::new(Matrix4f::from_translation(Vector3f::new(12.0 as Float, 12.0 as Float, 30.0 as Float)));
-    let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(-12.0 as Float, -12.0 as Float, 30.0 as Float)));
+    let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 12.0 as Float, 0.0 as Float)));
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
     let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 12.0 as Float, 20.0 as Float)));
@@ -69,7 +71,7 @@ fn main() {
     let sigma = ConstantTexture{value: 10. as Float};
     let material1 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
     
-    let texture = ConstantTexture{value: RGBSpectrumf::new(12.5 as Float, 14.2 as Float, 15.3 as Float)};
+    let texture = ConstantTexture{value: RGBSpectrumf::new(5.5 as Float, 5.5 as Float, 5.0 as Float)};
 
     let sphere1 = ShapedPrimitive::new(sphere1, material1.clone(), Some(Arc::new(texture)));
     let sphere1 = TransformedComposable::new(sphere1, transform1, inv_transform1);
@@ -91,7 +93,7 @@ fn main() {
     let mut naive = NaiveAggregate::from_one(sphere2.clone());
     // naive.append(Arc::new(sphere1));
     // naive.append(sphere2.clone());
-    std::env::set_current_dir("./target/").unwrap();
+    // std::env::set_current_dir("./target/").unwrap();
     // let teapot_meshes = TriangleMesh::load_from_file_transformed(
     //     "cbs.obj", Matrix4f::from_translation(
     //     //     Vector3f::new(0.0 as Float, -10.0 as Float, 12.0 as Float)
@@ -121,16 +123,34 @@ fn main() {
     //     }
     // }
     // let naive = BVH::new(&naive.elements, BVHStrategy::SAH);
+    
+    // std::env::set_current_dir("./target/sponza/").unwrap();
+    // let bvh = BVH::load_obj(
+    //     "sponza.obj", Matrix4f::from_translation(
+    //         Vector3f::new(0.0 as Float, -0.0 as Float, 30.0 as Float)
+    //     ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
+    //       * Matrix4f::from_scale(1.0 as Float)
+    // ).unwrap();
+    // println!("bbox:{:?}", bvh.bbox_parent());
+    // // naive.append(Arc::new(bvh));
+    // let naive = bvh;
 
+    std::env::set_current_dir("./target/sibenik/").unwrap();
+    #[cfg(feature = "flame")]
+    flame::start("BVH Loading");
     let bvh = BVH::load_obj(
         "sibenik.obj", Matrix4f::from_translation(
             Vector3f::new(0.0 as Float, -0.0 as Float, 15.0 as Float)
         ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
           * Matrix4f::from_scale(1.0 as Float)
     ).unwrap();
+    #[cfg(feature = "flame")]
+    flame::end("BVH Loading");
     println!("bbox:{:?}", bvh.bbox_parent());
-    naive.append(Arc::new(bvh));
+    // naive.append(Arc::new(bvh));
+    let naive = bvh;
 
+    // std::env::set_current_dir("./target/").unwrap();
     // let bvh = BVH::load_obj(
     //     "mitsuba.obj", Matrix4f::from_translation(
     //         Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
@@ -138,6 +158,7 @@ fn main() {
     //       * Matrix4f::from_scale(3.0 as Float)
     // ).unwrap();
     // println!("bbox:{:?}", bvh.bbox_parent());
+    // let naive = bvh;
     // naive.append(Arc::new(bvh));
 
     let mut lights: Vec<Arc<Light>> = vec![
@@ -192,7 +213,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(640, 640),
+            Point2::new(1024, 1024),
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -217,12 +238,18 @@ fn main() {
     println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
         Vector3f::unit_z()
     ));
-    let mut renderer = PTRenderer::new(StrataSampler::new(9, 9, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "sibenik3.png", 5, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(16, 16, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target3.png", 5, true);
 
     // use arendur::sample;
     // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);
-    
+    #[cfg(feature = "flame")]
+    flame::start("Rendering");
     renderer.render(&scene);
+    #[cfg(feature = "flame")]
+    flame::end("Rendering");
+    
     let duration = sudato.elapsed();
     println!("Done! Time used: {:.4}s", duration.as_secs() as f64 + (duration.subsec_nanos() as f64/1_000_000_000.0f64));
+    #[cfg(feature = "flame")]
+    flame::dump_html(&mut std::fs::File::create("flaming.html").unwrap()).unwrap();
 }
