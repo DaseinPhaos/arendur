@@ -96,16 +96,16 @@ impl PerspecCam {
 
     pub fn look_from(&mut self, eye: Point3f, to: Point3f, up: Vector3f) {
         let f = (to - eye).normalize();
-        let s = f.cross(up).normalize();
-        let u = s.cross(f);
+        let s = up.cross(f).normalize();
+        let u = f.cross(s);
 
-        self.view_parent = Matrix4::new(
+        self.parent_view = Matrix4::new(
             s.x.clone(), u.x.clone(), f.x.clone(), Float::zero(),
             s.y.clone(), u.y.clone(), f.y.clone(), Float::zero(),
             s.z.clone(), u.z.clone(), f.z.clone(), Float::zero(),
-            eye.dot(s), eye.dot(u), -eye.dot(f), Float::one()
+            -eye.dot(s), -eye.dot(u), -eye.dot(f), Float::one()
         );
-        self.parent_view = self.view_parent.inverse_transform().unwrap();
+        self.view_parent = self.parent_view.inverse_transform().unwrap();
     }
 }
 

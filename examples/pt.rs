@@ -34,7 +34,7 @@ fn main() {
     let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 12.0 as Float, 0.0 as Float)));
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
-    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 12.0 as Float, 20.0 as Float)));
+    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(-5.0 as Float, 12.0 as Float, 10.0 as Float)));
     let inv_transform2 = Arc::new(transform2.invert().unwrap());
 
     // let sphere0 = Sphere::new(8. as Float, -7. as Float, 7. as Float, 6.28 as Float);
@@ -52,7 +52,7 @@ fn main() {
         gamma: false,
         scale: 1. as Float,
     };
-    let kd = ImageTexture::new(
+    let kd = RGBImageTexture::new(
         info.clone(),
         UVMapping{
             scaling: Vector2f::new(16. as Float, 16. as Float),
@@ -92,64 +92,32 @@ fn main() {
     let sphere2 = Arc::new(TransformedComposable::new(sphere2, transform2, inv_transform2));
 
     let mut naive = NaiveAggregate::from_one(sphere2.clone());
-    // naive.append(Arc::new(sphere1));
-    // naive.append(sphere2.clone());
-    // std::env::set_current_dir("./target/").unwrap();
-    // let teapot_meshes = TriangleMesh::load_from_file_transformed(
-    //     "cbs.obj", Matrix4f::from_translation(
-    //     //     Vector3f::new(0.0 as Float, -10.0 as Float, 12.0 as Float)
-    //     // ) * Matrix4f::from_angle_y(Rad(float::pi()))
-    //     //   * Matrix4f::from_scale(2.0 as Float)
-    //         Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
-    //     ) * Matrix4f::from_angle_y(Rad(float::pi()))
-    //       * Matrix4f::from_scale(3.0 as Float)
-    // ).unwrap();
-    // println!("teapot bbox{:?}", teapot_meshes[0].bounding());
-    // let materials = vec![
-    //     material0.clone(),
-    //     material2.clone(),
-    //     material1.clone(),
-    //     material1.clone(),
-    //     material1.clone(),
-    //     material1.clone(),
-    //     material1.clone(),
-    //     material1.clone(),
-    //     material1.clone(),
-    // ];
-    // for (i, mesh) in teapot_meshes.into_iter().enumerate() {
-    //     for instance in mesh {
-    //         naive.append(Arc::new(ShapedPrimitive::new(
-    //             instance, materials[i].clone(), None
-    //         )));
-    //     }
-    // }
-    // let naive = BVH::new(&naive.elements, BVHStrategy::SAH);
     
-    // std::env::set_current_dir("./target/sponza/").unwrap();
-    // let bvh = BVH::load_obj(
-    //     "sponza.obj", Matrix4f::from_translation(
-    //         Vector3f::new(0.0 as Float, -0.0 as Float, 30.0 as Float)
-    //     ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
-    //       * Matrix4f::from_scale(1.0 as Float)
-    // ).unwrap();
-    // println!("bbox:{:?}", bvh.bbox_parent());
-    // // naive.append(Arc::new(bvh));
-    // let naive = bvh;
-
-    std::env::set_current_dir("./target/sibenik/").unwrap();
-    #[cfg(feature = "flame")]
-    flame::start("BVH Loading");
+    std::env::set_current_dir("./target/sponza/").unwrap();
     let bvh = BVH::load_obj(
-        "sibenik.obj", Matrix4f::from_translation(
-            Vector3f::new(0.0 as Float, -0.0 as Float, 15.0 as Float)
+        "sponza.obj", Matrix4f::from_translation(
+            Vector3f::new(0.0 as Float, -5.0 as Float, 15.0 as Float)
         ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
           * Matrix4f::from_scale(1.0 as Float)
     ).unwrap();
-    #[cfg(feature = "flame")]
-    flame::end("BVH Loading");
     println!("bbox:{:?}", bvh.bbox_parent());
     // naive.append(Arc::new(bvh));
     let naive = bvh;
+
+    // std::env::set_current_dir("./target/sibenik/").unwrap();
+    // #[cfg(feature = "flame")]
+    // flame::start("BVH Loading");
+    // let bvh = BVH::load_obj(
+    //     "sibenik.obj", Matrix4f::from_translation(
+    //         Vector3f::new(0.0 as Float, -0.0 as Float, 15.0 as Float)
+    //     ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
+    //       * Matrix4f::from_scale(1.0 as Float)
+    // ).unwrap();
+    // #[cfg(feature = "flame")]
+    // flame::end("BVH Loading");
+    // println!("bbox:{:?}", bvh.bbox_parent());
+    // // naive.append(Arc::new(bvh));
+    // let naive = bvh;
 
     // std::env::set_current_dir("./target/").unwrap();
     // let bvh = BVH::load_obj(
@@ -175,21 +143,21 @@ fn main() {
         //     RGBSpectrumf::new(0.0 as Float, 0.0 as Float, 1.0 as Float))
         // ), 
         // Arc::new(PointLight::new(
-        //     Point3f::new(0.0 as Float, 100.0 as Float, 100.0 as Float),
-        //     RGBSpectrumf::new(100000.7 as Float, 0.0 as Float, 0.0 as Float))
+        //     Point3f::new(0.0 as Float, 20. as Float, 15. as Float),
+        //     RGBSpectrumf::new(1000.7 as Float, 1000.0 as Float, 1000.0 as Float))
         // ),
-        Arc::new(SpotLight::new(
-            // Point3f::new(-8.0 as Float, 20.0 as Float, 5.0 as Float),
-            // Vector3f::new(8.0 as Float, -20.0 as Float, 10.0 as Float).normalize(),
-            Point3f::new(-5.0 as Float, 10.0 as Float, 0.0 as Float),
-            Vector3f::new(0.2 as Float, -0.5 as Float, 1.0 as Float).normalize(),
-            RGBSpectrumf::new(350.0 as Float, 73.0 as Float, 45.0 as Float),
-            float::frac_pi_4()*0.75 as Float, float::frac_pi_4()*0.25 as Float)
-        ), 
-        Arc::new(PointLight::new(
-            Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
-            RGBSpectrumf::new(20.0 as Float, 20.0 as Float, 20.0 as Float))
-        ), 
+        // Arc::new(SpotLight::new(
+        //     // Point3f::new(-8.0 as Float, 20.0 as Float, 5.0 as Float),
+        //     // Vector3f::new(8.0 as Float, -20.0 as Float, 10.0 as Float).normalize(),
+        //     Point3f::new(-5.0 as Float, 10.0 as Float, 0.0 as Float),
+        //     Vector3f::new(0.2 as Float, -0.5 as Float, 1.0 as Float).normalize(),
+        //     RGBSpectrumf::new(350.0 as Float, 73.0 as Float, 45.0 as Float),
+        //     float::frac_pi_4()*0.75 as Float, float::frac_pi_4()*0.25 as Float)
+        // ), 
+        // Arc::new(PointLight::new(
+        //     Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
+        //     RGBSpectrumf::new(20.0 as Float, 20.0 as Float, 20.0 as Float))
+        // ), 
     ];
     // lights.push(Arc::new(sphere1));
     lights.push(sphere2);
@@ -213,7 +181,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(640, 640),
+            Point2::new(320, 320),
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -230,15 +198,21 @@ fn main() {
             )
         )
     );
+    // camera.look_from(
+    //     Point3f::origin(),
+    //     Point3f::new(0.0 as Float, 0.0 as Float, 155.0 as Float),
+    //     Vector3f::unit_y()
+    // );
+
     camera.look_from(
-        Point3f::origin(),
-        Point3f::new(0.0 as Float, 0.0 as Float, 155.0 as Float),
-        Vector3f::unit_y()
+        Point3f::new(0.0 as Float, 5. as Float, 15. as Float),
+        Point3f::new(0.0 as Float, 0. as Float, 20. as Float),
+        Vector3f::unit_z()
     );
     println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
         Vector3f::unit_z()
     ));
-    let mut renderer = PTRenderer::new(StrataSampler::new(1, 1, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target9.png", 5, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(8, 8, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target20.png", 5, false);
 
     // use arendur::sample;
     // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);

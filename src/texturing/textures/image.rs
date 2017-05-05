@@ -19,6 +19,7 @@ use std::collections::hash_map::Entry;
 extern crate image;
 use self::image::GenericImage;
 use self::image::Pixel;
+use self::image::Luma;
 use spectrum::{RGBSpectrum, ToNorm};
 use num_traits::NumCast;
 use sample::distribution::Distribution2D;
@@ -31,6 +32,10 @@ pub struct ImageTexture<TM, TP, M>
     mapping: M,
     mipmap: Arc<MipMap<TM, TP>>,
 }
+
+
+pub type RGBImageTexture<TM, M> = ImageTexture<TM, RGBSpectrum<TM>, M>;
+pub type LumaImageTexture<TM, M> = ImageTexture<TM, Luma<TM>, M>;
 
 impl<TM, TP, M> ImageTexture<TM, TP, M>
     where TM: BaseNum + image::Primitive + 'static,
@@ -50,12 +55,11 @@ impl<TM, TP, M> ImageTexture<TM, TP, M>
 // unsafe impl<T: BaseNum + image::Primitive, M> Sync for ImageTexture<T, M> { }
 // unsafe impl<T: BaseNum + image::Primitive, M> Send for ImageTexture<T, M> { }
 
-impl<TM, TP, M> Texture for ImageTexture<TM, TP, M>
+impl<TM, M> Texture for ImageTexture<TM, RGBSpectrum<TM>, M>
     where TM: BaseNum + image::Primitive + ToNorm + 'static + Send + Sync,
-          TP: Pixel<Subpixel=TM> + Send + Sync + 'static,
           M: Mapping2D + Send + Sync,
 {
-    type Texel = TP;
+    type Texel = RGBSpectrum<TM>;
 
     #[inline]
     fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel {
@@ -66,6 +70,24 @@ impl<TM, TP, M> Texture for ImageTexture<TM, TP, M>
     #[inline]
     fn mean(&self) -> Self::Texel {
         self.mipmap.mean
+    }
+}
+
+impl<TM, M> Texture for ImageTexture<TM, Luma<TM>, M>
+    where TM: BaseNum + image::Primitive + ToNorm + 'static + Send + Sync,
+          M: Mapping2D + Send + Sync,
+{
+    type Texel = TM;
+
+    #[inline]
+    fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel {
+        let t2dinfo = self.mapping.map(si, dxy);
+        self.mipmap.look_up(t2dinfo.p, t2dinfo.dpdx, t2dinfo.dpdy).data[0]
+    }
+
+    #[inline]
+    fn mean(&self) -> Self::Texel {
+        self.mipmap.mean.data[0]
     }
 }
 
@@ -97,7 +119,7 @@ impl<TM, M> ImageTexture<TM, RGBSpectrum<TM>, M>
                 mipmap: mipmap,
             })
         } else {
-            let mipmap = MipMap::new(info.clone());
+            let mipmap = MipMap::<TM, RGBSpectrum<TM>>::new(info.clone());
             if let Some(mipmap) = mipmap {
                 let mipmap = Arc::new(mipmap);
                 ref_table.insert(info, Arc::downgrade(&mipmap));
@@ -116,7 +138,62 @@ impl<TM, M> ImageTexture<TM, RGBSpectrum<TM>, M>
         mapping: M, 
         ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, RGBSpectrum<TM>>>>
     ) -> Option<Arc<Texture<Texel=RGBSpectrum<TM>>>> {
-        if let Some(i) = ImageTexture::new(info, mapping, ref_table) {
+        if let Some(i) = RGBImageTexture::new(info, mapping, ref_table) {
+            Some(Arc::new(i))
+        } else {
+            None
+        }
+    }
+}
+
+impl<TM, M> ImageTexture<TM, Luma<TM>, M>
+    where TM: BaseNum + image::Primitive + ToNorm + 'static + Send + Sync,
+          M: Mapping2D + Send + Sync + 'static,
+{
+    /// Contructing a new texture with image described by `info`.
+    /// The actual image would be looked up from `ref_table`.
+    /// If the `ref_table` don't contain such an image, an attempt
+    /// to construct one would be made. If succeed, the texture would
+    /// be returned.
+    pub fn new(
+        info: ImageInfo,
+        mapping: M, 
+        ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, Luma<TM>>>>
+    ) -> Option<Self> {
+        let try_strong = match ref_table.entry(info.clone()) {
+            Entry::Occupied(oe) => {
+                oe.get().clone().upgrade()
+            },
+            Entry::Vacant(_) => {
+                None
+            },
+        };
+        if let Some(mipmap) = try_strong {
+            Some(ImageTexture{
+                mapping: mapping,
+                mipmap: mipmap,
+            })
+        } else {
+            let mipmap = MipMap::<TM, Luma<TM>>::new(info.clone());
+            if let Some(mipmap) = mipmap {
+                let mipmap = Arc::new(mipmap);
+                ref_table.insert(info, Arc::downgrade(&mipmap));
+                Some(ImageTexture{
+                    mapping: mapping,
+                    mipmap: mipmap,
+                })
+            } else {
+                None
+            }
+        }
+    }
+
+    pub fn new_as_arc(
+        info: ImageInfo,
+        mapping: M, 
+        ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, Luma<TM>>>>
+    ) -> Option<Arc<Texture<Texel=TM>>> {
+        if let Some(i) = LumaImageTexture::new(info, mapping, ref_table) {
             Some(Arc::new(i))
         } else {
             None
@@ -200,6 +277,69 @@ impl<T> MipMap<T, RGBSpectrum<T>>
             target.push(<u8 as ToNorm>::from_norm(inorm));
         }
         let target = image::RgbImage::from_raw(dim.0, dim.1, target).unwrap();
+        target.save(name).unwrap();
+    }
+}
+
+impl<T> MipMap<T, Luma<T>>
+    where T: BaseNum + image::Primitive + ToNorm + Zero + Copy + 'static,
+{
+    /// load a new mipmap with infomation given by `info`
+    fn new(info: ImageInfo) -> Option<MipMap<T, Luma<T>>> {
+        // treat `info.name` as filename in this case
+        if let Ok(opened) = image::open(info.name.clone()) {
+            let (nx, ny) = opened.dimensions();
+            let np2x = nx.next_power_of_two();
+            let np2y = ny.next_power_of_two();
+
+            let miplevels = if np2x > np2y {
+                np2x.trailing_zeros() + 1
+            } else {
+                np2y.trailing_zeros() + 1
+            };
+
+            let mut pyramid = Vec::with_capacity(miplevels as usize);
+            
+            for i in 0..miplevels {
+                let dx = cmp::max(np2x/(1<<i), 1);
+                let dy = cmp::max(np2y/(1<<i), 1);
+                let cb: Vec<T> = opened.resize_exact(
+                    dx, dy, image::FilterType::Lanczos3
+                ).to_luma().into_raw().into_iter().map(|x| {
+                    MipMap::convert_in(info.gamma, info.scale, x)
+                }).collect();
+                pyramid.push(image::ImageBuffer::from_raw(dx, dy, cb).unwrap());
+            }
+
+            let z = <T as Zero>::zero();
+            let mut sum = Luma{data:[z]};
+            let mut count = 0u32;
+            for p in pyramid[0].pixels() {
+                sum = add_two(sum, p);
+                count += 1;
+            }
+            let inv_count = 1. as Float / count as Float;
+
+            Some(MipMap{
+                info: info,
+                pyramid: pyramid,
+                mean: mul_float(sum, inv_count),
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn save(&self, idx: usize, name: &str) {
+        let buf = self.pyramid[idx].clone();
+        let dim = buf.dimensions();
+        let buf = buf.into_raw();
+        let mut target: Vec<u8> = Vec::with_capacity(buf.len());
+        for i in buf {
+            let inorm = i.to_norm();
+            target.push(<u8 as ToNorm>::from_norm(inorm));
+        }
+        let target = image::GrayImage::from_raw(dim.0, dim.1, target).unwrap();
         target.save(name).unwrap();
     }
 }

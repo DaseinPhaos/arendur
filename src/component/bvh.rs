@@ -10,7 +10,6 @@
 
 use super::*;
 use std::mem;
-use super::naive::Naive;
 use copy_arena::{Arena, Allocator};
 
 #[derive(Copy, Clone)]
@@ -134,16 +133,11 @@ impl Composable for BVH {
     }
 }
 
-// impl From<Naive> for BVH {
-//     fn from(naive: Naive) -> BVH {
-//         BVH::new(&naive.elements, BVHStrategy::SAH)
-//     }
-// }
-
 #[derive(Copy, Clone)]
 struct LinearNode {
     bound: BBox3f,
-    /// `len==0` means leaf node
+    /// `len==0` means leaf node, otherwise means length
+    /// in the component array of this node
     len: usize,
     /// if leaf, means offset into the components array
     /// if interior, means offset to the second child
@@ -404,6 +398,8 @@ fn sah_midpoint(
     let mut boundary_idx = BUCKETS-1;
     let mut min_cost = accum_rev[0].cost;
     for i in 0..BUCKETS-1 {
+        debug_assert!(inv_area<= 1.0 as Float / accum[i].bound.surface_area());
+        debug_assert!(inv_area<= 1.0 as Float / accum_rev[i+1].bound.surface_area());
         let cost = 0.125 as Float + (
             accum[i].cost * accum[i].bound.surface_area()
             + accum_rev[i+1].cost * accum_rev[i+1].bound.surface_area()

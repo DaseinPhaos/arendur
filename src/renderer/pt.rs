@@ -92,7 +92,7 @@ fn calculate_lighting<S: Sampler>(
                     ret += beta * term;
                 }
                 // sample bsdf to get new path direction
-                let wo = -ray.ray.direction();
+                let wo = -(ray.ray.direction());
                 let (f, wi, pdf, bt) = bsdf.evaluate_sampled(wo, sampler.next_2d(), BXDF_ALL);
                 specular_bounce = bt.intersects(BXDF_SPECULAR);
                 if f.is_black() || pdf == 0. as Float { break; }
@@ -159,6 +159,7 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
                     if !sampler.next_sample() { break; }
                 }
             }
+            // println!("tile {:?} done!", tile_bound);
         };
         if self.multithreaded {
             tiles.par_iter_mut().for_each(|tile| render_tile(tile));

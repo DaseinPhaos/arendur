@@ -503,6 +503,11 @@ impl Composable for TriangleInstance {
     fn as_light(&self) -> &Light {
         self
     }
+
+    #[inline]
+    fn intersection_cost(&self) -> Float {
+        3.0 as Float
+    }
 }
 
 impl Light for TriangleInstance {

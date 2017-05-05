@@ -190,19 +190,23 @@ enum Permulation {
 impl ShearingTransformCache {
     pub fn from_ray<R: ?Sized + Ray>(ray: &R) -> ShearingTransformCache {
         let o = ray.origin();
-        let neg_o = -Vector3f::new(o.x, o.y, o.z);
+        let neg_o = -o.to_vec();
 
         let direction = ray.direction();
         let absdx = direction.x.abs();
         let absdy = direction.y.abs();
         let absdz = direction.z.abs();
 
-        let perm = if absdx > absdy && absdx > absdz {
-            Permulation::XZ
+        let (perm, direction) = if absdx > absdy && absdx > absdz {
+            (Permulation::XZ, Vector3f::new(
+                direction.y, direction.z, direction.x
+            ))
         } else if absdy > absdz {
-            Permulation::YZ
+            (Permulation::YZ, Vector3f::new(
+                direction.z, direction.x, direction.y
+            ))
         } else {
-            Permulation::ZZ
+            (Permulation::ZZ, direction)
         };
 
         let shear = Vector3f::new(
@@ -235,33 +239,22 @@ impl Permulation {
     #[inline]
     pub fn perm(self, p0t: Point3f, p1t: Point3f, p2t: Point3f) -> (Point3f, Point3f, Point3f) {
         match self {
-            Permulation::XZ => Permulation::permxz(p0t, p1t, p2t),
-            Permulation::YZ => Permulation::permyz(p0t, p1t, p2t),
-            Permulation::ZZ => Permulation::permzz(p0t, p1t, p2t),
+            Permulation::XZ => (permxz(p0t), permxz(p1t), permxz(p2t)),
+            Permulation::YZ => (permyz(p0t), permyz(p1t), permyz(p2t)),
+            Permulation::ZZ => (p0t, p1t, p2t),
         }
     }
+}
 
-    #[inline]
-    pub fn permxz(p0t: Point3f, p1t: Point3f, p2t: Point3f) -> (Point3f, Point3f, Point3f)
-    {
-        (Point3f::new(p0t.y, p0t.z, p0t.x),
-        Point3f::new(p1t.y, p1t.z, p1t.x),
-        Point3f::new(p2t.y, p2t.z, p2t.x))
-    }
 
-    #[inline]
-    pub fn permyz(p0t: Point3f, p1t: Point3f, p2t: Point3f) -> (Point3f, Point3f, Point3f)
-    {
-        (Point3f::new(p0t.z, p0t.x, p0t.y),
-        Point3f::new(p1t.z, p1t.x, p1t.y),
-        Point3f::new(p2t.z, p2t.x, p2t.y))
-    }
+#[inline]
+pub fn permxz(p0t: Point3f) -> Point3f {
+    Point3f::new(p0t.y, p0t.z, p0t.x)
+}
 
-    #[inline]
-    pub fn permzz(p0t: Point3f, p1t: Point3f, p2t: Point3f) -> (Point3f, Point3f, Point3f)
-    {
-        (p0t, p1t, p2t)
-    }
+#[inline]
+pub fn permyz(p0t: Point3f) -> Point3f {
+    Point3f::new(p0t.z, p0t.x, p0t.y)
 }
 
 /// Ray with differencials

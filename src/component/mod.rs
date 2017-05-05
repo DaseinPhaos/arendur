@@ -65,9 +65,10 @@ pub trait Primitive: Composable + Light {
 pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer>, tobj::LoadError> {
     let (models, mtls) = tobj::load_obj(path)?;
     let mut texturess = HashMap::new();
+    let mut bumps = HashMap::new();
     let mut materials: Vec<Arc<Material>> = Vec::with_capacity(mtls.len()+1);
     for mtl in mtls {
-        let diffuse = ImageTexture::new_as_arc(
+        let diffuse = RGBImageTexture::new_as_arc(
             ImageInfo{
                 name: mtl.diffuse_texture,
                 trilinear: false,
@@ -86,7 +87,7 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
                 mtl.diffuse[0], mtl.diffuse[1], mtl.diffuse[2]
             ) })
         );
-        let specular = ImageTexture::new_as_arc(
+        let specular = RGBImageTexture::new_as_arc(
             ImageInfo{
                 name: mtl.specular_texture,
                 trilinear: false,
@@ -107,23 +108,35 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
         );
 
         let roughness = ConstantTexture{
-            value: (mtl.shininess / 100.).min(1.).max(0.) as Float
+            value: ((1000. - mtl.shininess) / 1000.).min(1.).max(0.) as Float
         };
+
+        let bump = LumaImageTexture::new_as_arc(
+            ImageInfo{
+                name: mtl.unknown_param.get("map_bump").map_or_else(|| String::new(), |r| r.to_owned()),
+                trilinear: false,
+                max_aniso: 16. as Float,
+                wrapping: ImageWrapMode::Repeat,
+                gamma: false,
+                scale: 1. as Float,
+            },
+            UVMapping{
+                scaling: Vector2f::new(1. as Float, 1. as Float),
+                shifting: Vector2f::zero(),
+            },
+            &mut bumps
+        );
+
         if specular.mean() == RGBSpectrumf::black() || !specular.mean().valid() {
             materials.push(Arc::new(MatteMaterial::new(
                 diffuse, Arc::new(ConstantTexture{value: 0. as Float}), 
-                None
+                bump
             )));
         } else {
-            // TODO: bump
             materials.push(Arc::new(PlasticMaterial::new(
-                diffuse, specular, Arc::new(roughness), None
+                diffuse, specular, Arc::new(roughness), bump
             )));
         }
-        // materials.push(Arc::new(MatteMaterial::new(
-        //     diffuse, Arc::new(ConstantTexture{value: 0. as Float}), 
-        //     None
-        // )));
     }
     materials.push(Arc::new(MatteMaterial::new(
         Arc::new(ConstantTexture{
