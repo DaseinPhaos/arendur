@@ -53,26 +53,26 @@ impl<T: Fresnel> Bxdf for SpecularRBxdf<T> {
     /// with pdf always equals to one.
     /// Evaluation behavior are described by the fresnel factor
     #[inline]
-    fn evaluate_sampled(&self, wo: Vector3f, _sample: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+    fn evaluate_sampled(&self, wo: Vector3f, _sample: Point2f) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
         let r = Vector3f::new(-wo.x, -wo.y, wo.z);
         let cos = normal::cos_theta(r);
         let s = self.fresnel.evaluate(cos) * self.reflectance / cos.abs();
-        (s, r, 1.0 as Float)
+        (s, r, 1.0 as Float, self.kind())
     }
 }
 
 /// A specular transmission bxdf
 #[derive(Copy, Clone, Debug)]
 pub struct SpecularTBxdf {
-    pub transmitance: RGBSpectrumf,
+    pub transmittance: RGBSpectrumf,
     pub fresnel: Dielectric,
 }
 
 impl SpecularTBxdf {
     /// construction
-    pub fn new(transmitance: RGBSpectrumf, eta_a: Float, eta_b: Float) -> SpecularTBxdf {
+    pub fn new(transmittance: RGBSpectrumf, eta_a: Float, eta_b: Float) -> SpecularTBxdf {
         SpecularTBxdf{
-            transmitance: transmitance,
+            transmittance: transmittance,
             fresnel: Dielectric::new(eta_a, eta_b),
         }
     }
@@ -90,12 +90,12 @@ impl Bxdf for SpecularTBxdf {
     }
 
     #[inline]
-    fn evaluate_sampled(&self, wo: Vector3f, _sample: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+    fn evaluate_sampled(&self, wo: Vector3f, _sample: Point2f) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
         let r = Vector3f::new(-wo.x, -wo.y, wo.z);
         let cos = normal::cos_theta(r);
         let t = RGBSpectrumf::grey_scale(1.0 as Float) - self.fresnel.evaluate(cos);
         // TODO: Double check
-        (t*self.transmitance/cos.abs(), r, 1.0 as Float)
+        (t*self.transmittance/cos.abs(), r, 1.0 as Float, self.kind())
     }
 
     #[inline]

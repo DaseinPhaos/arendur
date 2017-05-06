@@ -10,3 +10,5 @@ pub use super::Material;
 pub use super::bsdf::Bsdf;
 pub use super::matte::MatteMaterial;
 pub use super::plastic::PlasticMaterial;
+pub use super::glass::GlassMaterial;
+pub use super::translucent::TranslucentMaterial;

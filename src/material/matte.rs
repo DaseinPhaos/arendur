@@ -10,7 +10,7 @@
 use std::sync::Arc;
 use spectrum::RGBSpectrumf;
 use super::*;
-use bxdf::lambertian::LambertianBxdf;
+use bxdf::lambertian::LambertianRBxdf;
 use bxdf::oren_nayar::OrenNayer;
 //use std::ops::Deref;
 
@@ -55,7 +55,7 @@ impl Material for MatteMaterial {
         let mut ret = bsdf::Bsdf::new(si, 1.0 as Float);
         if !r.is_black() {
             if sig == 0.0 as Float {
-                ret.add(alloc.alloc(LambertianBxdf::new(r)));
+                ret.add(alloc.alloc(LambertianRBxdf::new(r)));
             } else {
                 ret.add(alloc.alloc(OrenNayer::new(r, sig)));
             }

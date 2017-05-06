@@ -71,9 +71,6 @@ fn calculate_lighting<S: Sampler>(
         if let Some(mut si) = scene.aggregate.intersect_ray(&mut ray.ray) {
             if bounces == 0 || specular_bounce {
                 let term = si.le(-ray.ray.direction());
-                // if term.valid() {
-                //     ret += beta * term;
-                // }
                 ret += beta * term;
             }
             if let Some(primitive) = si.primitive_hit {
@@ -86,9 +83,6 @@ fn calculate_lighting<S: Sampler>(
                 tags.remove(BXDF_SPECULAR);
                 if bsdf.have_n(tags) > 0 {
                     let term = scene.uniform_sample_all_lights(&si, sampler, &bsdf);
-                    // if term.valid() {
-                    //     ret += beta * term;
-                    // }
                     ret += beta * term;
                 }
                 // sample bsdf to get new path direction

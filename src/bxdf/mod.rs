@@ -30,7 +30,8 @@ pub trait Bxdf {
     /// Given an outgoing direction `wo`, and a uniform sample
     /// `u` from $[0,1)^2$, sample an incoming direction `wi`,
     /// and returns it with function value evaluated as `f(wo, wi)`,
-    /// as well as the pdf associated with the incoming direction.
+    /// as well as the pdf associated with the incoming direction,
+    /// as well as the type of the scattering event.
     ///
     /// The default implementation samples the incoming direction
     /// with a cos-weighted distribution above the hemisphere,
@@ -38,12 +39,12 @@ pub trait Bxdf {
     /// to `evaluate` and `pdf`. Bxdfs having better distribution descriptions
     /// should overwrite the behavior when needed.
     #[inline]
-    fn evaluate_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+    fn evaluate_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
         let mut wi = sample::sample_cosw_hemisphere(u);
         if wo.z < 0.0 as Float {wi.z = -wi.z;}
         let pdf = self.pdf(wo, wi);
         let spectrum = self.evaluate(wo, wi);
-        (spectrum, wi, pdf)
+        (spectrum, wi, pdf, self.kind())
     }
 
     /// evaluate the function given two normalized directions,
@@ -60,13 +61,14 @@ pub trait Bxdf {
     /// Given an outgoing direction `wo`, and a uniform sample
     /// `u` from $[0,1)^2$, sample an incoming direction `wi`,
     /// and returns it with function value evaluated as `f(wo, wi)`,
-    /// as well as the pdf associated with the incoming direction.
+    /// as well as the pdf associated with the incoming direction，
+    /// as well as the type of the scattering event.
     /// The particles being traced is camera-ray importance, rather tan light radiance
     ///
     /// default implementation assumes bxdf have symmetrical scattering 
     /// properties and just forwards the call to `self.evaluate_sampled`
     #[inline]
-    fn evaluate_importance_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+    fn evaluate_importance_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
         self.evaluate_sampled(wo, u)
     }
 
@@ -85,7 +87,7 @@ pub trait Bxdf {
     fn rho_hd(&self, wo: Vector3f, samples: &[Point2f]) -> RGBSpectrumf {
         let mut ret = RGBSpectrumf::black();
         for sample in samples {
-            let (spec, wi, pdf) = self.evaluate_sampled(wo, *sample);
+            let (spec, wi, pdf, _) = self.evaluate_sampled(wo, *sample);
             if pdf > 0.0 as Float {
                 ret += spec * normal::cos_theta(wi).abs() / pdf;
             }
@@ -103,7 +105,7 @@ pub trait Bxdf {
             let wo = unsafe {
                 sample::sample_uniform_hemisphere(*samples0.get_unchecked(i))
             };
-            let (spec, wi, pdfi) = unsafe {
+            let (spec, wi, pdfi, _) = unsafe {
                 self.evaluate_sampled(wo, *samples1.get_unchecked(i))
             };
             if pdfi > 0.0 as Float {

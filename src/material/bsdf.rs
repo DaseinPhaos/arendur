@@ -115,9 +115,9 @@ impl<'a> Bsdf<'a> {
             if i == idx {
                 is_specular = bxdf.is(BXDF_SPECULAR);
                 // sample the target now
-                let (f, wi, pdf) = bxdf.evaluate_sampled(wo, u);
+                let (f, wi, pdf, t) = bxdf.evaluate_sampled(wo, u);
                 if pdf == 0.0 as Float { return ret; }
-                ret = (f, wi, pdf, bxdf.kind() & types);
+                ret = (f, wi, pdf, t & types);
             }
             if bxdf.is(types) { i += 1; }
         }
@@ -174,9 +174,9 @@ impl<'a> Bsdf<'a> {
         for bxdf in self.sink.iter() {
             if i == idx {
                 // sample the target now
-                let (f, wi, pdf) = bxdf.evaluate_importance_sampled(wo, u);
+                let (f, wi, pdf, t) = bxdf.evaluate_importance_sampled(wo, u);
                 if pdf == 0.0 as Float { return ret; }
-                ret = (f, wi, pdf, bxdf.kind() & types);
+                ret = (f, wi, pdf, t & types);
             }
             if bxdf.is(types) { i += 1; }
         }

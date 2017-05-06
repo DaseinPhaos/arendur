@@ -68,6 +68,7 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
     let mut bumps = HashMap::new();
     let mut materials: Vec<Arc<Material>> = Vec::with_capacity(mtls.len()+1);
     for mtl in mtls {
+        // println!("{:?}", mtl);
         let diffuse = RGBImageTexture::new_as_arc(
             ImageInfo{
                 name: mtl.diffuse_texture,
@@ -126,13 +127,28 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
             },
             &mut bumps
         );
-
-        if specular.mean() == RGBSpectrumf::black() || !specular.mean().valid() {
+        let illum = mtl.unknown_param.get("illum").map(|a| a.as_ref()).unwrap_or("2");
+        let dissolve = mtl.dissolve as Float;
+        // if illum == "4" {
+        if illum.contains("4") {
+            // specular transmittance
+            materials.push(Arc::new(GlassMaterial::new(
+                diffuse, specular, dissolve.min(1. as Float).max(0. as Float),
+                mtl.optical_density, bump
+            )));
+        } else if !relative_eq!(dissolve, 1.0 as Float) {
+            // glossy transmitance
+            materials.push(Arc::new(TranslucentMaterial::new(
+                diffuse, specular, Arc::new(roughness), dissolve, bump
+            )));
+        } else if specular.mean() == RGBSpectrumf::black() || !specular.mean().valid() {
+            // diffuse reflection
             materials.push(Arc::new(MatteMaterial::new(
                 diffuse, Arc::new(ConstantTexture{value: 0. as Float}), 
                 bump
             )));
         } else {
+            // glossy reflection
             materials.push(Arc::new(PlasticMaterial::new(
                 diffuse, specular, Arc::new(roughness), bump
             )));

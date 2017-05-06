@@ -27,6 +27,7 @@ fn main() {
     println!("component ptr size : {}", std::mem::size_of::<arendur::component::ComponentPointer>());
     use std::io;
     let mut s = String::new();
+
     let _ = io::stdin().read_line(&mut s);
     println!("Rendering...");
     let sudato = Instant::now();
@@ -34,14 +35,17 @@ fn main() {
     let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 12.0 as Float, 0.0 as Float)));
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
-    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(-5.0 as Float, 12.0 as Float, 10.0 as Float)));
+    // let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(-5.0 as Float, 20.0 as Float, 10.0 as Float)));
+    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(-5.0 as Float, 8.0 as Float, 3.50 as Float)));
+    // let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 6.0 as Float, 3.50 as Float)));
     let inv_transform2 = Arc::new(transform2.invert().unwrap());
 
     // let sphere0 = Sphere::new(8. as Float, -7. as Float, 7. as Float, 6.28 as Float);
     let sphere0 = Sphere::full(8. as Float);
     // let sphere0 = Sphere::new(SphereInfo::new(20. as Float, -28. as Float, 58. as Float, 6.49 as Float), ShapeInfo::new(transform0, inv_transform0, false));
     let sphere1 = Sphere::full(8. as Float);
-    let sphere2 = Sphere::full(3. as Float);
+    // let sphere2 = Sphere::full(3. as Float);
+    let sphere2 = Sphere::full(2. as Float);
 
     let mut ref_table = HashMap::new();
     let info = ImageInfo{
@@ -83,7 +87,7 @@ fn main() {
 
     let material2 = MatteMaterial::new(Arc::new(kd), Arc::new(sigma), None);
 
-    let texture = ConstantTexture{value: RGBSpectrumf::new(25.5 as Float, 24.2 as Float, 20.3 as Float)};
+    let texture = ConstantTexture{value: RGBSpectrumf::new(35.5 as Float, 34.2 as Float, 27.3 as Float)};
 
     // let texture = ConstantTexture{value: RGBSpectrumf::new(0.5 as Float, 0.5 as Float, 0.5 as Float)};
 
@@ -93,16 +97,16 @@ fn main() {
 
     let mut naive = NaiveAggregate::from_one(sphere2.clone());
     
-    std::env::set_current_dir("./target/sponza/").unwrap();
-    let bvh = BVH::load_obj(
-        "sponza.obj", Matrix4f::from_translation(
-            Vector3f::new(0.0 as Float, -5.0 as Float, 15.0 as Float)
-        ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
-          * Matrix4f::from_scale(1.0 as Float)
-    ).unwrap();
-    println!("bbox:{:?}", bvh.bbox_parent());
-    // naive.append(Arc::new(bvh));
-    let naive = bvh;
+    // std::env::set_current_dir("./target/sponza/").unwrap();
+    // let bvh = BVH::load_obj(
+    //     "sponza.obj", Matrix4f::from_translation(
+    //         Vector3f::new(0.0 as Float, -5.0 as Float, 15.0 as Float)
+    //     ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
+    //       * Matrix4f::from_scale(1.0 as Float)
+    // ).unwrap();
+    // println!("bbox:{:?}", bvh.bbox_parent());
+    // // naive.append(Arc::new(bvh));
+    // let naive = bvh;
 
     // std::env::set_current_dir("./target/sibenik/").unwrap();
     // #[cfg(feature = "flame")]
@@ -119,15 +123,15 @@ fn main() {
     // // naive.append(Arc::new(bvh));
     // let naive = bvh;
 
-    // std::env::set_current_dir("./target/").unwrap();
-    // let bvh = BVH::load_obj(
-    //     "mitsuba.obj", Matrix4f::from_translation(
-    //         Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
-    //     ) * Matrix4f::from_angle_y(Rad(float::pi()))
-    //       * Matrix4f::from_scale(3.0 as Float)
-    // ).unwrap();
-    // println!("bbox:{:?}", bvh.bbox_parent());
-    // let naive = bvh;
+    std::env::set_current_dir("./target/mitsuba/").unwrap();
+    let bvh = BVH::load_obj(
+        "mitsuba.obj", Matrix4f::from_translation(
+            Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
+        ) * Matrix4f::from_angle_y(Rad(float::pi()))
+          * Matrix4f::from_scale(3.0 as Float)
+    ).unwrap();
+    println!("bbox:{:?}", bvh.bbox_parent());
+    let naive = bvh;
 
     let mut lights: Vec<Arc<Light>> = vec![
         // Arc::new(PointLight::new(
@@ -149,15 +153,15 @@ fn main() {
         // Arc::new(SpotLight::new(
         //     // Point3f::new(-8.0 as Float, 20.0 as Float, 5.0 as Float),
         //     // Vector3f::new(8.0 as Float, -20.0 as Float, 10.0 as Float).normalize(),
-        //     Point3f::new(-5.0 as Float, 10.0 as Float, 0.0 as Float),
-        //     Vector3f::new(0.2 as Float, -0.5 as Float, 1.0 as Float).normalize(),
-        //     RGBSpectrumf::new(350.0 as Float, 73.0 as Float, 45.0 as Float),
+        //     Point3f::new(0.0 as Float, 0.0 as Float, 30.0 as Float),
+        //     Vector3f::new(0.0 as Float, -0.5 as Float, 0.0 as Float).normalize(),
+        //     RGBSpectrumf::new(350.0 as Float, 73.0 as Float, 345.0 as Float),
         //     float::frac_pi_4()*0.75 as Float, float::frac_pi_4()*0.25 as Float)
         // ), 
-        // Arc::new(PointLight::new(
-        //     Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
-        //     RGBSpectrumf::new(20.0 as Float, 20.0 as Float, 20.0 as Float))
-        // ), 
+        Arc::new(PointLight::new(
+            Point3f::new(0.0 as Float, 0.0 as Float, 0.0 as Float),
+            RGBSpectrumf::new(40.0 as Float, 40.0 as Float, 40.0 as Float))
+        ), 
     ];
     // lights.push(Arc::new(sphere1));
     lights.push(sphere2);
@@ -170,7 +174,7 @@ fn main() {
     let mut camera = PerspecCam::new(
         Matrix4f::identity(),
         BBox2f::new(
-            Point2f::new(-1.0 as Float, -0.875 as Float), 
+            Point2f::new(-1.0 as Float, -0.75 as Float), 
             Point2f::new(1.0 as Float, 1.0 as Float)
             // Point2f::new(-0.2 as Float, -0.2 as Float), 
             // Point2f::new(0.2 as Float, 0.2 as Float)
@@ -181,7 +185,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(320, 320),
+            Point2::new(640, 600),
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -198,21 +202,21 @@ fn main() {
             )
         )
     );
+    camera.look_from(
+        Point3f::origin(),
+        Point3f::new(0.0 as Float, 0.0 as Float, 155.0 as Float),
+        Vector3f::unit_y()
+    );
+
     // camera.look_from(
-    //     Point3f::origin(),
-    //     Point3f::new(0.0 as Float, 0.0 as Float, 155.0 as Float),
+    //     Point3f::new(0.0 as Float, -3.0 as Float, 15. as Float),
+    //     Point3f::new(0.0 as Float, 0. as Float, 30. as Float),
     //     Vector3f::unit_y()
     // );
-
-    camera.look_from(
-        Point3f::new(0.0 as Float, 5. as Float, 15. as Float),
-        Point3f::new(0.0 as Float, 0. as Float, 20. as Float),
-        Vector3f::unit_z()
-    );
     println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
         Vector3f::unit_z()
     ));
-    let mut renderer = PTRenderer::new(StrataSampler::new(8, 8, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target20.png", 5, false);
+    let mut renderer = PTRenderer::new(StrataSampler::new(1, 1, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target51.png", 8, false);
 
     // use arendur::sample;
     // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);

@@ -39,7 +39,9 @@ impl<T: Material + ?Sized> Material for Arc<T> {
 }
 
 // utility to bump a map
-fn add_bumping<T: Texture<Texel=Float> + ?Sized>(si: &mut SurfaceInteraction, dxy: &DxyInfo, bump: &T) {
+fn add_bumping<T: Texture<Texel=Float> + ?Sized>(
+    si: &mut SurfaceInteraction, dxy: &DxyInfo, bump: &T
+) {
     let mut sie = si.clone();
     let du = {
         // shifting in u
@@ -86,4 +88,6 @@ fn add_bumping<T: Texture<Texel=Float> + ?Sized>(si: &mut SurfaceInteraction, dx
 pub mod bsdf;
 pub mod matte;
 pub mod plastic;
+pub mod glass;
+pub mod translucent;
 pub mod prelude;

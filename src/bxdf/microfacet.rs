@@ -389,14 +389,15 @@ impl<M: MicrofacetDistribution, F: Fresnel> Bxdf for TorranceSparrowBxdf<M, F> {
         }
     }
 
-    fn evaluate_sampled(&self, wo: Vector3f, u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+    fn evaluate_sampled(&self, wo: Vector3f, u: Point2f
+    ) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
         let wh = self.distribution.sample_wh(wo, u);
         let pdf = self.distribution.pdf(wo, wh)/(4. as Float * wo.dot(wh));
         let wi = (2. as Float * wh * wo.dot(wh)- wo).normalize();
         if wo.dot(wi) <= 0. as Float {
-            (RGBSpectrumf::black(), wi, pdf)
+            (RGBSpectrumf::black(), wi, pdf, self.kind())
         } else {
-            (self.evaluate(wo, wi), wi, pdf)
+            (self.evaluate(wo, wi), wi, pdf, self.kind())
         }
     }
 
@@ -462,7 +463,8 @@ impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
         }
     }
 
-    fn evaluate_sampled(&self, wo: Vector3f, mut u: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
+    fn evaluate_sampled(&self, wo: Vector3f, mut u: Point2f
+    ) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
         // sample according to specular distribution
         // or according to the diffuse term, both with
         // probability of 1/2
@@ -471,7 +473,7 @@ impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
             let wh = self.distribution.sample_wh(wo, u);
             let wi = (2. as Float * wh * wo.dot(wh)- wo).normalize();
             if wo.dot(wi) <= 0. as Float {
-                return (RGBSpectrumf::black(), wi, self.pdf(wo, wi));
+                return (RGBSpectrumf::black(), wi, self.pdf(wo, wi), self.kind());
             } else {
                 wi
             }
@@ -481,7 +483,7 @@ impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
             if wi.z < 0.0 as Float {wi.z = -wi.z;}
             wi
         };
-        (self.evaluate(wo, wi), wi, self.pdf(wo, wi))
+        (self.evaluate(wo, wi), wi, self.pdf(wo, wi), self.kind())
     }
 
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {

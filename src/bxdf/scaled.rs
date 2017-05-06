@@ -29,9 +29,9 @@ impl<T: Bxdf> Bxdf for ScaledBxdf<T> {
     }
 
     #[inline]
-    fn evaluate_sampled(&self, wo: Vector3f, sample: Point2f) -> (RGBSpectrumf, Vector3f, Float) {
-        let (s, v, f) = self.inner.evaluate_sampled(wo, sample);
-        (s * self.scale, v, f)
+    fn evaluate_sampled(&self, wo: Vector3f, sample: Point2f) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
+        let (s, v, f, t) = self.inner.evaluate_sampled(wo, sample);
+        (s * self.scale, v, f, t)
     }
 
     #[inline]
