@@ -7,7 +7,7 @@
 // except according to those terms.
 
 pub use super::{Bxdf, BxdfType, BXDF_REFLECTION, BXDF_TRANSMISSION, BXDF_DIFFUSE, BXDF_GLOSSY, BXDF_SPECULAR, BXDF_ALL};
-pub use super::fresnel::{Conductor, Dielectric, Noop as NoopFresnel, Fresnel, FresnelBxdf};
+pub use super::fresnel::{Conductor, Dielectric, Noop as NoopFresnel, Fresnel, FresnelBxdf, FresnelTBxdf};
 pub use super::lambertian::{LambertianRBxdf, LambertianTBxdf};
 pub use super::oren_nayar::OrenNayer as OrenNayerBxdf;
 pub use super::scaled::ScaledBxdf;

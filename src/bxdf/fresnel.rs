@@ -19,14 +19,14 @@ fn fresnel_dielectric(mut cos_theta_i: Float, mut etai: Float, mut etat: Float) 
         mem::swap(&mut etai, &mut etat);
         cos_theta_i = -cos_theta_i;
     }
-
-    let sin_theta_i = (1.0 as Float - cos_theta_i * cos_theta_i).abs().sqrt();
-    let sin_theta_t = etai / etat * sin_theta_i;
-    if sin_theta_t >= 1.0 as Float {
+    let sin2_theta_i = (1.0 as Float - cos_theta_i * cos_theta_i).min(0. as Float);
+    let eta = etai / etat;
+    let sin2_theta_t = eta*eta*sin2_theta_i;
+    if sin2_theta_t >= 1.0 as Float {
         // total reflection
         return 1.0 as Float;
     }
-    let cos_theta_t = (1.0 as Float - sin_theta_t * sin_theta_t).sqrt();
+    let cos_theta_t = (1.0 as Float - sin2_theta_t).sqrt();
     let etci = etat * cos_theta_i;
     let eict = etai * cos_theta_t;
     let r_para = (etci - eict) / (etci + eict);
@@ -168,37 +168,75 @@ impl Bxdf for FresnelBxdf {
         let f = fresnel_dielectric(cos_theta, self.eta0, self.eta1);
         if u.x < f {
             // reflection
-            // print!("ref ");
             let wi = Vector3f::new(-wo.x, -wo.y, wo.z);
             let pdf = f;
             debug_assert!(pdf <= 1. as Float);
             debug_assert!(pdf > 0. as Float);
-            let f = f * self.reflectance * cos_theta.abs();
+            let f = pdf * self.reflectance / cos_theta.abs();
             (f, wi, pdf, BXDF_REFLECTION | BXDF_SPECULAR)
         } else {
             // transmition
-            // print!("tra ");
             let pdf = 1. as Float - f;
             debug_assert!(pdf>= 0. as Float);
-            let (etai, etao) = if cos_theta > 0. as Float {
-                (self.eta0, self.eta1)
+            let (etai, etao, n) = if cos_theta > 0. as Float {
+                (self.eta0, self.eta1, Vector3f::new(0. as Float, 0., 1.))
             } else {
-                (self.eta1, self.eta0)
+                // println!("in to out");
+                (self.eta1, self.eta0, Vector3f::new(0. as Float, 0., -1.))
             };
             let eta = etai/etao;
-            let sin_thetat = eta * eta * (1. as Float - cos_theta*cos_theta).sqrt();
-            if !(sin_thetat < 1. as Float) {
-                (RGBSpectrumf::black(), Vector3f::zero(), pdf, BXDF_TRANSMISSION | BXDF_SPECULAR)
-            } else {
-                let cos_thetat = (1. as Float - sin_thetat*sin_thetat).sqrt();
-                let wt = -eta * wo + Vector3f::new(
-                    0. as Float,
-                    0. as Float,
-                    eta*cos_theta - cos_thetat
-                );
-                let f = self.transmittance * pdf;
+            let wt = normal::refract(wo, n, eta);
+            if let Some(wt) = wt {
+                let f = self.transmittance *eta * eta* pdf/wt.z.abs();
+                // println!("{:?}, {:?}, {}", f, wt, pdf);
                 (f, wt, pdf, BXDF_TRANSMISSION | BXDF_SPECULAR)
+            } else {
+                (RGBSpectrumf::black(), Vector3f::zero(), pdf, BXDF_TRANSMISSION | BXDF_SPECULAR)
             }
+        }
+    }
+
+    #[inline]
+    fn pdf(&self, _wo: Vector3f, _wi: Vector3f) -> Float {
+        0. as Float
+    }
+}
+
+/// A refracting model
+#[derive(Copy, Clone, Debug)]
+pub struct FresnelTBxdf {
+    pub transmittance: RGBSpectrumf,
+    pub eta0: Float,
+    pub eta1: Float,
+}
+
+impl Bxdf for FresnelTBxdf {
+    #[inline]
+    fn kind(&self) -> BxdfType {
+        BXDF_TRANSMISSION | BXDF_SPECULAR
+    }
+
+    #[inline]
+    fn evaluate(&self, _wo: Vector3f, _wi: Vector3f) -> RGBSpectrumf {
+        RGBSpectrumf::black()
+    }
+
+    fn evaluate_sampled(&self, wo: Vector3f, _u: Point2f) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
+        let (etai, etao, n) = if wo.z > 0. as Float {
+                (self.eta0, self.eta1, Vector3f::new(0. as Float, 0., 1.))
+        } else {
+            (self.eta1, self.eta0, Vector3f::new(0. as Float, 0., -1.))
+        };
+        let eta = etai/etao;
+        let wt = normal::refract(wo, n, eta);
+        if let Some(wt) = wt {
+            let f = self.transmittance *eta * eta*(
+                1. as Float - fresnel_dielectric(wo.z, self.eta0, self.eta1)
+            ) /wt.z.abs();
+            // println!("{:?}, {:?}, {}", f, wt, pdf);
+            (f, wt, 1. as Float, BXDF_TRANSMISSION | BXDF_SPECULAR)
+        } else {
+            (RGBSpectrumf::black(), Vector3f::zero(), 1. as Float, BXDF_TRANSMISSION | BXDF_SPECULAR)
         }
     }
 

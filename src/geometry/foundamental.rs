@@ -189,6 +189,21 @@ pub mod normal {
         -wo + 2.0 as Float * wo.dot(n) * n
     }
 
+    #[inline]
+    pub fn refract(wo: Vector3f, n: Vector3f, eta: Float) -> Option<Vector3f> {
+        let cos_theta = wo.dot(n);
+        let sin2_theta = 1. as Float - cos_theta * cos_theta;
+        let sin2_thetat = eta * eta * sin2_theta.max(0. as Float);
+        if sin2_thetat >= 1. as Float {
+            None
+        } else {
+            let cos_thetat = (1. as Float - sin2_thetat).sqrt();
+            Some(
+                -eta * wo + (eta*cos_theta - cos_thetat)*n
+            )
+        }
+    }
+
     /// given `e1`, returns `e2` and `e3` that forms a basis
     #[inline]
     pub fn get_basis_from(dir: Vector3f) -> (Vector3f, Vector3f) {

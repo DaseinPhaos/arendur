@@ -31,7 +31,8 @@ fn main() {
     let _ = io::stdin().read_line(&mut s);
     println!("Rendering...");
     let sudato = Instant::now();
-    let transform0 = Arc::new(Matrix4f::from_translation(Vector3f::new(12.0 as Float, 12.0 as Float, 30.0 as Float)));
+    let transform0 = Arc::new(Matrix4f::from_translation(Vector3f::new(2.0 as Float, 12.0 as Float, 30.0 as Float)));
+    // let transform0 = Arc::new(Matrix4f::from_translation(Vector3f::new(2.0 as Float, 0.0 as Float, -10.0 as Float)));
     let transform1 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 12.0 as Float, 0.0 as Float)));
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
@@ -125,13 +126,15 @@ fn main() {
 
     std::env::set_current_dir("./target/mitsuba/").unwrap();
     let bvh = BVH::load_obj(
-        "mitsuba.obj", Matrix4f::from_translation(
+        "mitsuba1.obj", Matrix4f::from_translation(
             Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
         ) * Matrix4f::from_angle_y(Rad(float::pi()))
           * Matrix4f::from_scale(3.0 as Float)
     ).unwrap();
     println!("bbox:{:?}", bvh.bbox_parent());
-    let naive = bvh;
+    naive.append(Arc::new(bvh));
+    naive.append(Arc::new(sphere0));
+    // let naive = bvh;
 
     let mut lights: Vec<Arc<Light>> = vec![
         // Arc::new(PointLight::new(
@@ -216,7 +219,7 @@ fn main() {
     println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
         Vector3f::unit_z()
     ));
-    let mut renderer = PTRenderer::new(StrataSampler::new(1, 1, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target51.png", 8, false);
+    let mut renderer = PTRenderer::new(StrataSampler::new(6, 6, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target89.png", 8, true);
 
     // use arendur::sample;
     // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);
