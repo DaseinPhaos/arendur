@@ -54,7 +54,7 @@ impl Material for PlasticMaterial {
         ret.add(alloc.alloc(
             AshikhminShirleyBxdf::new(
                 diffuse, specular,
-                Trowbridge{
+                Beckmann{
                     ax: alpha, ay: alpha
                 }
             )

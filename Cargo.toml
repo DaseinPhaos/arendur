@@ -41,3 +41,7 @@ default = []
 [[example]]
 name = "pt"
 path = "examples/pt.rs"
+
+[[example]]
+name = "sponza"
+path = "examples/sponza.rs"

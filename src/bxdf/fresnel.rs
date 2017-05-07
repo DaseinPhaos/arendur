@@ -19,7 +19,7 @@ fn fresnel_dielectric(mut cos_theta_i: Float, mut etai: Float, mut etat: Float) 
         mem::swap(&mut etai, &mut etat);
         cos_theta_i = -cos_theta_i;
     }
-    let sin2_theta_i = (1.0 as Float - cos_theta_i * cos_theta_i).min(0. as Float);
+    let sin2_theta_i = (1.0 as Float - cos_theta_i * cos_theta_i).max(0. as Float);
     let eta = etai / etat;
     let sin2_theta_t = eta*eta*sin2_theta_i;
     if sin2_theta_t >= 1.0 as Float {
@@ -100,8 +100,8 @@ impl Fresnel for Conductor {
 /// A fresnel dielectric
 #[derive(Copy, Clone, Debug)]
 pub struct Dielectric {
-    pub etai: Float,
-    pub etat: Float,
+    pub eta0: Float,
+    pub eta1: Float,
 }
 
 impl Dielectric {
@@ -109,7 +109,7 @@ impl Dielectric {
     #[inline]
     pub fn new(etai: Float, etat: Float) -> Dielectric {
         Dielectric{
-            etai: etai, etat: etat
+            eta0: etai, eta1: etat
         }
     }
 }
@@ -117,7 +117,7 @@ impl Dielectric {
 impl Fresnel for Dielectric {
     #[inline]
     fn evaluate(&self, cos_theta_i: Float) -> RGBSpectrumf {
-        RGBSpectrumf::grey_scale(fresnel_dielectric(cos_theta_i, self.etai, self.etat))
+        RGBSpectrumf::grey_scale(fresnel_dielectric(cos_theta_i, self.eta0, self.eta1))
     }
 }
 

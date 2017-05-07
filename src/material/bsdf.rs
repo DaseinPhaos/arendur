@@ -80,8 +80,8 @@ impl<'a> Bsdf<'a> {
 
     /// evalute this bsdf. vectors given in parent frame
     pub fn evaluate(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> (RGBSpectrumf, BxdfType) {
-        let wo = self.parent_to_local(wow);
-        let wi = self.parent_to_local(wiw);
+        let wo = self.parent_to_local(wow).normalize();
+        let wi = self.parent_to_local(wiw).normalize();
         let is_reflection = wow.dot(self.ng) * wiw.dot(self.ng) > 0.0 as Float;
         let mut ret = RGBSpectrumf::black();
         let mut rettype = BxdfType::empty();
@@ -107,7 +107,7 @@ impl<'a> Bsdf<'a> {
         );
         if match_count == 0 { return ret; }
         
-        let wo = self.parent_to_local(wow);
+        let wo = self.parent_to_local(wow).normalize();
         let idx = cmp::min((u.x * match_count as Float).floor() as usize, match_count-1);
         let mut i = 0;
         let mut is_specular = false;
@@ -125,17 +125,19 @@ impl<'a> Bsdf<'a> {
         ret.1 = self.local_to_parent(wi);
 
         if match_count == 1 || is_specular { return ret; }
-
+        ret.0 = RGBSpectrumf::black();
+        let is_reflection = wow.dot(self.ng) * ret.1.dot(self.ng) > 0.0 as Float;
         let mut pdfsum = 0.0 as Float;
         for bxdf in self.sink.iter() {
-            if bxdf.is(types) {
-                pdfsum += bxdf.pdf(wo, wi);
+            if bxdf.is(ret.3) && (
+            (is_reflection && bxdf.is(BXDF_REFLECTION))
+             || (!is_reflection && bxdf.is(BXDF_TRANSMISSION))
+            ) {
+                ret.0 += bxdf.evaluate(wo, wi);
+                pdfsum += bxdf.pdf(wo, wi).max(0. as Float);
             }
         }
-        if match_count > 0 {
-            pdfsum /= match_count as Float;
-        }
-        ret.2 = pdfsum;
+        ret.2 = pdfsum / match_count as Float;
         ret
     }
 
@@ -188,7 +190,7 @@ impl<'a> Bsdf<'a> {
         let mut pdfsum = 0.0 as Float;
         for bxdf in self.sink.iter() {
             if bxdf.is(types) {
-                pdfsum += bxdf.pdf(wo, wi);
+                pdfsum += bxdf.pdf(wo, wi).max(0. as Float);
             }
         }
         if match_count > 0 {
@@ -199,15 +201,15 @@ impl<'a> Bsdf<'a> {
     }
 
     pub fn pdf(&self, wow: Vector3f, wiw: Vector3f, types: BxdfType) -> Float {
-        let wo = self.parent_to_local(wow);
-        let wi = self.parent_to_local(wiw);
+        let wo = self.parent_to_local(wow).normalize();
+        let wi = self.parent_to_local(wiw).normalize();
         if wo.z == 0. as Float { return 0. as Float; }
         let mut pdfsum = 0.0 as Float;
         let mut match_count = 0;
         for bxdf in self.sink.iter() {
             if bxdf.is(types) {
                 match_count += 1;
-                pdfsum += bxdf.pdf(wo, wi);
+                pdfsum += bxdf.pdf(wo, wi).max(0. as Float);
             }
         }
         if match_count == 0 {

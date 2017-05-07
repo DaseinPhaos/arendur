@@ -10,6 +10,7 @@
 
 use cgmath;
 use super::float;
+use std::ops;
 
 pub type Float = f32;
 pub type FSize = u32;
@@ -25,6 +26,95 @@ pub type Basis3f = cgmath::Basis3<Float>;
 pub use cgmath::{Point2, Point3, Vector2, Vector3, Vector4, Basis3, BaseNum, BaseFloat, Matrix4, PartialOrd, Deg, Rad, ApproxEq};
 pub use cgmath::prelude::*;
 //pub use num_traits::{Num, NumCast};
+
+/// Floating point values with accumulative error bounds
+#[derive(Debug, Copy, Clone)]
+pub struct EFloat {
+    pub value: Float,
+    pub err: Float,
+}
+
+impl EFloat {
+    #[inline]
+    pub fn lower_bound(self) -> Float {
+        float::next_down(self.value - self.err)
+    }
+
+    #[inline]
+    pub fn upper_bound(self) -> Float {
+        float::next_up(self.value + self.err)
+    }
+}
+
+impl From<Float> for EFloat {
+    #[inline]
+    fn from(f: Float) -> EFloat {
+        EFloat{
+            value: f, err: 0. as Float,
+        }
+    }
+}
+
+impl From<EFloat> for Float {
+    #[inline]
+    fn from(f: EFloat) -> Float {
+        f.value
+    }
+}
+
+impl ops::Add for EFloat {
+    type Output = EFloat;
+    #[inline]
+    fn add(self, rhs: EFloat) -> EFloat {
+        let value = self.value + rhs.value; 
+        let errsum = self.err + rhs.err;
+        EFloat{
+            value,
+            err: (value.abs() + errsum) * float::eb_term(1. as Float) + errsum
+        }
+    }
+}
+
+impl ops::Sub for EFloat {
+    type Output = EFloat;
+    #[inline]
+    fn sub(self, rhs: EFloat) -> EFloat {
+        let value = self.value - rhs.value; 
+        let errsum = (self.err - rhs.err).abs();
+        EFloat{
+            value,
+            err: (value.abs() + errsum) * float::eb_term(1. as Float) + errsum
+        }
+    }
+}
+
+impl ops::Mul for EFloat {
+    type Output = EFloat;
+    #[inline]
+    fn mul(self, rhs: EFloat) -> EFloat {
+        let value = self.value * rhs.value; 
+        let errsum = (self.err*rhs.value + rhs.err*self.value + self.err*rhs.err).abs();
+        EFloat{
+            value,
+            err: (value.abs() + errsum) * float::eb_term(1. as Float) + errsum
+        }
+    }
+}
+
+impl ops::Div for EFloat {
+    type Output = EFloat;
+    #[inline]
+    fn div(self, rhs: EFloat) -> EFloat {
+        let value = self.value / rhs.value;
+        // FIXME: not conservative here?
+        let errsum = self.err / rhs.value.abs();
+        EFloat{
+            value,
+            err: (value.abs() + errsum) * float::eb_term(1. as Float) + errsum
+        }
+    }
+}
+
 
 /// Point on unit sphere represented as spherical coordinate in radians
 #[derive(Copy, Clone, PartialEq)]

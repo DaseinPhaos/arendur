@@ -6,7 +6,10 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+// required to properly transform primitives
 #![feature(specialization)]
+// required by `float::next_up` and `float::next_down`
+#![feature(float_bits_conv)]
 
 #[macro_use]
 extern crate bitflags;

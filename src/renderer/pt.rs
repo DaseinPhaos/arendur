@@ -82,7 +82,8 @@ fn calculate_lighting<S: Sampler>(
                 let mut tags = BXDF_ALL;
                 tags.remove(BXDF_SPECULAR);
                 if bsdf.have_n(tags) > 0 {
-                    let term = scene.uniform_sample_all_lights(&si, sampler, &bsdf);
+                    // let term = scene.uniform_sample_all_lights(&si, sampler, &bsdf);
+                    let term = scene.uniform_sample_one_light(&si, sampler, &bsdf);
                     ret += beta * term;
                 }
                 // sample bsdf to get new path direction

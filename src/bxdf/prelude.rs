@@ -12,4 +12,4 @@ pub use super::lambertian::{LambertianRBxdf, LambertianTBxdf};
 pub use super::oren_nayar::OrenNayer as OrenNayerBxdf;
 pub use super::scaled::ScaledBxdf;
 pub use super::specular::{SpecularRBxdf, SpecularTBxdf};
-pub use super::microfacet::{MicrofacetDistribution, Beckmann, Trowbridge, TorranceSparrowBxdf, AshikhminShirleyBxdf};
+pub use super::microfacet::{MicrofacetDistribution, Beckmann, Trowbridge, TorranceSparrowRBxdf, TorranceSparrowTBxdf, AshikhminShirleyBxdf};

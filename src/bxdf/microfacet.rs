@@ -93,7 +93,32 @@ impl MicrofacetDistribution for Beckmann {
 
     #[inline]
     fn lambda(&self, w: Vector3f) -> Float {
-        _lambda(w, self.ax, self.ay)
+        // polynomial approximation of
+        // $\Lambda(\omega)=\frac{
+        // erf(a) - 1 + \frac{\exp{-a^2}}{a\sqrt{\pi}}   
+        // }{2}$, where $a=1/(\alpha tan\theta)$, and
+        // $erf(x)=2/\sqrt{\pi}\integral_0^x\exp{-t^2}dt$
+        // this approximation was first introduced by pbrt
+        let tant = normal::tan_theta(w).abs();
+        if tant.is_infinite() || tant.is_nan() {
+            0. as Float
+        } else {
+            let alpha = (
+                normal::cos2_phi(w) * self.ax * self.ax
+                 + normal::sin2_phi(w) * self.ay * self.ay
+            ).sqrt();
+            let a = 1. as Float / (alpha * tant);
+            if a >= 1.6 as Float {
+                0. as Float
+            } else {
+                (
+                    1. as Float - 1.259 as Float * a
+                    + 0.396 as Float * a * a
+                ) / (
+                    3.535 as Float * a + 2.181 as Float * a * a
+                )
+            }
+        }
     }
 
     #[inline]
@@ -120,6 +145,7 @@ impl MicrofacetDistribution for Trowbridge {
     fn distribution(&self, wh: Vector3f) -> Float {
         let cos2_theta = normal::cos2_theta(wh);
         let tan2_theta = normal::tan2_theta(wh);
+        if tan2_theta.is_infinite() { return 0. as Float; }
         let cos2_phi = normal::cos2_phi(wh);
         let sin2_phi = normal::sin2_phi(wh);
         let last_term = 1. as Float + tan2_theta*(
@@ -133,41 +159,22 @@ impl MicrofacetDistribution for Trowbridge {
 
     #[inline]
     fn lambda(&self, w: Vector3f) -> Float {
-        _lambda(w, self.ax, self.ay)
+        let tabs = normal::tan_theta(w).abs();
+        if tabs.is_infinite() { return 0. as Float; }
+        let alpha = (
+            normal::cos2_phi(w)*self.ax*self.ax
+             + normal::sin2_phi(w)*self.ay*self.ay
+        ).sqrt();
+        let term = alpha * tabs;
+        (-1. as Float + (1. as Float + term*term).sqrt()) * 0.5 as Float
     }
 
     #[inline]
     fn sample_wh(&self, wo: Vector3f, u: Point2f) -> Vector3f {
-        _sample_wh_trowbridge(wo, u, self.ax, self.ay)
-    }
-}
-
-fn _lambda(w: Vector3f, ax: Float, ay: Float) -> Float {
-    // polynomial approximation of
-    // $\Lambda(\omega)=\frac{
-    // erf(a) - 1 + \frac{\exp{-a^2}}{a\sqrt{\pi}}   
-    // }{2}$, where $a=1/(\alpha tan\theta)$, and
-    // $erf(x)=2/\sqrt{\pi}\integral_0^x\exp{-t^2}dt$
-    // this approximation was first introduced by pbrt
-    let tant = normal::tan_theta(w).abs();
-    if tant.is_infinite() || tant.is_nan() {
-        0. as Float
-    } else {
-        let alpha = (
-            normal::cos2_phi(w) * ax * ax
-             + normal::sin2_phi(w) * ay * ay
-        ).sqrt();
-        let a = 1. as Float / (alpha * tant);
-        if a >= 1.6 as Float {
-            0. as Float
-        } else {
-            (
-                1. as Float - 1.259 as Float * a
-                 + 0.396 as Float * a * a
-            ) / (
-                3.535 as Float * a + 2.181 as Float * a * a
-            )
-        }
+        let won = if wo.z < 0. as Float { -wo } else { wo };
+        let wh = _sample_wh_trowbridge(won, u, self.ax, self.ay);
+        let ret = if wo.z < 0. as Float { -wh } else { wh };
+        ret
     }
 }
 
@@ -298,7 +305,7 @@ fn _sample_wh_trowbridge(wo: Vector3f, u: Point2f, ax: Float, ay: Float) -> Vect
     sx = rotation_tmp;
     sx *= ax;
     sy *= ay;
-    Vector3f::new(-sx, -sy, 1. as Float).normalize() * wo.z.signum()
+    Vector3f::new(-sx, -sy, 1. as Float).normalize()
 }
 
 /// polynomial approximation of $Erf^{-1}(x)$, introduced by pbrt
@@ -362,7 +369,7 @@ fn erf(x: Float) -> Float {
 ///    D(\omege_h)G(\omega_o,\omega_i)F_r(\omega_o)
 /// }{4cos\theta_o cos\theta_i}
 #[derive(Copy, Clone, Debug)]
-pub struct TorranceSparrowBxdf<M, F> {
+pub struct TorranceSparrowRBxdf<M, F> {
     /// reflectance factor
     pub reflectance: RGBSpectrumf,
     /// microfacet distribution for `D` and `G`
@@ -371,7 +378,16 @@ pub struct TorranceSparrowBxdf<M, F> {
     pub fresnel: F
 }
 
-impl<M: MicrofacetDistribution, F: Fresnel> Bxdf for TorranceSparrowBxdf<M, F> {
+impl<M, F> TorranceSparrowRBxdf<M, F> {
+    #[inline]
+    pub fn new(reflectance: RGBSpectrumf, distribution: M, fresnel: F) -> Self {
+        TorranceSparrowRBxdf{
+            reflectance, distribution, fresnel
+        }
+    }
+}
+
+impl<M: MicrofacetDistribution, F: Fresnel> Bxdf for TorranceSparrowRBxdf<M, F> {
     #[inline]
     fn kind(&self) -> BxdfType {
         BXDF_REFLECTION | BXDF_GLOSSY
@@ -384,8 +400,8 @@ impl<M: MicrofacetDistribution, F: Fresnel> Bxdf for TorranceSparrowBxdf<M, F> {
         } else {
             self.reflectance * self.distribution.distribution(wh)
              * self.distribution.visible_both(wo, wi)
-             * self.fresnel.evaluate(wo.dot(wh))
-             / (4. as Float * normal::cos_theta(wo) * normal::cos_theta(wi))
+             * self.fresnel.evaluate(wi.dot(wh))
+             / (4. as Float * wo.z.abs() * wi.z.abs())
         }
     }
 
@@ -403,7 +419,105 @@ impl<M: MicrofacetDistribution, F: Fresnel> Bxdf for TorranceSparrowBxdf<M, F> {
 
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
         let wh = (wo + wi).normalize();
-        self.distribution.pdf(wo, wh)/(4. as Float * wo.dot(wh))
+        let pdf = self.distribution.pdf(wo, wh)/(4. as Float * wo.dot(wh));
+        // pdf.max(0. as Float)
+        pdf
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct TorranceSparrowTBxdf<M> {
+    /// transmittance factor
+    pub transmittance: RGBSpectrumf,
+    /// fresnel factor `Fr`
+    pub fresnel: Dielectric,
+    /// microfacet distribution for `D` and `G`
+    pub distribution: M,
+}
+
+impl<M> TorranceSparrowTBxdf<M> {
+    #[inline]
+    pub fn new(
+        transmittance: RGBSpectrumf, distribution: M, eta0: Float, eta1: Float
+    ) -> Self {
+        TorranceSparrowTBxdf{
+            transmittance, distribution, fresnel: Dielectric::new(eta0, eta1)
+        }
+    }
+}
+
+impl<M: MicrofacetDistribution> Bxdf for TorranceSparrowTBxdf<M> {
+    #[inline]
+    fn kind(&self) -> BxdfType {
+        BXDF_TRANSMISSION | BXDF_GLOSSY
+    }
+
+    fn evaluate(&self, wo: Vector3f, wi: Vector3f) -> RGBSpectrumf {
+        // reject reflectance
+        if wo.dot(wi) >= 0. as Float { return RGBSpectrumf::black(); }
+        let eta = if wo.z > 0. as Float {
+            self.fresnel.eta1 / self.fresnel.eta0
+        } else {
+            self.fresnel.eta0 / self.fresnel.eta1
+        };
+        let mut wh = (wo+wi*eta).normalize();
+        if wh.x.is_nan() || wh.y.is_nan() || wh.z.is_nan() {
+            RGBSpectrumf::black()
+        } else {
+            if wh.z < 0. as Float { wh = -wh; }
+            let cosoh = wo.dot(wh);
+            let f = self.fresnel.evaluate(cosoh);
+            let cosih = wi.dot(wh);
+            let sqrt_denom = cosoh + eta * cosih;
+
+            let ret = self.transmittance * self.distribution.distribution(wh)
+             * self.distribution.visible_both(wo, wi)
+             * (RGBSpectrumf::grey_scale(1. as Float) - f)
+             * cosih.abs() * cosoh.abs()//  * 2.5 as Float
+             / (normal::cos_theta(wo).abs() * normal::cos_theta(wi).abs()*sqrt_denom*sqrt_denom);
+
+            if ret.r() < 0. as Float {
+                println!("negative f:");
+                println!("\tdis:{}, v:{}, cih: {}, coh:{}, ",self.distribution.distribution(wh), self.distribution.visible_both(wo, wi), cosih.abs(), cosoh.abs());
+                println!("\tctwo:{}, ctwi:{}, denom:{}", wo.z, wi.z, sqrt_denom);
+            }
+            ret
+        }
+    }
+
+    fn evaluate_sampled(&self, wo: Vector3f, u: Point2f
+    ) -> (RGBSpectrumf, Vector3f, Float, BxdfType) {
+        let wh = self.distribution.sample_wh(wo, u);
+        let eta = if wo.z > 0. as Float {
+            self.fresnel.eta0 / self.fresnel.eta1
+        } else {
+            self.fresnel.eta1 / self.fresnel.eta0
+        };
+        if let Some(wi) = normal::refract(wo, wh, eta) {
+            let pdf = self.pdf(wo, wi);
+            let f = self.evaluate(wo, wi);
+            let ret = (f, wi, pdf, self.kind());
+            // println!("f:{:?}", f);
+            ret
+        } else {
+            (RGBSpectrumf::black(), Vector3f::zero(), 0. as Float, self.kind())
+        }
+    }
+
+    #[inline]
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if wo.dot(wi) >= 0. as Float { return 0. as Float; }
+        let eta = if wo.z > 0. as Float {
+            self.fresnel.eta1 / self.fresnel.eta0
+        } else {
+            self.fresnel.eta0 / self.fresnel.eta1
+        };
+        let wh = (wo + wi*eta).normalize();
+        let sqrt_denom = wo.dot(wh) + eta*wi.dot(wh);
+        let dhdi = eta*eta*wi.dot(wh).abs() / (sqrt_denom*sqrt_denom);
+        let pdf = self.distribution.pdf(wo, wh) * dhdi;
+        // pdf.max(0. as Float)
+        pdf
     }
 }
 
@@ -489,10 +603,12 @@ impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
         if wo.dot(wi) < 0. as Float { return 0. as Float; }
         let wh = (wo + wi).normalize();
-        0.5 as Float * (
+        let pdf = 0.5 as Float * (
             self.distribution.pdf(wo, wh)/(4. as Float * wo.dot(wh))
              + normal::cos_theta(wi).abs() * float::frac_1_pi()
-        )
+        );
+        // pdf.max(0. as Float)
+        pdf
     }
 }
 

@@ -21,7 +21,7 @@ pub trait Bxdf {
     /// check if the type matches
     #[inline]
     fn is(&self, t: BxdfType) -> bool {
-        (self.kind().bits & t.bits) == self.kind().bits
+        self.kind().intersects(t)
     }
 
     /// evaluate the function given two normalized directions

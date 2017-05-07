@@ -37,8 +37,8 @@ fn main() {
     let inv_transform0 = Arc::new(transform0.invert().unwrap());
     let inv_transform1 = Arc::new(transform1.invert().unwrap());
     // let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(-5.0 as Float, 20.0 as Float, 10.0 as Float)));
-    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(-5.0 as Float, 8.0 as Float, 3.50 as Float)));
-    // let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 6.0 as Float, 3.50 as Float)));
+    // let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(-5.0 as Float, 8.0 as Float, 3.50 as Float)));
+    let transform2 = Arc::new(Matrix4f::from_translation(Vector3f::new(0.0 as Float, 6.0 as Float, 3.50 as Float)));
     let inv_transform2 = Arc::new(transform2.invert().unwrap());
 
     // let sphere0 = Sphere::new(8. as Float, -7. as Float, 7. as Float, 6.28 as Float);
@@ -46,7 +46,7 @@ fn main() {
     // let sphere0 = Sphere::new(SphereInfo::new(20. as Float, -28. as Float, 58. as Float, 6.49 as Float), ShapeInfo::new(transform0, inv_transform0, false));
     let sphere1 = Sphere::full(8. as Float);
     // let sphere2 = Sphere::full(3. as Float);
-    let sphere2 = Sphere::full(2. as Float);
+    let sphere2 = Sphere::full(1. as Float);
 
     let mut ref_table = HashMap::new();
     let info = ImageInfo{
@@ -109,32 +109,32 @@ fn main() {
     // // naive.append(Arc::new(bvh));
     // let naive = bvh;
 
-    // std::env::set_current_dir("./target/sibenik/").unwrap();
-    // #[cfg(feature = "flame")]
-    // flame::start("BVH Loading");
-    // let bvh = BVH::load_obj(
-    //     "sibenik.obj", Matrix4f::from_translation(
-    //         Vector3f::new(0.0 as Float, -0.0 as Float, 15.0 as Float)
-    //     ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
-    //       * Matrix4f::from_scale(1.0 as Float)
-    // ).unwrap();
-    // #[cfg(feature = "flame")]
-    // flame::end("BVH Loading");
-    // println!("bbox:{:?}", bvh.bbox_parent());
-    // // naive.append(Arc::new(bvh));
-    // let naive = bvh;
-
-    std::env::set_current_dir("./target/mitsuba/").unwrap();
+    std::env::set_current_dir("./target/sibenik/").unwrap();
+    #[cfg(feature = "flame")]
+    flame::start("BVH Loading");
     let bvh = BVH::load_obj(
-        "mitsuba.obj", Matrix4f::from_translation(
-            Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
-        ) * Matrix4f::from_angle_y(Rad(float::pi()))
-          * Matrix4f::from_scale(3.0 as Float)
+        "sibenik.obj", Matrix4f::from_translation(
+            Vector3f::new(0.0 as Float, -0.0 as Float, 15.0 as Float)
+        ) * Matrix4f::from_angle_y(Rad(float::frac_pi_2()))
+          * Matrix4f::from_scale(1.0 as Float)
     ).unwrap();
+    #[cfg(feature = "flame")]
+    flame::end("BVH Loading");
     println!("bbox:{:?}", bvh.bbox_parent());
-    naive.append(Arc::new(bvh));
-    naive.append(sphere0.clone());
-    // let naive = bvh;
+    // naive.append(Arc::new(bvh));
+    let naive = bvh;
+
+    // std::env::set_current_dir("./target/mitsuba/").unwrap();
+    // let bvh = BVH::load_obj(
+    //     "mitsuba.obj", Matrix4f::from_translation(
+    //         Vector3f::new(0.0 as Float, -2.50 as Float, 7.0 as Float)
+    //     ) * Matrix4f::from_angle_y(Rad(float::pi()))
+    //       * Matrix4f::from_scale(3.0 as Float)
+    // ).unwrap();
+    // println!("bbox:{:?}", bvh.bbox_parent());
+    // naive.append(Arc::new(bvh));
+    // naive.append(sphere0.clone());
+    // // let naive = bvh;
 
     let mut lights: Vec<Arc<Light>> = vec![
         // Arc::new(PointLight::new(
@@ -166,7 +166,7 @@ fn main() {
             RGBSpectrumf::new(20.0 as Float, 20.0 as Float, 25.0 as Float))
         ), 
     ];
-    lights.push(sphere0);
+    // lights.push(sphere0);
     lights.push(sphere2);
     
     for light in &lights {
@@ -188,7 +188,7 @@ fn main() {
         float::frac_pi_2(),
         None, 
         Film::new(
-            Point2::new(860, 800),
+            Point2::new(320, 300),
             BBox2f::new(
                 Point2f::new(0.0 as Float, 0.0 as Float), 
                 Point2f::new(1.0 as Float, 1.0 as Float)
@@ -219,7 +219,7 @@ fn main() {
     println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
         Vector3f::unit_z()
     ));
-    let mut renderer = PTRenderer::new(StrataSampler::new(16, 16, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target136.png", 8, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(16, 16, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target139.png", 8, true);
 
     // use arendur::sample;
     // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);

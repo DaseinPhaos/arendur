@@ -7,11 +7,10 @@
 // except according to those terms.
 
 //! Basic geometric interaction
-use cgmath::ApproxEq;
 use super::{RayDifferential, Ray, RawRay};
 use super::foundamental::*;
 use super::transform::TransformExt;
-// use shape::ShapeInfo;
+use super::float;
 use component::Primitive;
 use spectrum::{Spectrum, RGBSpectrumf};
 
@@ -21,6 +20,8 @@ use spectrum::{Spectrum, RGBSpectrumf};
 pub struct InteractInfo {
     /// Position at which the interaction occurs
     pub pos: Point3f,
+    /// position's error term
+    pub pos_err: Vector3f,
     /// Negative direction of the associated ray
     pub wo: Vector3f,
     /// Associated normal vector
@@ -34,9 +35,40 @@ impl InteractInfo {
     {
         InteractInfo {
             pos: t.transform_point(self.pos),
+            pos_err: t.transform_vector(self.pos_err),
             wo: t.transform_vector(self.wo),
             norm: t.transform_norm(self.norm),
         }
+    }
+
+    #[inline]
+    pub fn offset_towards(&self, dir: Vector3f) -> Point3f {
+        let nabs = Vector3f::new(
+            self.norm.x.abs(), self.norm.y.abs(), self.norm.z.abs()
+        );
+        let edn = nabs.dot(self.pos_err);
+        let mut offset = edn * self.norm;
+        if dir.dot(self.norm) < 0. as Float { offset = -offset; }
+        let mut ret = self.pos + offset;
+        if offset.x > 0. as Float {
+            ret.x = float::next_up(ret.x);
+        } else if offset.x < 0. as Float {
+            ret.x = float::next_down(ret.x);
+        }
+
+        if offset.y > 0. as Float {
+            ret.y = float::next_up(ret.y);
+        } else if offset.y < 0. as Float {
+            ret.y = float::next_down(ret.y);
+        }
+
+        if offset.z > 0. as Float {
+            ret.z = float::next_up(ret.z);
+        } else if offset.z < 0. as Float {
+            ret.z = float::next_down(ret.z);
+        }
+
+        ret
     }
 }
 
@@ -100,10 +132,10 @@ impl<'b> SurfaceInteraction<'b> {
     /// Construct a new instance from given info
     pub fn new(
         pos: Point3f,
+        perr: Vector3f,
         wo: Vector3f,
         uv: Point2f,
-        duv: DuvInfo,
-        // shape_info: Option<&'a ShapeInfo>,
+        duv: DuvInfo
     ) -> SurfaceInteraction<'b> {
         let norm = duv.dpdu.cross(duv.dpdv).normalize();
 
@@ -116,6 +148,7 @@ impl<'b> SurfaceInteraction<'b> {
         SurfaceInteraction {
             basic: InteractInfo {
                 pos: pos,
+                pos_err: perr,
                 wo: wo,
                 norm: norm,
             },
@@ -201,8 +234,7 @@ impl<'b> SurfaceInteraction<'b> {
 
     #[inline]
     pub fn spawn_ray_differential(&self, dir: Vector3f, dxy: Option<&DxyInfo>) -> RayDifferential {
-        let epsilon = Vector3f::default_epsilon();
-        let pos = self.basic.pos + epsilon * dir;
+        let pos = self.basic.offset_towards(dir);
         let ray = RawRay::from_od(pos, dir);
         let diffs = if let Some(dxy) = dxy {
             let posdx = pos + dxy.dpdx;

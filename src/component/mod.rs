@@ -128,12 +128,12 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
             &mut bumps
         );
         let illum = mtl.unknown_param.get("illum").map(|a| a.as_ref()).unwrap_or("2");
-        let dissolve = mtl.dissolve as Float;
+        let dissolve = mtl.dissolve.max(0.).min(1.) as Float;
         // if illum == "4" {
         if illum.contains("4") {
             // specular transmittance
             materials.push(Arc::new(GlassMaterial::new(
-                diffuse, specular, dissolve.min(1. as Float).max(0. as Float),
+                diffuse, specular, Arc::new(roughness),
                 mtl.optical_density, bump
             )));
         } else if !relative_eq!(dissolve, 1.0 as Float) {

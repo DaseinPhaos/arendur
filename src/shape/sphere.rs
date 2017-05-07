@@ -174,7 +174,10 @@ impl Shape for Sphere {
                 };
                 Some((
                     t, SurfaceInteraction::new(
-                        p, -ray.direction(), Point2f::new(u, v),
+                        p, 
+                        // FIXME: wrong
+                        Vector3f::zero(),
+                        -ray.direction(), Point2f::new(u, v),
                         DuvInfo{
                             dpdu: dpdu,
                             dpdv: dpdv,

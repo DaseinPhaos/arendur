@@ -7,7 +7,7 @@
 // except according to those terms.
 
 //! 2D and 3D bounding box
-
+use super::float;
 use super::foundamental::*;
 use std::ops;
 use std::mem;
@@ -525,7 +525,8 @@ impl BBox3f {
                 mem::swap(&mut t_near, &mut t_far);
             }
             
-            // TODO: Update to ensure robust ray-bounds intersection
+            // Update to ensure robust ray-bounds intersection
+            t_far *= 1. as Float + 2. as Float * float::eb_term(3. as Float);
 
             if t_near > t0 {
                 t0 = t_near;
@@ -550,18 +551,21 @@ impl BBox3f {
         let mut t1 = (self.index(!cache.2.x).x - cache.0.x) * cache.1.x;
 
         let ty0 = (self.index(cache.2.y).y - cache.0.y) * cache.1.y;
-        let ty1 = (self.index(!cache.2.y).y - cache.0.y) * cache.1.y;
+        let mut ty1 = (self.index(!cache.2.y).y - cache.0.y) * cache.1.y;
 
-        // TODO: update for robustness
+        // update for conservative intersection
+        t1 *= 1. as Float + 2. as Float * float::eb_term(3. as Float);
+        ty1 *= 1. as Float + 2. as Float * float::eb_term(3. as Float);
 
         if t0 > ty1 || ty0 > t1 { return None; }
         if ty0 > t0 { t0 = ty0; }
         if ty1 < t1 { t1 = ty1; }
 
         let tz0 = (self.index(cache.2.z).z - cache.0.z) * cache.1.z;
-        let tz1 = (self.index(!cache.2.z).z - cache.0.z) * cache.1.z;
+        let mut tz1 = (self.index(!cache.2.z).z - cache.0.z) * cache.1.z;
 
-        // TODO: update for robustness
+        // update for robustness
+        tz1 *= 1. as Float + 2. as Float * float::eb_term(3. as Float);
 
         if t0 > tz1 || tz0 > t1 { return None; }
         if tz0 > t0 { t0 = tz0; }

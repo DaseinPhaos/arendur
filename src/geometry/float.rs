@@ -7,7 +7,6 @@
 // except according to those terms.
 
 //! Floating point number helper functions
-
 use num_traits;
 use super::foundamental::*;
 
@@ -22,6 +21,18 @@ pub fn clamp(f: Float, min: Float, max: Float) -> Float {
 #[inline]
 pub fn epsilon() -> Float {
     <Float as num_traits::Float>::epsilon()
+}
+
+#[inline]
+pub fn machine_epsilon() -> Float {
+    <Float as num_traits::Float>::epsilon() * 0.5 as Float
+}
+
+#[inline]
+/// error bound term given by Higham(2002)
+pub fn eb_term(n: Float) -> Float {
+    let ne = n * machine_epsilon();
+    ne / (1. as Float - ne)
 }
 
 #[inline]
@@ -89,13 +100,35 @@ pub fn pi() -> Float {
     <Float as num_traits::FloatConst>::PI()
 }
 
-
 #[inline]
-pub fn ln_2() -> Float {
-    <Float as num_traits::FloatConst>::LN_2()
+pub fn next_up(f: Float) -> Float {
+    if f.is_infinite() && f.is_sign_positive() {
+        f
+    } else if f == -0. as Float {
+        0. as Float
+    } else {
+        let t = f.to_bits();
+        if f.is_sign_positive() {
+            Float::from_bits(t+1)
+        } else {
+            Float::from_bits(t-1)
+        }
+    }
 }
 
 #[inline]
-pub fn sqrt_2() -> Float {
-    <Float as num_traits::FloatConst>::SQRT_2()
+pub fn next_down(f: Float) -> Float {
+    if f.is_infinite() && f.is_sign_negative() {
+        f
+    } else if f == 0. as Float {
+        -0. as Float
+    } else {
+        let t = f.to_bits();
+        if f.is_sign_negative() {
+            Float::from_bits(t+1)
+        } else {
+            Float::from_bits(t-1)
+        }
+    }
 }
+

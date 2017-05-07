@@ -9,29 +9,31 @@
 //! glass material
 
 use std::sync::Arc;
-use spectrum::RGBSpectrumf;
+use spectrum::prelude::*;
 use super::*;
 use bxdf::prelude::*;
+use bxdf::microfacet::roughness_to_alpha;
 
 /// A glass material
 #[derive(Clone)]
 pub struct GlassMaterial {
-    pub transmittance: Arc<Texture<Texel=RGBSpectrumf>>,
-    pub reflectance: Arc<Texture<Texel=RGBSpectrumf>>,
-    pub dissolve: Float,
+    pub diffuse: Arc<Texture<Texel=RGBSpectrumf>>,
+    pub specular: Arc<Texture<Texel=RGBSpectrumf>>,
+    pub roughness: Arc<Texture<Texel=Float>>,
     pub eta: Float,
     pub bump: Option<Arc<Texture<Texel=Float>>>,
 }
 
 impl GlassMaterial {
     pub fn new(
-        transmittance: Arc<Texture<Texel=RGBSpectrumf>>,
-        reflectance: Arc<Texture<Texel=RGBSpectrumf>>,
-        dissolve: Float, eta: Float,
+        diffuse: Arc<Texture<Texel=RGBSpectrumf>>,
+        specular: Arc<Texture<Texel=RGBSpectrumf>>,
+        roughness: Arc<Texture<Texel=Float>>,
+        eta: Float,
         bump: Option<Arc<Texture<Texel=Float>>>
     ) -> GlassMaterial {
         GlassMaterial{
-            transmittance, reflectance, dissolve, eta, bump
+            diffuse, specular, roughness, eta, bump
         }
     }
 }
@@ -46,14 +48,34 @@ impl Material for GlassMaterial {
         if let Some(ref bump) = self.bump {
             add_bumping(si, dxy, &**bump);
         }
-        let reflectance = self.reflectance.evaluate(si, dxy) * self.dissolve;
-        let transmittance = self.transmittance.evaluate(si, dxy) * (1. as Float - self.dissolve);
+        let specular = self.specular.evaluate(si, dxy);
+        let diffuse = self.diffuse.evaluate(si, dxy);
+        let roughness = self.roughness.evaluate(si, dxy);
+        let alpha = roughness_to_alpha(roughness);
         let mut ret = bsdf::Bsdf::new(si, 1.0 as Float);
-        ret.add(alloc.alloc(
-            FresnelBxdf::new(
-                reflectance, transmittance, 1. as Float, self.eta
-            )
-        ));
+        if !specular.is_black() {
+            ret.add(alloc.alloc(FresnelBxdf::new(
+                specular, specular, 1. as Float, self.eta
+            )));
+        }
+        if !diffuse.is_black() {
+            // diffuse reflection
+            ret.add(alloc.alloc(TorranceSparrowRBxdf::new(
+                diffuse,
+                Trowbridge{
+                    ax: alpha, ay: alpha
+                },
+                Dielectric::new(1. as Float, self.eta)
+            )));
+            // diffuse transmission
+            ret.add(alloc.alloc(TorranceSparrowTBxdf::new(
+                diffuse, 
+                Trowbridge{
+                    ax: alpha, ay: alpha
+                },
+                1. as Float, self.eta
+            )));
+        }
         ret
     }
 }

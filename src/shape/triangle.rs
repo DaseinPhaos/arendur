@@ -7,7 +7,6 @@
 // except according to those terms.
 
 //! Defines triangle mesh and triangle instance
-
 use geometry::prelude::*;
 use super::Shape;
 use std::ops;
@@ -429,18 +428,47 @@ impl Shape for TriangleInstance {
         let b2 = e2 * inv_det;
         let t = tscaled * inv_det;
 
+        // conservative intersection
+        let maxxt = p0t.x.max(p1t.x).max(p2t.x);
+        let maxyt = p0t.y.max(p1t.y).max(p2t.y);
+        let maxzt = p0t.z.max(p1t.z).max(p2t.z);
+        let maxe = e0.max(e1).max(e2);
+
+        let deltax = maxxt * float::eb_term(5. as Float);
+        let deltay = maxyt * float::eb_term(5. as Float);
+        let deltaz = maxzt * float::eb_term(3. as Float);
+
+        let delta_err = 2. as Float * (
+            float::eb_term(2. as Float) * maxxt * maxyt
+             + deltay * maxxt + deltax * maxyt
+        );
+
+        let delta_t = 3. as Float * (
+            float::eb_term(3. as Float) * maxe * maxzt
+             + delta_err * maxzt + deltaz * maxe
+        ) * inv_det.abs();
+
+        if t <= delta_t { return None; }
+
         let uvs = self.uvs();
         let p0 = p0.to_vec();
         let p1 = p1.to_vec();
         let p2 = p2.to_vec();
 
         let phit = Point3f::from_vec(b0 * p0 + b1 * p1 + b2 * p2);
+        let perr = float::eb_term(7. as Float) * Vector3f::new(
+            (b0*p0.x).abs() + (b1*p1.x).abs() + (b2*p2.x).abs(),
+            (b0*p0.y).abs() + (b1*p1.y).abs() + (b2*p2.y).abs(),
+            (b0*p0.z).abs() + (b1*p1.z).abs() + (b2*p2.z).abs()
+        );
+
         let uvhit = Point2f::from_vec(b0 * uvs.0.to_vec() + b1 * uvs.1.to_vec() + b2 * uvs.2.to_vec());
 
         let (dpdu, dpdv) = TriangleInstance::computedpduv(p0, p1, p2, uvs);
 
+
         let mut surface_interaction = SurfaceInteraction::new(
-            phit, -ray.direction(), uvhit,
+            phit, perr, -ray.direction(), uvhit,
             DuvInfo{
                 dpdu: dpdu,
                 dpdv: dpdv,
