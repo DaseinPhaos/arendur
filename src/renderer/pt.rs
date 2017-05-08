@@ -123,6 +123,7 @@ fn calculate_lighting<S: Sampler>(
 impl<S: Sampler> Renderer for PTRenderer<S> {
     fn render(&mut self, scene: &Scene) {
         profile_start!("pt rendering");
+        info!("Path tracing rendering process started");
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
         let render_tile = |tile: &mut FilmTile<_>| {
             let mut arena = Arena::new();
@@ -163,7 +164,12 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
         }
         let render_result = self.camera.get_film().collect_into(tiles);
         profile_end!("pt rendering");
-        render_result.save(&self.filename).expect("saving failure");
+        info!("Path tracing rendering process ended");
+        if let Ok(_) = render_result.save(&self.filename) {
+            info!("Path tracing result saved at {:?}", self.filename);
+        } else {
+            warn!("Path tracing result saving at {:?} failed", self.filename);
+        }
         profile_dump!("pt rendering results.html");
     }
 }

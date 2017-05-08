@@ -219,7 +219,7 @@ fn main() {
     println!("vray_world: {:?}", camera.view_to_parent().transform_vector(
         Vector3f::unit_z()
     ));
-    let mut renderer = PTRenderer::new(StrataSampler::new(16, 16, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target139.png", 8, true);
+    let mut renderer = PTRenderer::new(StrataSampler::new(1, 1, 8, rand::StdRng::new().unwrap()), Arc::new(camera), "target140.png", 8, true);
 
     // use arendur::sample;
     // let mut renderer = PTRenderer::new(sample::naive::Naive::new(16), Arc::new(camera), "mitsuba15s16_naive.png", 5, true);

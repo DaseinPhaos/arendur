@@ -16,6 +16,7 @@ categories = ["rendering"]
 
 
 [dependencies]
+log = "0.3"
 num-traits = "0.1"
 rand = "0.3"
 cgmath = "0.13"
@@ -26,6 +27,9 @@ copy_arena = "0.1"
 rayon = "0.7"
 tobj = "0.1"
 flame = {version="*", optional=true}
+
+[dev-dependencies]
+env_logger = "0.4"
 
 [features]
 default = []

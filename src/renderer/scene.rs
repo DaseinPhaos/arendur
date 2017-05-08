@@ -58,6 +58,7 @@ impl Scene {
     pub fn uniform_sample_one_light<S: Sampler>(
         &self, si: &SurfaceInteraction, sampler: &mut S, bsdf: &Bsdf
     ) -> RGBSpectrumf {
+        trace!("Sampling one light at {:?}", si);
         let (light, lightpdf) = self.sample_one_light(sampler.next());
         let ulight = sampler.next_2d();
         let uscattering = sampler.next_2d();
@@ -83,25 +84,44 @@ impl Scene {
         light: &Light, ulight: Point2f, uscattering: Point2f,
         si: &SurfaceInteraction, bsdf: &Bsdf
     ) -> RGBSpectrumf {
+        trace!(
+            "evaluating light {:p}, si {:p}, bsdf {:p}， ulight: {:?}, uscatter: {:?}", 
+            light, si, bsdf, ulight, uscattering
+        );
         let mut ret = RGBSpectrumf::black();
         let ls = light.evaluate_sampled(si.basic.pos, ulight);
+        trace!("got light sample: {:?}", ls);
         let wi = ls.wi();
         if !ls.no_effect() {
-            let mut f = bsdf.evaluate(si.basic.wo, wi, BXDF_ALL).0 * wi.dot(si.shading_norm).abs();
+            let mut f = bsdf.evaluate(
+                si.basic.wo, wi, BXDF_ALL
+            ).0 * wi.dot(si.shading_norm).abs();
             let spdf = bsdf.pdf(si.basic.wo, wi, BXDF_ALL);
+            trace!("got bsdf value {:?}, pdf {:?}", f, spdf);
             if spdf == 0. as Float {
                 f = RGBSpectrumf::black();
             }
             if !f.is_black() && ls.occluded(&*self.aggregate) {
                 f = RGBSpectrumf::black();
+                trace!("occluded");
             }
             if light.is_delta() {
-                ret += ls.radiance * f / ls.pdf;
+                let addition = ls.radiance * f / ls.pdf;
+                trace!(
+                    "delta light, adding {:?} to return term", addition
+                );
+                if !addition.valid() {
+                    warn!("invalid adding {:?} from light sampling", addition);
+                }
+                ret += addition;
             } else {
                 let weight = sample::power_heuristic(1, ls.pdf, 1, spdf);
-                // let weight = sample::balance_heuristic(1, ls.pdf, 1, spdf);
-                ret += ls.radiance * f * weight / ls.pdf;
-                // println!("ls={:?}, weight={:?}, lpdf={:?}, spdf={:?}", ls.radiance, weight, ls.pdf, spdf);
+                let addition = ls.radiance * f * weight / ls.pdf;
+                trace!("non delta light, sampling with MIS, with weight {}, adding {:?} to return term", weight, addition);
+                if !addition.valid() {
+                    warn!("invalid adding {:?} from light sampling", addition);
+                }
+                ret += addition;
             }
         }
         
@@ -111,13 +131,17 @@ impl Scene {
                 si.basic.wo, uscattering, BXDF_ALL
             );
             f *= wi.dot(si.shading_norm).abs();
+            trace!(
+                "bsdf sampling result value: {:?}, wi {:?}, pdf {}, type {:?}",
+                f, wi, pdf, bt
+            );
             if !f.is_black() && pdf > 0. as Float {
                 let mut weight = 1. as Float;
                 if !bt.intersects(BXDF_SPECULAR) {
                     let lpdf = light.pdf(si.basic.pos, wi);
                     if lpdf == 0. as Float { return ret; }
                     weight = sample::power_heuristic(1, pdf, 1, lpdf);
-                    // weight = sample::balance_heuristic(1, pdf, 1, lpdf);
+                    trace!("non specular, MIS weight {}", weight);
                 }
                 let mut ray = si.spawn_ray_differential(wi, None);
                 let mut li = RGBSpectrumf::black();
@@ -125,11 +149,16 @@ impl Scene {
                     if let Some(primitive) = lsi.primitive_hit {
                         if ptr::eq(light, primitive.as_light()) {
                             li = lsi.le(-wi);
+                            trace!("valid lighting term {:?}", li);
                         }
                     }
                 }
                 if !li.is_black() {
-                    ret += f * li * weight / pdf;
+                    let addition = f * li * weight / pdf;
+                    if !addition.valid() {
+                        warn!("invalid adding {:?} from bsdf sampling", addition);
+                    }
+                    ret += addition;
                 }
             }
         }
