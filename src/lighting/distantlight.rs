@@ -12,7 +12,7 @@ use super::*;
 use sample;
 
 /// Distant light
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct DistantLight {
     pub intensity: RGBSpectrumf,
     dir: Vector3f,

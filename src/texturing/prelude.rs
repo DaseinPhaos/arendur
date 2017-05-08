@@ -9,4 +9,4 @@
 pub use super::{TexInfo2D, TexInfo3D, Mapping2D, Mapping3D, Texture};
 pub use super::mappings::*;
 pub use super::textures::{ConstantTexture, ProductTexture, MixTexture};
-pub use super::textures::image::{ImageTexture, ImageInfo, ImageWrapMode, MipMap, RGBImageTexture, LumaImageTexture};
+pub use super::textures::image::{ImageTexture, ImageInfo, ImageWrapMode, MipMap, RGBImageTexture, LumaImageTexture, RGBMipMapHashTable, LumaMipMapHashTable};

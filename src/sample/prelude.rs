@@ -8,5 +8,5 @@
 
 pub use super::{Filter, Sampler};
 pub use super::filters::*;
-pub use super::strata::StrataSampler;
+pub use super::strata::{StrataSampler, StdStrataSampler};
 pub use super::distribution::{Distribution1D, Distribution2D};

@@ -282,6 +282,7 @@ pub mod normal {
     #[inline]
     pub fn refract(wo: Vector3f, n: Vector3f, eta: Float) -> Option<Vector3f> {
         let cos_theta = wo.dot(n);
+        debug_assert!(cos_theta > 0. as Float);
         let sin2_theta = 1. as Float - cos_theta * cos_theta;
         let sin2_thetat = eta * eta * sin2_theta.max(0. as Float);
         if sin2_thetat >= 1. as Float {

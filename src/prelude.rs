@@ -19,3 +19,6 @@ pub use shape::prelude::*;
 pub use spectrum::{RGBSpectrum, RGBSpectrumf, Spectrum};
 pub use texturing::prelude::*;
 pub use bxdf::prelude::*;
+
+use rand::StdRng;
+pub type StdPTRenderer = PTRenderer<StrataSampler<StdRng>>;

@@ -71,6 +71,9 @@ fn calculate_lighting<S: Sampler>(
         if let Some(mut si) = scene.aggregate.intersect_ray(&mut ray.ray) {
             if bounces == 0 || specular_bounce {
                 let term = si.le(-ray.ray.direction());
+                if !term.valid() {
+                    warn!("invalid le {:?} from {:p}, vray: {:p}", term, &si, &ray);
+                }
                 ret += beta * term;
             }
             if let Some(primitive) = si.primitive_hit {
@@ -93,9 +96,10 @@ fn calculate_lighting<S: Sampler>(
                 if f.is_black() || pdf == 0. as Float { break; }
                 beta *= f * (wi.dot(si.shading_norm).abs() / pdf);
                 if !beta.valid() {
+                    warn!("invalid beta encountered from {:?} dot {:?} with pdf {}, breaking current bouncing", wi, si.shading_norm, pdf);
                     break;
                 }
-                assert!(beta.inner.y >= 0. as Float);
+                debug_assert!(beta.inner.y >= 0. as Float);
                 ray = si.spawn_ray_differential(wi, Some(&dxy));
 
             } else {

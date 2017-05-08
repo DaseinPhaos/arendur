@@ -36,6 +36,8 @@ pub struct ImageTexture<TM, TP, M>
 
 pub type RGBImageTexture<TM, M> = ImageTexture<TM, RGBSpectrum<TM>, M>;
 pub type LumaImageTexture<TM, M> = ImageTexture<TM, Luma<TM>, M>;
+pub type RGBMipMapHashTable<TM> = HashMap<ImageInfo, Weak<MipMap<TM, RGBSpectrum<TM>>>>;
+pub type LumaMipMapHashTable<TM> = HashMap<ImageInfo, Weak<MipMap<TM, Luma<TM>>>>;
 
 impl<TM, TP, M> ImageTexture<TM, TP, M>
     where TM: BaseNum + image::Primitive + 'static,
@@ -103,7 +105,7 @@ impl<TM, M> ImageTexture<TM, RGBSpectrum<TM>, M>
     pub fn new(
         info: ImageInfo,
         mapping: M, 
-        ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, RGBSpectrum<TM>>>>
+        ref_table: &mut RGBMipMapHashTable<TM>
     ) -> Option<Self> {
         let try_strong = match ref_table.entry(info.clone()) {
             Entry::Occupied(oe) => {
@@ -136,7 +138,7 @@ impl<TM, M> ImageTexture<TM, RGBSpectrum<TM>, M>
     pub fn new_as_arc(
         info: ImageInfo,
         mapping: M, 
-        ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, RGBSpectrum<TM>>>>
+        ref_table: &mut RGBMipMapHashTable<TM>
     ) -> Option<Arc<Texture<Texel=RGBSpectrum<TM>>>> {
         if let Some(i) = RGBImageTexture::new(info, mapping, ref_table) {
             Some(Arc::new(i))
@@ -158,7 +160,7 @@ impl<TM, M> ImageTexture<TM, Luma<TM>, M>
     pub fn new(
         info: ImageInfo,
         mapping: M, 
-        ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, Luma<TM>>>>
+        ref_table: &mut LumaMipMapHashTable<TM>
     ) -> Option<Self> {
         let try_strong = match ref_table.entry(info.clone()) {
             Entry::Occupied(oe) => {
@@ -191,7 +193,7 @@ impl<TM, M> ImageTexture<TM, Luma<TM>, M>
     pub fn new_as_arc(
         info: ImageInfo,
         mapping: M, 
-        ref_table: &mut HashMap<ImageInfo, Weak<MipMap<TM, Luma<TM>>>>
+        ref_table: &mut LumaMipMapHashTable<TM>
     ) -> Option<Arc<Texture<Texel=TM>>> {
         if let Some(i) = LumaImageTexture::new(info, mapping, ref_table) {
             Some(Arc::new(i))
@@ -570,7 +572,7 @@ fn add_two<TM, TP>(pix0: TP, pix1: &TP) -> TP
 }
 
 /// Information abount an image
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Deserialize, Serialize)]
 pub struct ImageInfo {
     pub name: String,
     pub trilinear: bool,
@@ -596,7 +598,7 @@ impl Hash for ImageInfo {
 impl Eq for ImageInfo { }
 
 /// Wrapping mode when coordinates out of bound
-#[derive(Hash, Eq, PartialEq, Copy, Clone)]
+#[derive(Hash, Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum ImageWrapMode {
     /// repeat the texture again
     Repeat,

@@ -11,6 +11,7 @@
 // required by `float::next_up` and `float::next_down`
 #![feature(float_bits_conv)]
 
+extern crate rand;
 #[macro_use]
 extern crate bitflags;
 

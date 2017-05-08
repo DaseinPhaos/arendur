@@ -1,0 +1,114 @@
+{
+    "lights": [
+    ],
+    "components": [
+        {
+            "name": "cornellbox",
+            "value": {"Mesh": {
+                "filename": "./examples/cornellbox/CornellBox-Glossy.obj",
+                "transform": [
+                    [ -2.0, 0.0, 0.0, 0.0 ],
+                    [ 0.0, 2.0, 0.0, 1.0 ],
+                    [ 0.0, 0.0, -2.0, 0.0 ],
+                    [ 0.0, -1.5, 4.0, 1.0]
+                ]
+            }}
+        },
+        {
+            "name": "light_sphere",
+            "value": {"Shaped": {
+                "shape": {"Sphere": {
+                    "radius": 1.5,
+                    "zmin": -2.0,
+                    "zmax": 2.0,
+                    "phimax": 6.28
+                }},
+                "material": {
+                    "name": "light_sphere_matte",
+                    "value": {"Matte": {
+                        "kd": {
+                            "name": "light_sphere_kd",
+                            "value": {"Constant": {
+                                "value": {"inner": [ 0.5, 0.5, 0.5 ]}
+                            }}
+                        },
+                        "sigma": {
+                            "name": "light_sphere_sigma",
+                            "value": {"Constant": { "value": 3.0 }}
+                        }
+                    }}
+                },
+                "light": {
+                    "name": "light_sphere_light",
+                    "value": {"Constant": {
+                        "value": {"inner": [ 15.5, 10.5, 5.5]}
+                    }}
+                },
+                "transform": {
+                    "x": [1.0, 0.0, 0.0, 0.0],
+                    "y": [0.0, 1.0, 0.0, 0.0],
+                    "z": [0.0, 0.0, 1.0, 0.0],
+                    "w": [-3.0, 0.0, -4.5, 1.0]
+                }
+            }}
+        },
+        {
+            "name": "blue_sphere",
+            "value": {"Shaped": {
+                "shape": {"Sphere": {
+                    "radius": 1.5,
+                    "zmin": -2.0,
+                    "zmax": 2.0,
+                    "phimax": 6.28
+                }},
+                "material": {
+                    "name": "light_sphere_matte"
+                },
+                "light": {
+                    "name": "blue_sphere_light",
+                    "value": {"Constant": {
+                        "value": {"inner": [ 7.5, 7.5, 10.5]}
+                    }}
+                },
+                "transform": {
+                    "x": [1.0, 0.0, 0.0, 0.0],
+                    "y": [0.0, 1.0, 0.0, 0.0],
+                    "z": [0.0, 0.0, 1.0, 0.0],
+                    "w": [2.0, 2.0, -2.5, 1.0]
+                }
+            }}
+        }
+    ],
+    "sampler": {
+        "sampledx": 8,
+        "sampledy": 8,
+        "ndim": 8
+    },
+    "camera": {
+        "transform": [
+            [1, 0.0, 0, 0],
+            [0, 1.0, 0, 0],
+            [0, 0.0, 1, 0],
+            [0, 0.0, 0, 1]
+        ],
+        "screen": {
+            "pmin": { "x": -0.2, "y": -0.8 },
+            "pmax": { "x": 0.8, "y": 0.2 }
+        },
+        "znear": 0.1,
+        "zfar": 1000.0,
+        "fov": 1.2707964,
+        "lens": null,
+        "film": {
+            "resolution": { "x": 300, "y": 300 },
+            "crop_window": {
+                "pmin": { "x": 0, "y": 0 },
+                "pmax": { "x": 300, "y": 300 }
+            },
+            "filter_radius": { "x": 4.0, "y": 4.0 }
+        }
+    },
+    "multithreaded": true,
+    "max_depth": 8,
+    "outputfilename": "./examples/cornellbox/CornellBox-Glossy30.png"
+}

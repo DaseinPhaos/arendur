@@ -8,21 +8,124 @@
 
 use geometry::prelude::*;
 use super::Shape;
+use std;
+use serde;
+use serde::{Serialize, Deserialize};
+use serde::ser::{Serializer, SerializeStruct};
+use serde::de::{Deserializer, MapAccess, SeqAccess, Visitor};
 
 /// A (possibly-partial) sphere, as a geometry definition
 #[derive(Copy, Clone, PartialEq)]
 pub struct Sphere {
     /// The radius of the sphere
     pub radius: Float,
-    /// The lower bound xy-plane. Points with `z<zmin` are excluded.
+    /// The lower bound xy-plane. Points with `z<zmin` being excluded.
     pub zmin: Float,
-    /// The upper bound xy-plane. Points with `z>zmax` are excluded.
+    /// The upper bound xy-plane. Points with `z>zmax` being excluded.
     pub zmax: Float,
-    /// The maximum `phi`. Points with `phi>phimax` are excluded.
+    /// The maximum `phi`. Points with `phi>phimax` being excluded.
     pub phimax: Float,
     // These two are updated accordingly when `zmin` or `zmax` changes.
     thetamin: Float,
     thetamax: Float,
+}
+
+impl Serialize for Sphere {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut state = s.serialize_struct("Sphere", 4)?;
+        state.serialize_field("radius", &self.radius)?;
+        state.serialize_field("zmin", &self.zmin)?;
+        state.serialize_field("zmax", &self.zmax)?;
+        state.serialize_field("phimax", &self.phimax)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for Sphere {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field { Radius, Zmin, Zmax, Phimax }
+
+        struct SamplerVisitor;
+        impl<'de> Visitor<'de> for SamplerVisitor {
+            type Value = Sphere;
+            fn expecting(&self, fmter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                fmter.write_str("struct Sphere")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
+                where V: SeqAccess<'de>
+            {
+                let radius = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                let zmin = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+                let zmax = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(2, &self))?;
+                let phimax = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(3, &self))?;
+                Ok(Sphere::new(radius, zmin, zmax, phimax))
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
+                where V: MapAccess<'de>
+            {
+                let mut radius = None;
+                let mut zmin = None;
+                let mut zmax = None;
+                let mut phimax = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Radius => {
+                            if radius.is_some() {
+                                return Err(serde::de::Error::duplicate_field("radius"));
+                            }
+                            radius = Some(map.next_value()?);
+                        }
+                        Field::Zmin => {
+                            if zmin.is_some() {
+                                return Err(serde::de::Error::duplicate_field("zmin"));
+                            }
+                            zmin = Some(map.next_value()?);
+                        }
+                        Field::Zmax => {
+                            if zmax.is_some() {
+                                return Err(serde::de::Error::duplicate_field("zmax"));
+                            }
+                            zmax = Some(map.next_value()?);
+                        }
+                        Field::Phimax => {
+                            if phimax.is_some() {
+                                return Err(serde::de::Error::duplicate_field("phimax"));
+                            }
+                            phimax = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let radius = radius.ok_or_else(|| 
+                    serde::de::Error::missing_field("radius")
+                )?;
+                let zmin = zmin.ok_or_else(|| 
+                    serde::de::Error::missing_field("zmin")
+                )?;
+                let zmax = zmax.ok_or_else(|| 
+                    serde::de::Error::missing_field("znear")
+                )?;
+                let phimax = phimax.ok_or_else(|| 
+                    serde::de::Error::missing_field("zfar")
+                )?;
+
+                Ok(Sphere::new(
+                    radius, zmin, zmax, phimax
+                ))
+            }
+        }
+        const FIELDS: &[&str] = &["transform", "screen", "znear", "zfar", "fov", "lens", "film"];
+        deserializer.deserialize_struct("Sphere", FIELDS, SamplerVisitor)
+    }
 }
 
 impl Sphere {

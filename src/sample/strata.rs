@@ -18,6 +18,8 @@ use serde::{Serialize, Deserialize};
 use serde::ser::{Serializer, SerializeStruct};
 use serde::de::{Deserializer, MapAccess, SeqAccess, Visitor};
 
+pub type StdStrataSampler = StrataSampler<rand::StdRng>;
+
 /// Represents a stratified sampler
 #[derive(Debug)]
 pub struct StrataSampler<T> {

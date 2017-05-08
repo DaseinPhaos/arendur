@@ -9,6 +9,7 @@
 //! The texuture mapping interface
 
 use geometry::prelude::*;
+use std::sync::Arc;
 
 /// Represents a texture information
 #[derive(Copy, Clone, PartialEq)]
@@ -69,6 +70,20 @@ impl<'a, T: 'a> Texture for &'a T
     #[inline]
     fn mean(&self) -> Self::Texel {
         (*self).mean()
+    }
+}
+
+impl<T: Texture + ?Sized> Texture for Arc<T> {
+    type Texel = <T as Texture>::Texel;
+
+    #[inline]
+    fn evaluate(&self, si: &SurfaceInteraction, dxy: &DxyInfo) -> Self::Texel {
+        (**self).evaluate(si, dxy)
+    }
+
+    #[inline]
+    fn mean(&self) -> Self::Texel {
+        (**self).mean()
     }
 }
 

@@ -25,7 +25,7 @@ or simply grab it from [crates.io](https:://crates.io).
 
 Before 0.1, I want the module to support:
 
-- [ ] a console interface
+- [x] a console interface (implemented as `./examples/arencli.rs`)
 - [x] area lights
 - [ ] more materials
 - [ ] a bidirectional path tracing based renderer

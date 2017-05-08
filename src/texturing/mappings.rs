@@ -12,7 +12,7 @@ use super::*;
 
 /// A uv mapping using surface interaction's duv info,
 /// with scaling and shifting
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UVMapping {
     pub scaling: Vector2f,
     pub shifting: Vector2f,

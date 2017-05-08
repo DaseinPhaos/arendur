@@ -95,7 +95,7 @@ impl Bxdf for LambertianTBxdf {
 
     #[inline]
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
-        if wo.dot(wi)>0. as Float {
+        if wo.dot(wi)>= 0. as Float {
             0. as Float
         } else {
             normal::cos_theta(wi).abs() * float::frac_1_pi()

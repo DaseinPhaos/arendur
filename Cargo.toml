@@ -1,6 +1,6 @@
 [package]
 name = "arendur"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Luxko <luxko@qq.com>"]
 
 license = "MIT/Apache-2.0"
@@ -32,22 +32,13 @@ flame = {version="*", optional=true}
 
 [dev-dependencies]
 env_logger = "0.4"
+clap = "2.24"
+serde_json = "1.0"
+flame = "*"
 
 [features]
 default = []
 
-# [[example]]
-# name = "whitted"
-# path = "examples/whitted/main.rs"
-
-# [[example]]
-# name = "bpt"
-# path = "examples/bpt/main.rs"
-
 [[example]]
-name = "pt"
-path = "examples/pt.rs"
-
-[[example]]
-name = "sponza"
-path = "examples/sponza.rs"
+name = "arencli"
+path = "examples/arencli.rs"

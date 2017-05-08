@@ -48,7 +48,7 @@ impl InteractInfo {
         );
         let edn = nabs.dot(self.pos_err);
         let mut offset = edn * self.norm;
-        if dir.dot(self.norm) < 0. as Float { offset = -offset; }
+        if dir.dot(self.norm) <= 0. as Float { offset = -offset; }
         let mut ret = self.pos + offset;
         if offset.x > 0. as Float {
             ret.x = float::next_up(ret.x);
