@@ -10,7 +10,7 @@
 
 use geometry::prelude::*;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ProjCameraInfo {
     pub view_screen: Matrix4f,
     pub screen_raster: Matrix4f,

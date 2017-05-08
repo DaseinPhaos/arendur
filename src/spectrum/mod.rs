@@ -51,7 +51,7 @@ pub trait Spectrum
 }
 
 /// An spectrum represented in SRGB
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct RGBSpectrum<T: BaseNum> {
     pub inner: Vector3<T>,
 }

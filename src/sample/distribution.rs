@@ -13,6 +13,7 @@ use std::iter::FromIterator;
 use std::cmp::Ordering;
 
 /// A 1d distribution
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Distribution1D {
     func: Vec<Float>,
     cdf: Vec<Float>,
@@ -158,6 +159,7 @@ impl FromIterator<Float> for Distribution1D {
 }
 
 /// A 2d distribution
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Distribution2D {
     pcv: Vec<Distribution1D>,
     pmarginal: Distribution1D,

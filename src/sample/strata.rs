@@ -13,6 +13,10 @@ use super::Sampler;
 use self::rand::Rng;
 use geometry::*;
 use std;
+use serde;
+use serde::{Serialize, Deserialize};
+use serde::ser::{Serializer, SerializeStruct};
+use serde::de::{Deserializer, MapAccess, SeqAccess, Visitor};
 
 /// Represents a stratified sampler
 #[derive(Debug)]
@@ -71,6 +75,89 @@ impl<T: Rng> StrataSampler<T> {
             }
         }
         self.rng.shuffle(over);
+    }
+}
+
+impl Serialize for StrataSampler<rand::StdRng> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut state = s.serialize_struct("StrataSampler", 3)?;
+        state.serialize_field("sampledx", &self.sampledx)?;
+        state.serialize_field("sampledy", &self.sampledy)?;
+        state.serialize_field("ndim", &self.sinkf.ndim())?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for StrataSampler<rand::StdRng> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field { Sampledx, Sampledy, Ndim }
+
+        struct SamplerVisitor;
+        impl<'de> Visitor<'de> for SamplerVisitor {
+            type Value = StrataSampler<rand::StdRng>;
+            fn expecting(&self, fmter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                fmter.write_str("struct StrataSampler")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
+                where V: SeqAccess<'de>
+            {
+                let sampledx = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                let sampledy = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+                let ndim = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(2, &self))?;
+                Ok(StrataSampler::new(sampledx, sampledy, ndim, rand::StdRng::new().unwrap()))
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
+                where V: MapAccess<'de>
+            {
+                let mut sampledx = None;
+                let mut sampledy = None;
+                let mut ndim = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Sampledx => {
+                            if sampledx.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sampledx"));
+                            }
+                            sampledx = Some(map.next_value()?);
+                        }
+                        Field::Sampledy => {
+                            if sampledy.is_some() {
+                                return Err(serde::de::Error::duplicate_field("sampledy"));
+                            }
+                            sampledy = Some(map.next_value()?);
+                        }
+                        Field::Ndim => {
+                            if ndim.is_some() {
+                                return Err(serde::de::Error::duplicate_field("ndim"));
+                            }
+                            ndim = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let sampledx = sampledx.ok_or_else(|| 
+                    serde::de::Error::missing_field("sampledx")
+                )?;
+                let sampledy = sampledy.ok_or_else(|| 
+                    serde::de::Error::missing_field("sampledy")
+                )?;
+                let ndim = ndim.ok_or_else(|| 
+                    serde::de::Error::missing_field("ndim")
+                )?;
+
+                Ok(StrataSampler::new(sampledx, sampledy, ndim, rand::StdRng::new().unwrap()))
+            }
+        }
+        const FIELDS: &[&str] = &["sampledx", "sampledy", "ndim"];
+        deserializer.deserialize_struct("StrataSampler", FIELDS, SamplerVisitor)
     }
 }
 

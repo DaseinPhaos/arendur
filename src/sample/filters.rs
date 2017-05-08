@@ -33,7 +33,7 @@ use std::mem;
 // }
 
 /// A box filter!
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub struct BoxFilter {
     radius: Vector2f,
 }
@@ -60,7 +60,7 @@ impl Filter for BoxFilter {
 }
 
 /// A triangle filter!
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub struct TriangleFilter {
     radius: Vector2f,
 }
@@ -91,7 +91,7 @@ impl Filter for TriangleFilter {
 /// by $f(x) = e^{-\alpha\times x^2} - e^{-\alpha\times r^2}$
 /// $\alpha$ controls the rate of fall-off.
 /// Smaller value gives slower fall off.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub struct GaussianFilter {
     radius: Vector2f,
     // precompute `$e^{-\alpha\times r^2}$ for efficiency
@@ -130,7 +130,7 @@ impl Filter for GaussianFilter {
 }
 
 /// Mitchell filter as per Mitchell-Netravali [1988]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub struct MitchellFilter {
     radius: Vector2f,
     inv_radius: Vector2f,
@@ -189,7 +189,7 @@ impl Filter for MitchellFilter {
 /// A windowed sinc filter as per [Lanczos](https://en.wikipedia.org/wiki/Lanczos_resampling).
 /// `tau` controls how many circles the function passes through
 /// before clamping to zero.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub struct LanczosSincFilter {
     radius: Vector2f,
     inv_tau: Float,
@@ -248,7 +248,7 @@ const PREC_FILTER_SIZE: usize = PREC_FILTER_WIDTH * PREC_FILTER_WIDTH;
 /// be desirable to precompute the filtered value at some
 /// discrete locations and look'em up at runtime. This struct
 /// provides such functionality.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PrecomputedFilter {
     // buf: [Float; PREC_FILTER_SIZE],
     buf: Vec<Float>,

@@ -19,7 +19,8 @@ pub type BBox3f = BBox3<Float>;
 
 
 /// A 2D bounding box
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Serialize, Deserialize, Debug)]
+#[must_use]
 pub struct BBox2<T> {
     /// min corner of the bounding box
     pub pmin: Point2<T>,
@@ -227,7 +228,7 @@ impl<T: BaseNum> BBox2<T> {
     }
 }
 
-#[derive(PartialEq, Eq, Copy, Clone, Hash, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Hash, Serialize, Deserialize, Debug)]
 #[must_use]
 pub struct BBox3<T> {
     /// min corner of the bounding box

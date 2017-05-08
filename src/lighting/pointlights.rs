@@ -13,7 +13,7 @@ use cgmath::Quaternion;
 use sample;
 
 /// An isotropic point light emitting same amount of light in all directions
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct PointLight {
     /// position in parent frame
     pub posw: Point3f,
@@ -84,7 +84,7 @@ impl Light for PointLight {
 }
 
 /// Spot light emit light in a cone of directions
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize, Debug)]
 pub struct SpotLight {
     // position in parent frame
     posw: Point3f,

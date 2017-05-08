@@ -10,7 +10,7 @@
 
 use geometry::prelude::*;
 use spectrum::{Spectrum, RGBSpectrumf, ToNorm};
-use sample::Filter;
+use sample::{Filter, filters};
 use std::ops;
 use std::mem;
 use std::sync::Arc;
@@ -34,12 +34,20 @@ fn pidx_to_pcenter(idx: Point2<isize>) -> Point2f {
 /// 2. Spawn an array of tiles
 /// 3. tracing was done within those tiles, possibly multithreaded
 /// 4. when done, collect the result into a single `image`
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Film {
     resolution: Point2<usize>,
     crop_window: BBox2<isize>,
+    #[serde(skip_serializing, skip_deserializing, default = "lanczos_default")]
     filter: Arc<Filter>,
     filter_radius: Vector2f,
     // inv_filter_radius: Vector2f,
+}
+
+fn lanczos_default() -> Arc<Filter> {
+    Arc::new(filters::LanczosSincFilter::new(
+        Vector2f::new(4. as Float, 4. as Float), 3.0 as Float
+    ))
 }
 
 impl Film {

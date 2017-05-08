@@ -14,8 +14,14 @@ use super::projective::ProjCameraInfo;
 use super::film::Film;
 use spectrum::{RGBSpectrumf, Spectrum};
 use sample;
+use std;
+use serde;
+use serde::{Serialize, Deserialize};
+use serde::ser::{Serializer, SerializeStruct};
+use serde::de::{Deserializer, MapAccess, SeqAccess, Visitor};
 
 /// A perspective camera
+#[derive(Clone)]
 pub struct PerspecCam {
     view_parent: Matrix4f,
     parent_view: Matrix4f,
@@ -26,6 +32,9 @@ pub struct PerspecCam {
     lens: Option<(Float, Float)>,
     film: Film,
     area: Float,
+    znear: Float,
+    zfar: Float,
+    fov: Float,
 }
 
 impl PerspecCam {
@@ -74,6 +83,9 @@ impl PerspecCam {
             lens,
             film,
             area,
+            znear,
+            zfar,
+            fov,
         }
     }
 
@@ -106,6 +118,144 @@ impl PerspecCam {
             -eye.dot(s), -eye.dot(u), -eye.dot(f), Float::one()
         );
         self.view_parent = self.parent_view.inverse_transform().unwrap();
+    }
+}
+
+
+impl Serialize for PerspecCam {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut state = s.serialize_struct("PerspecCam", 7)?;
+        state.serialize_field("transform", &self.parent_view)?;
+        state.serialize_field("screen", &self.proj_info.screen)?;
+        state.serialize_field("znear", &self.znear)?;
+        state.serialize_field("zfar", &self.zfar)?;
+        state.serialize_field("fov", &self.fov)?;
+        state.serialize_field("lens", &self.lens)?;
+        state.serialize_field("film", &self.film)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for PerspecCam {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field { Transform, Screen, Znear, Zfar, Fov, Lens, Film }
+
+        struct SamplerVisitor;
+        impl<'de> Visitor<'de> for SamplerVisitor {
+            type Value = PerspecCam;
+            fn expecting(&self, fmter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                fmter.write_str("struct PerspecCam")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
+                where V: SeqAccess<'de>
+            {
+                let transform = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                let screen = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;
+                let znear = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(2, &self))?;
+                let zfar = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(3, &self))?;
+                let fov = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(4, &self))?;
+                let lens = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(5, &self))?;
+                let film = seq.next_element()?
+                    .ok_or_else(|| serde::de::Error::invalid_length(6, &self))?;
+                Ok(PerspecCam::new(transform, screen, znear, zfar, fov, lens, film))
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
+                where V: MapAccess<'de>
+            {
+                let mut transform = None;
+                let mut screen = None;
+                let mut znear = None;
+                let mut zfar = None;
+                let mut fov = None;
+                let mut lens = None;
+                let mut film = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Transform => {
+                            if transform.is_some() {
+                                return Err(serde::de::Error::duplicate_field("transform"));
+                            }
+                            transform = Some(map.next_value()?);
+                        }
+                        Field::Screen => {
+                            if screen.is_some() {
+                                return Err(serde::de::Error::duplicate_field("screen"));
+                            }
+                            screen = Some(map.next_value()?);
+                        }
+                        Field::Znear => {
+                            if znear.is_some() {
+                                return Err(serde::de::Error::duplicate_field("znear"));
+                            }
+                            znear = Some(map.next_value()?);
+                        }
+                        Field::Zfar => {
+                            if zfar.is_some() {
+                                return Err(serde::de::Error::duplicate_field("zfar"));
+                            }
+                            zfar = Some(map.next_value()?);
+                        }
+                        Field::Fov => {
+                            if fov.is_some() {
+                                return Err(serde::de::Error::duplicate_field("fov"));
+                            }
+                            fov = Some(map.next_value()?);
+                        }
+                        Field::Lens => {
+                            if lens.is_some() {
+                                return Err(serde::de::Error::duplicate_field("lens"));
+                            }
+                            lens = Some(map.next_value()?);
+                        }
+                        Field::Film => {
+                            if film.is_some() {
+                                return Err(serde::de::Error::duplicate_field("film"));
+                            }
+                            film = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let transform = transform.ok_or_else(|| 
+                    serde::de::Error::missing_field("transform")
+                )?;
+                let screen = screen.ok_or_else(|| 
+                    serde::de::Error::missing_field("screen")
+                )?;
+                let znear = znear.ok_or_else(|| 
+                    serde::de::Error::missing_field("znear")
+                )?;
+                let zfar = zfar.ok_or_else(|| 
+                    serde::de::Error::missing_field("zfar")
+                )?;
+                let fov = fov.ok_or_else(|| 
+                    serde::de::Error::missing_field("fov")
+                )?;
+                let lens = lens.ok_or_else(|| 
+                    serde::de::Error::missing_field("lens")
+                )?;
+                let film = film.ok_or_else(|| 
+                    serde::de::Error::missing_field("film")
+                )?;
+
+                Ok(PerspecCam::new(
+                    transform, screen, znear, zfar, fov, lens, film
+                ))
+            }
+        }
+        const FIELDS: &[&str] = &["transform", "screen", "znear", "zfar", "fov", "lens", "film"];
+        deserializer.deserialize_struct("PerspecCam", FIELDS, SamplerVisitor)
     }
 }
 
