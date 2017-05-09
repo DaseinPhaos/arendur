@@ -67,14 +67,14 @@ impl Material for GlassMaterial {
                 },
                 Dielectric::new(1. as Float, self.eta)
             )));
-            // // diffuse transmission
-            // ret.add(alloc.alloc(TorranceSparrowTBxdf::new(
-            //     diffuse, 
-            //     Trowbridge{
-            //         ax: alpha, ay: alpha
-            //     },
-            //     1. as Float, self.eta
-            // )));
+            // diffuse transmission
+            ret.add(alloc.alloc(TorranceSparrowTBxdf::new(
+                diffuse, 
+                Trowbridge{
+                    ax: alpha, ay: alpha
+                },
+                1. as Float, self.eta
+            )));
         }
         ret
     }

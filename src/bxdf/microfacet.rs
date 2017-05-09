@@ -410,14 +410,18 @@ impl<M: MicrofacetDistribution, F: Fresnel> Bxdf for TorranceSparrowRBxdf<M, F> 
         let wh = self.distribution.sample_wh(wo, u);
         let pdf = self.distribution.pdf(wo, wh)/(4. as Float * wo.dot(wh));
         let wi = (2. as Float * wh * wo.dot(wh)- wo).normalize();
-        if wo.dot(wi) <= 0. as Float {
+        if wo.z * wi.z <= 0. as Float {
+            trace!("not samehemisphere for TSR, blacking");
             (RGBSpectrumf::black(), wi, pdf, self.kind())
         } else {
-            (self.evaluate(wo, wi), wi, pdf, self.kind())
+            let ret = (self.evaluate(wo, wi), wi, pdf, self.kind());
+            trace!("samehemisphere for TSR, {:?}", ret);
+            ret
         }
     }
 
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if wo.z *wi.z <= 0. as Float { return 0. as Float; }
         let wh = (wo + wi).normalize();
         let pdf = self.distribution.pdf(wo, wh)/(4. as Float * wo.dot(wh));
         // pdf.max(0. as Float)
@@ -454,35 +458,35 @@ impl<M: MicrofacetDistribution> Bxdf for TorranceSparrowTBxdf<M> {
 
     fn evaluate(&self, wo: Vector3f, wi: Vector3f) -> RGBSpectrumf {
         // reject reflectance
-        if wo.dot(wi) >= 0. as Float { return RGBSpectrumf::black(); }
+        if wo.z * wi.z > 0. as Float { return RGBSpectrumf::black(); }
         let eta = if wo.z > 0. as Float {
             self.fresnel.eta1 / self.fresnel.eta0
         } else {
             self.fresnel.eta0 / self.fresnel.eta1
         };
         let mut wh = (wo+wi*eta).normalize();
-        if wh.x.is_nan() || wh.y.is_nan() || wh.z.is_nan() {
-            RGBSpectrumf::black()
-        } else {
-            if wh.z < 0. as Float { wh = -wh; }
-            let cosoh = wo.dot(wh);
-            let f = self.fresnel.evaluate(cosoh);
-            let cosih = wi.dot(wh);
-            let sqrt_denom = cosoh + eta * cosih;
-
-            let ret = self.transmittance * self.distribution.distribution(wh)
-             * self.distribution.visible_both(wo, wi)
-             * (RGBSpectrumf::grey_scale(1. as Float) - f)
-             * cosih.abs() * cosoh.abs()//  * 2.5 as Float
-             / (normal::cos_theta(wo).abs() * normal::cos_theta(wi).abs()*sqrt_denom*sqrt_denom);
-
-            if ret.r() < 0. as Float {
-                println!("negative f:");
-                println!("\tdis:{}, v:{}, cih: {}, coh:{}, ",self.distribution.distribution(wh), self.distribution.visible_both(wo, wi), cosih.abs(), cosoh.abs());
-                println!("\tctwo:{}, ctwi:{}, denom:{}", wo.z, wi.z, sqrt_denom);
-            }
-            ret
+        if wh.x.is_infinite() || wh.y.is_infinite() || wh.z.is_infinite()
+         || wh.x.is_nan() || wh.y.is_nan() || wh.z.is_nan() {
+            trace!("handling eta==1");
+            return RGBSpectrumf::grey_scale(1. as Float);
         }
+        if wh.z < 0. as Float { wh = -wh; }
+        let cosoh = wo.dot(wh);
+        let f = self.fresnel.evaluate(cosoh);
+        let cosih = wi.dot(wh);
+        let sqrt_denom = cosoh + eta * cosih;
+
+        let ret = self.transmittance * self.distribution.distribution(wh)
+            * self.distribution.visible_both(wo, wi)
+            * (RGBSpectrumf::grey_scale(1. as Float) - f)
+            * cosih.abs() * cosoh.abs()//  * 2.5 as Float
+            / (normal::cos_theta(wo).abs() * normal::cos_theta(wi).abs()*sqrt_denom*sqrt_denom);
+        if ret.r() < 0. as Float {
+            warn!("negative f:");
+            warn!("\tdis:{}, v:{}, cih: {}, coh:{}, ",self.distribution.distribution(wh), self.distribution.visible_both(wo, wi), cosih.abs(), cosoh.abs());
+            warn!("\tctwo:{}, ctwi:{}, denom:{}", wo.z, wi.z, sqrt_denom);
+        }
+        ret
     }
 
     fn evaluate_sampled(&self, wo: Vector3f, u: Point2f
@@ -497,24 +501,31 @@ impl<M: MicrofacetDistribution> Bxdf for TorranceSparrowTBxdf<M> {
             let pdf = self.pdf(wo, wi);
             let f = self.evaluate(wo, wi);
             let ret = (f, wi, pdf, self.kind());
-            // println!("f:{:?}", f);
+            trace!("refraction found {:?}", ret);
             ret
         } else {
+            trace!("total reflection, no refraction");
             (RGBSpectrumf::black(), Vector3f::zero(), 0. as Float, self.kind())
         }
     }
 
     #[inline]
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
-        if wo.dot(wi) >= 0. as Float { return 0. as Float; }
+        if wo.z * wi.z > 0. as Float { return 0. as Float; }
         let eta = if wo.z > 0. as Float {
             self.fresnel.eta1 / self.fresnel.eta0
         } else {
             self.fresnel.eta0 / self.fresnel.eta1
         };
         let wh = (wo + wi*eta).normalize();
+        if wh.x.is_infinite() || wh.y.is_infinite() || wh.z.is_infinite()
+         || wh.x.is_nan() || wh.y.is_nan() || wh.z.is_nan() {
+            trace!("handling eta==1");
+            return 1. as Float;
+        }
         let sqrt_denom = wo.dot(wh) + eta*wi.dot(wh);
         let dhdi = eta*eta*wi.dot(wh).abs() / (sqrt_denom*sqrt_denom);
+        trace!("wo: {:?}, wi: {:?}, wh: {:?}, sqrtdenom: {}", wo, wi, wh, sqrt_denom);
         let pdf = self.distribution.pdf(wo, wh) * dhdi;
         // pdf.max(0. as Float)
         pdf
@@ -586,7 +597,7 @@ impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
             u.x *= 2. as Float;
             let wh = self.distribution.sample_wh(wo, u);
             let wi = (2. as Float * wh * wo.dot(wh)- wo).normalize();
-            if wo.dot(wi) <= 0. as Float {
+            if wo.z * wi.z <= 0. as Float {
                 return (RGBSpectrumf::black(), wi, self.pdf(wo, wi), self.kind());
             } else {
                 wi
@@ -601,7 +612,7 @@ impl<M: MicrofacetDistribution> Bxdf for AshikhminShirleyBxdf<M> {
     }
 
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
-        if wo.dot(wi) < 0. as Float { return 0. as Float; }
+        if wo.z * wi.z < 0. as Float { return 0. as Float; }
         let wh = (wo + wi).normalize();
         let pdf = 0.5 as Float * (
             self.distribution.pdf(wo, wh)/(4. as Float * wo.dot(wh))

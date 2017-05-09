@@ -23,14 +23,14 @@ newmtl sphere
 
 newmtl shortBox
 	Ns 10.0000
-  Ni 1.050
-  d 0.0
-  illum 2
+  Ni 1.5
+  d 0.5
+  illum 4
   # White
   Ka 0.725 0.71 0.68 
-  Ke 0.725 0.71 0.68
-  Ks 0 0 0
-  Kd 11 11 11
+  Kd 0.725 0.71 0.68
+  Ke 0 0 0
+  Ks 1 1 1
 
 newmtl floor
 	Ns 80
