@@ -1,25 +1,33 @@
 # arendur
 
-[travis](https://travis-ci.org/DaseinPhaos/arendur.svg?branch=master)
+![travis](https://travis-ci.org/DaseinPhaos/arendur.svg?branch=master)
+[![Crates.io](https://img.shields.io/crates/v/arendur.svg)](https://crates.io/crates/arendur)
 
 Just Another Renderer. This time in Rust though.
 
 This is a project guided by [pbrt](http://www.pbrt.org/). Its on `0.0.4` for the time being, with a functional path-tracing based renderer.
 
-A sample scene rendered with 256 samples per pixel, using a Cornell Box modification created by [Guedis Cardenas and Morgan McGuire at Williams College, 2011](http://graphics.cs.williams.edu/data)):
+A sample scene rendered by the command line interface prototype `arencli` in `./examples`, with 1024 samples per pixel, using a (modified) Cornell Box modification created by [Guedis Cardenas and Morgan McGuire at Williams College, 2011](http://graphics.cs.williams.edu/data)):
 
-![cornelbox](cbs256.png)
+![cornelbox](cornellbox.png)
 
 
 
 To tinker with it you can either clone the source code with `git`:
 
-   ```sh
+```sh
    $ git clone https://github.com/DaseinPhaos/arendur.git
    $ cd arendur
-   ```
+```
 
-or simply grab it from [crates.io](https:://crates.io).
+or simply grab it from crates.io.
+
+Once grabbed, `arencli` can be built with
+
+```sh
+cargo build --example arencli --release
+```
+
 
 ## What's next
 
@@ -29,6 +37,7 @@ Before 0.1, I want the module to support:
 - [x] area lights
 - [ ] more materials
 - [ ] a bidirectional path tracing based renderer
+- [ ] refine the [docs](http://docs.rs/arendur)
 
 ## Contributing
 

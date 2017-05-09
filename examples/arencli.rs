@@ -24,19 +24,31 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::io::Read;
 use std::time::*;
+use std::str::FromStr;
 
 fn main() {
     env_logger::init().unwrap();
-    rayon::initialize(rayon::Configuration::new().num_threads(4)).unwrap();
     let matches = App::new("The Arendur CLI"
     ).version("0.1").author("Luxko<luxko@qq.com>")
     .arg(
         Arg::with_name("INPUT")
-            .help("Set the scene description input file")
-            .required(true)// .takes_value(true).index(1)
+            .help("The scene description input file")
+            .required(true)
+    ).arg(
+        Arg::with_name("thread")
+            .help("The number of working t")
+            .short("t")
+            .long("thread")
+            .value_name("NUM")
+            .takes_value(true)
     ).get_matches();
 
     let input_filename = matches.value_of("INPUT").unwrap();
+    if let Some(threads) = matches.value_of("thread") {
+        let threads = usize::from_str(threads.as_ref()).expect("Invalid input: thread needs to be a number");
+        rayon::initialize(rayon::Configuration::new().num_threads(threads)).unwrap();
+    }
+
     let (scene, mut renderer) = parse_input(input_filename.as_ref()).expect("");
     println!("Start rendering");
     let sudato = Instant::now();
