@@ -28,10 +28,12 @@ Once grabbed, `arencli` can be built with
 cargo build --example arencli --release
 ```
 
+Note that the newest nightly version of Rust is needed.
+
 
 ## What's next
 
-Before 0.1, I want the module to support:
+Goals before 0.1:
 
 - [x] a console interface (implemented as `./examples/arencli.rs`)
 - [x] area lights
