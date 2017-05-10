@@ -63,15 +63,16 @@ pub trait Primitive: Composable + Light {
 
 /// Load an `.obj` file into a vector
 pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer>, tobj::LoadError> {
+    let parent_path = path.parent().unwrap_or("".as_ref());
     let (models, mtls) = tobj::load_obj(path)?;
     let mut texturess = HashMap::new();
     let mut bumps = HashMap::new();
     let mut materials: Vec<Arc<Material>> = Vec::with_capacity(mtls.len()+1);
     for mtl in mtls {
-        // println!("{:?}", mtl);
+        let diffuse_texture_path = parent_path.join(mtl.diffuse_texture.clone());
         let diffuse = RGBImageTexture::new_as_arc(
             ImageInfo{
-                name: mtl.diffuse_texture,
+                name: diffuse_texture_path.into_os_string().into_string().unwrap_or_default(),
                 trilinear: false,
                 max_aniso: 16. as Float,
                 wrapping: ImageWrapMode::Repeat,
@@ -83,14 +84,17 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
                 shifting: Vector2f::zero(),
             },
             &mut texturess
-        ).unwrap_or(
+        ).unwrap_or_else(|| {
+            warn!("diffuse texture {} unfound!", mtl.diffuse_texture);
             Arc::new(ConstantTexture{value: RGBSpectrum::new(
                 mtl.diffuse[0], mtl.diffuse[1], mtl.diffuse[2]
             ) })
-        );
+        });
+
+        let specular_texture_path = parent_path.join(mtl.specular_texture.clone());
         let specular = RGBImageTexture::new_as_arc(
             ImageInfo{
-                name: mtl.specular_texture,
+                name: specular_texture_path.into_os_string().into_string().unwrap_or_default(),
                 trilinear: false,
                 max_aniso: 16. as Float,
                 wrapping: ImageWrapMode::Repeat,
@@ -102,11 +106,12 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
                 shifting: Vector2f::zero(),
             },
             &mut texturess
-        ).unwrap_or(
+        ).unwrap_or_else(|| {
+            warn!("specular texture {} unfound!", mtl.specular_texture);
             Arc::new(ConstantTexture{value: RGBSpectrum::new(
                 mtl.specular[0], mtl.specular[1], mtl.specular[2]
             ) })
-        );
+        });
 
         let roughness = ConstantTexture{
             value: ((1000. - mtl.shininess) / 1000.).min(1.).max(0.) as Float

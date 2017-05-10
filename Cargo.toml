@@ -42,3 +42,7 @@ default = []
 [[example]]
 name = "arencli"
 path = "examples/arencli.rs"
+
+[[example]]
+name = "pt"
+path = "examples/pt.rs"
