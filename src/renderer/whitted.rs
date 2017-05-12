@@ -17,7 +17,7 @@ use super::scene::Scene;
 use filming::film::FilmTile;
 use spectrum::{RGBSpectrumf, Spectrum};
 use rayon::prelude::*;
-use copy_arena::{Allocator, Arena};
+use aren_alloc::Allocator;
 use geometry::prelude::*;
 use std::path::{PathBuf, Path};
 
@@ -43,7 +43,7 @@ fn calculate_lighting<S: Sampler>(
     mut ray: RayDifferential, 
     scene: &Scene, 
     sampler: &mut S, 
-    alloc: &mut Allocator, 
+    alloc: &Allocator, 
     depth: usize
 ) -> RGBSpectrumf {
     let mut ret = RGBSpectrumf::black();
@@ -88,8 +88,8 @@ impl<S: Sampler> Renderer for WhittedRenderer<S> {
         // let mut tc = 0;
         tiles.par_iter_mut().for_each(|tile| {
         // for tile in &mut tiles {
-            let mut arena = Arena::new();
-            let mut allocator = arena.allocator();
+            // let mut arena = Arena::new();
+            let allocator = Allocator::new();
             let mut sampler = self.sampler.clone();
             let tile_bound = tile.bounding();
             for p in tile_bound {
@@ -99,7 +99,7 @@ impl<S: Sampler> Renderer for WhittedRenderer<S> {
                     let camera_sample_info = sampler.get_camera_sample(p);
                     let mut ray_differential = self.camera.generate_path_differential(camera_sample_info);
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
-                    let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &mut allocator, 0);
+                    let total_randiance = calculate_lighting(ray_differential, scene, &mut sampler, &allocator, 0);
                     // if total_randiance != RGBSpectrumf::black() { rc += 1; }
                     // tc += 1;
                     tile.add_sample(camera_sample_info.pfilm, &total_randiance);

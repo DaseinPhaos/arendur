@@ -17,7 +17,7 @@ use std::sync::Arc;
 use super::scene::Scene;
 use spectrum::{RGBSpectrumf, Spectrum};
 use rayon::prelude::*;
-use copy_arena::{Allocator, Arena};
+use aren_alloc::Allocator;
 use geometry::prelude::*;
 use std::path::{PathBuf, Path};
 profile_use!();
@@ -56,7 +56,7 @@ fn calculate_lighting<S: Sampler>(
     mut ray: RayDifferential, 
     scene: &Scene, 
     sampler: &mut S, 
-    alloc: &mut Allocator, 
+    alloc: &Allocator,
     depth: usize,
     max_depth: usize,
     min_depth: usize,
@@ -130,21 +130,20 @@ impl<S: Sampler> Renderer for PTRenderer<S> {
         info!("Path tracing rendering process started");
         let mut tiles: Vec<FilmTile<RGBSpectrumf>> = self.camera.get_film().spawn_tiles(16, 16);
         let render_tile = |tile: &mut FilmTile<_>| {
-            let mut arena = Arena::new();
             let mut sampler = self.sampler.clone();
             let tile_bound = tile.bounding();
             for p in tile_bound {
                 let p: Point2<u32> = p.cast();
                 sampler.start_pixel(p);
                 loop {
-                    let mut allocator = arena.allocator();
+                    let allocator = Allocator::new();
                     let camera_sample_info = sampler.get_camera_sample(p);
                     let mut ray_differential = self.camera.generate_path_differential(camera_sample_info);
                     ray_differential.scale_differentials(1.0 as Float / sampler.sample_per_pixel() as Float);
                     profile_start!("pt light calculation");
                     let total_randiance = calculate_lighting(
                         ray_differential, scene, &mut sampler, 
-                        &mut allocator, 0, self.max_depth,
+                        &allocator, 0, self.max_depth,
                         self.min_depth, self.rr_threshold
                     );
                     profile_end!("pt light calculation");

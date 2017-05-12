@@ -14,9 +14,9 @@ use bxdf::*;
 use geometry::prelude::*;
 use spectrum::{RGBSpectrumf, Spectrum};
 use std::cmp;
+use aren_alloc::Pointer;
 
 /// A bsdf
-#[derive(Copy, Clone)]
 pub struct Bsdf<'a> {
     pub eta: Float,
     /// shading normal
@@ -45,7 +45,7 @@ impl<'a> Bsdf<'a> {
 
     /// adding an bxdf
     #[inline]
-    pub fn add(&mut self, bxdf: &'a Bxdf) {
+    pub fn add(&mut self, bxdf: Pointer<'a, Bxdf>) {
         self.sink.add(bxdf);
     }
 
@@ -237,16 +237,15 @@ impl<'a> Bsdf<'a> {
     }
 }
 
-#[derive(Copy, Clone)]
 struct BsdfSink<'a> {
-    bxdfs: [Option<&'a Bxdf>; 8],
+    bxdfs: [Option<Pointer<'a, Bxdf>>; 8],
     n: usize,
 }
 
 impl<'a> Default for BsdfSink<'a> {
     fn default() -> BsdfSink<'a> {
         BsdfSink{
-            bxdfs: [None; 8],
+            bxdfs: [None, None, None, None, None, None, None, None],
             n: 0,
         }
     }
@@ -255,12 +254,10 @@ impl<'a> Default for BsdfSink<'a> {
 impl<'a> BsdfSink<'a> {
     /// adding an bxdf
     #[inline]
-    fn add(&mut self, bxdf: &'a Bxdf) {
+    fn add(&mut self, bxdf: Pointer<'a, Bxdf>) {
         assert!(self.n < 8);
         let n = self.n;
-        unsafe {
-            *self.bxdfs.get_unchecked_mut(n) = Some(bxdf);
-        }
+        self.bxdfs[n] = Some(bxdf);
         self.n += 1;
     }
 
@@ -286,10 +283,13 @@ impl<'a, 'b: 'a> Iterator for BsdfSinkIter<'a, 'b> {
         } else {
             let i = self.i;
             let ret = unsafe {
-                self.sink.bxdfs.get_unchecked(i)
+                self.sink.bxdfs.get_unchecked(i).as_ref().map(|p| {
+                    let ret: *const Bxdf = &**p;
+                    &*ret
+                })
             };
             self.i += 1;
-            *ret
+            ret
         }
     }
 }

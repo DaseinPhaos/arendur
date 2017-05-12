@@ -30,6 +30,7 @@ extern crate cgmath;
 extern crate image;
 extern crate num_traits;
 extern crate copy_arena;
+extern crate aren_alloc;
 extern crate tobj;
 extern crate rayon;
 #[cfg(feature = "flame")]

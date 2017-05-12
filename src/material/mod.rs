@@ -10,7 +10,7 @@
 
 use geometry::prelude::*;
 use texturing::*;
-use copy_arena::Allocator;
+use aren_alloc::Allocator;
 use std::sync::Arc;
 
 /// The material interface
@@ -20,7 +20,7 @@ pub trait Material: Sync + Send {
         &self,
         si: &mut SurfaceInteraction,
         dxy: &DxyInfo,
-        alloc: &mut Allocator<'a>
+        alloc: &'a Allocator
     ) -> bsdf::Bsdf<'a>;
 }
 
@@ -30,7 +30,7 @@ impl<T: Material + ?Sized> Material for Arc<T> {
         &self,
         si: &mut SurfaceInteraction,
         dxy: &DxyInfo,
-        alloc: &mut Allocator<'a>
+        alloc: &'a Allocator
     ) -> bsdf::Bsdf<'a> {
         <T as Material>::compute_scattering(
             &*self, si, dxy, alloc

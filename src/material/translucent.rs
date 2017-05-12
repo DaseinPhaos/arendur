@@ -43,7 +43,7 @@ impl Material for TranslucentMaterial {
         &self,
         si: &mut SurfaceInteraction,
         dxy: &DxyInfo,
-        alloc: &mut Allocator<'a>
+        alloc: &'a Allocator
     ) -> bsdf::Bsdf<'a> {
         if let Some(ref bump) = self.bump {
             add_bumping(si, dxy, &**bump);
