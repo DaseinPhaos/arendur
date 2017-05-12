@@ -96,7 +96,7 @@ fn calculate_lighting<S: Sampler>(
                 if f.is_black() || pdf == 0. as Float { break; }
                 beta *= f * (wi.dot(si.shading_norm).abs() / pdf);
                 if !beta.valid() {
-                    warn!("invalid beta encountered from {:?} dot {:?} with pdf {}, breaking current bouncing", wi, si.shading_norm, pdf);
+                    warn!("invalid beta {:?} encountered from {:?} dot {:?} with pdf {}, breaking current bouncing", beta, wi, si.shading_norm, pdf);
                     break;
                 }
                 debug_assert!(beta.inner.y >= 0. as Float);

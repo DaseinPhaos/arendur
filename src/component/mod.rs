@@ -85,7 +85,9 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
             },
             &mut texturess
         ).unwrap_or_else(|| {
-            warn!("diffuse texture {} unfound!", mtl.diffuse_texture);
+            if mtl.diffuse_texture != "" {
+                warn!("diffuse texture {} unfound!", mtl.diffuse_texture);
+            }
             Arc::new(ConstantTexture{value: RGBSpectrum::new(
                 mtl.diffuse[0], mtl.diffuse[1], mtl.diffuse[2]
             ) })
@@ -107,7 +109,9 @@ pub fn load_obj(path: &Path, transform: Matrix4f) -> Result<Vec<ComponentPointer
             },
             &mut texturess
         ).unwrap_or_else(|| {
-            warn!("specular texture {} unfound!", mtl.specular_texture);
+            if mtl.specular_texture != "" {
+                warn!("specular texture {} unfound!", mtl.specular_texture);
+            }
             Arc::new(ConstantTexture{value: RGBSpectrum::new(
                 mtl.specular[0], mtl.specular[1], mtl.specular[2]
             ) })
