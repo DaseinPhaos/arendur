@@ -85,8 +85,8 @@ impl<S, M> Light for ShapedPrimitive<S, M>
         false
     }
 
-    /// Given a position and an light direction in local coordinates,
-    /// evaluate the light's radiance along that direction.
+    /// Given a position on surface and an direction in local coordinates,
+    /// evaluate the light's emitted radiance along that direction.
     #[inline]
     fn evaluate_path(&self, pos: Point3f, dir: Vector3f) -> RGBSpectrumf {
         if let Some(ref lp) = self.lighting_profile {

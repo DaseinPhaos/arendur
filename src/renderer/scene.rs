@@ -90,14 +90,14 @@ impl Scene {
         );
         let mut ret = RGBSpectrumf::black();
         let ls = light.evaluate_sampled(si.basic.pos, ulight);
-        trace!("got light sample: {:?}", ls);
+        trace!("sampled ls: {:?}", ls);
         let wi = ls.wi();
         if !ls.no_effect() {
             let mut f = bsdf.evaluate(
                 si.basic.wo, wi, BXDF_ALL
             ).0 * wi.dot(si.shading_norm).abs();
             let spdf = bsdf.pdf(si.basic.wo, wi, BXDF_ALL);
-            trace!("got bsdf value {:?}, pdf {:?}", f, spdf);
+            trace!("with bsdf {:?}, spdf {:?}", f, spdf);
             if spdf == 0. as Float {
                 f = RGBSpectrumf::black();
             }
@@ -108,7 +108,7 @@ impl Scene {
             if light.is_delta() {
                 let addition = ls.radiance * f / ls.pdf;
                 trace!(
-                    "delta light, adding {:?} to return term", addition
+                    "dlight, adding {:?}", addition
                 );
                 if !addition.valid() {
                     warn!("invalid adding {:?} from light sampling", addition);
@@ -117,7 +117,7 @@ impl Scene {
             } else {
                 let weight = sample::power_heuristic(1, ls.pdf, 1, spdf);
                 let addition = ls.radiance * f * weight / ls.pdf;
-                trace!("non delta light, sampling with MIS, with weight {}, adding {:?} to return term", weight, addition);
+                trace!("ndlight, MISw {}, adding {:?}", weight, addition);
                 if !addition.valid() {
                     warn!("invalid adding {:?} from light sampling", addition);
                 }
@@ -132,7 +132,7 @@ impl Scene {
             );
             f *= wi.dot(si.shading_norm).abs();
             trace!(
-                "bsdf sampling result value: {:?}, wi {:?}, pdf {}, type {:?}",
+                "sampled bsdf: {:?}, wi {:?}, pdf {}, type {:?}",
                 f, wi, pdf, bt
             );
             if !f.is_black() && pdf > 0. as Float {
@@ -141,15 +141,15 @@ impl Scene {
                     let lpdf = light.pdf(si.basic.pos, wi);
                     if lpdf == 0. as Float { return ret; }
                     weight = sample::power_heuristic(1, pdf, 1, lpdf);
-                    trace!("non specular, MIS weight {}", weight);
                 }
+                trace!("MISw {}", weight);
                 let mut ray = si.spawn_ray_differential(wi, None);
                 let mut li = RGBSpectrumf::black();
                 if let Some(lsi) = self.aggregate.intersect_ray(&mut ray.ray) {
                     if let Some(primitive) = lsi.primitive_hit {
                         if ptr::eq(light, primitive.as_light()) {
                             li = lsi.le(-wi);
-                            trace!("valid lighting term {:?}", li);
+                            trace!("li {:?}", li);
                         }
                     }
                 }
@@ -158,6 +158,7 @@ impl Scene {
                     if !addition.valid() {
                         warn!("invalid adding {:?} from bsdf sampling", addition);
                     }
+                    trace!("adding {:?}", addition);
                     ret += addition;
                 }
             }

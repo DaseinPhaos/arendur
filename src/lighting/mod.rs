@@ -36,8 +36,8 @@ pub trait Light: Sync+ Send {
         self.evaluate_path(rd.ray.origin(), rd.ray.direction())
     }
 
-    /// Given a position on surface and an light direction in local
-    /// coordinates, evaluate the light's radiance along that direction.
+    /// Given a position on surface and an direction in local coordinates,
+    /// evaluate the light's emitted radiance along that direction.
     ///
     /// Default implementation yields zero radiance
     #[inline]

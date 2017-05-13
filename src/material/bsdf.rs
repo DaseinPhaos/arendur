@@ -123,7 +123,9 @@ impl<'a> Bsdf<'a> {
         }
         let wi = ret.1;
         ret.1 = self.local_to_parent(wi);
-
+        if ret.1.x.is_nan() || ret.1.y.is_nan() || ret.1.z.is_nan() {
+            warn!("Invalid wiw {:?}, wi {:?}, wow {:?}, wo {:?} bxdft {:?}", ret.1, wi, wow, wo, ret.3);
+        }
         if match_count == 1 || is_specular { return ret; }
         ret.0 = RGBSpectrumf::black();
         let is_reflection = wow.dot(self.ng) * ret.1.dot(self.ng) > 0.0 as Float;
