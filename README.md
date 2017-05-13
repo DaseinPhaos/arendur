@@ -5,7 +5,7 @@
 
 Just Another Renderer. This time in Rust though.
 
-This is a project guided by [pbrt](http://www.pbrt.org/). Its on `0.0.4` for the time being, with a functional path-tracing based renderer.
+This is a project guided by [pbrt](http://www.pbrt.org/). Its on `0.0.5` for the time being, with a functional path-tracing based renderer.
 
 A sample scene rendered by the command line interface prototype `arencli` in `./examples`, with 1024 samples per pixel, using a (modified) Cornell Box modification created by [Guedis Cardenas and Morgan McGuire at Williams College, 2011](http://graphics.cs.williams.edu/data)):
 
